@@ -1,32 +1,15 @@
-# Prerequisites
-*.d
+# paths
+Build/ipch/
+Build/.vs/
+Lib/
+Bin/Temp/
+CMakeFiles
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
 
-# Precompiled Headers
-*.gch
-*.pch
+# files
+Build/*.db
+Build/*.opendb
+CMakeCache.txt
+*.cmake
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
 
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
