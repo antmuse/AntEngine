@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <title>test page</title>
+    </head>
+    <body>
+        <frameset cols="20%,*" rows="30%,30%">
+            <frame src="https://www.baidu.com" />
+            <frame src="https://www.baidu.com" />
+        </frameset>
+        <iframe src="http://www.tianya.cn" id="frame1" frameborder=0 width="30%", height=20%>
+        </iframe>
+        <form method="post" action="http://localhost/show.html">
+            名1: <input type="text" name="key1"/>
+            <br>
+            名2: <input type="text" name="key2"/>
+            <br>
+            名3: <input type="password" name="key3"/>
+            <br>
+            名4: <input type="checkbox" name="key4"/>
+            <br>
+            名5: <input type="radio" name="key5" value="k5a"/>
+            <input type="radio" name="key5" value="k5b"/>
+            <br>
+            <select name="cars">
+                <option value="volvo">Volvo</option>
+                <option value="saab">Saab</option>
+                <option value="fiat">Fiat</option>
+                <option value="audi" selected="selected">Audi</option>
+            </select>
+            <br>
+            <br>
+            <fieldset>
+                <legend>健康信息</legend>
+                身高：<input type="text" name="key6"/>
+                体重：<input type="text" name="key7"/>
+            </fieldset>
+            <br>
+            <br>
+            <input type="submit" value="提交"/>
+        </form>
+    </body>
+</html>

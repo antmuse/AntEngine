@@ -1,0 +1,8 @@
+body {color:#FFFFFF; font-family:"Verdana", "Arial", "Helvetica", "sans-serif"; font-size: 10pt}
+p {color:yellow; font-family:"¡• È"; font-size: 15pt}
+a:link { color:#66FF00; text-decoration:none; font-size:20px}
+a:visited { color:#66FF00; text-decoration:none; font-size:20px}
+a:hover { color: yellow; text-decoration:none; font-size:20px; background:url(../index/linkBar2.jpg)}
+.text { color: yellow; font-size:15px;}
+.textBig{color:yellow; font-size:30px;}
+.textCopyRight { color: white; font-size:12px;}

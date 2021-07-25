@@ -1,0 +1,68 @@
+BODY {
+    BACKGROUND-COLOR: #000000; MARGIN: 20px 0px 0px
+}
+BODY {
+    COLOR: #ffffff
+}
+TD {
+    COLOR: #ffffff
+}
+TH {
+    COLOR: #ffffff
+}
+.style1 {
+    FONT-SIZE: 36px; FONT-WEIGHT: bold
+}
+.footer{
+    PADDING-BOTTOM: 0px; LIST-STYLE-TYPE: none; MARGIN: 0px; PADDING-LEFT: 20px;
+    PADDING-RIGHT: 0px; BACKGROUND: #000000; COLOR: #ffffff;
+    HEIGHT: 30px; LIST-STYLE-IMAGE: none; PADDING-TOP: 0px
+}
+.navigation {
+    PADDING-BOTTOM: 0px; LIST-STYLE-TYPE: none; MARGIN: 0px; PADDING-LEFT: 20px;
+    PADDING-RIGHT: 0px; BACKGROUND: url(/res/navigation/nav_background.gif) #1841c8;
+    HEIGHT: 40px; LIST-STYLE-IMAGE: none; PADDING-TOP: 0px
+}
+.navigation LI {
+    FLOAT: left
+}
+.navigation LI A {
+    TEXT-ALIGN: center; PADDING-BOTTOM: 0px; LINE-HEIGHT: 40px;
+    PADDING-LEFT: 10px; PADDING-RIGHT: 0px; DISPLAY: block;
+    FONT-FAMILY: arial, verdana, sans-serif; FLOAT: left; HEIGHT: 40px; COLOR: #ffffff;
+    FONT-SIZE: 11px; CURSOR: pointer; TEXT-DECORATION: none; PADDING-TOP: 0px
+}
+.navigation LI A B {
+    PADDING-BOTTOM: 0px; PADDING-LEFT: 8px; PADDING-RIGHT: 16px; DISPLAY: block; FLOAT: left; PADDING-TOP: 0px
+}
+.navigation LI.current A {
+    BACKGROUND: url(/res/navigation/nav_hover.gif); COLOR: #ffffff
+}
+.navigation LI A:hover {
+    BACKGROUND: url(/res/navigation/nav_hover.gif); COLOR: #00ccff
+}
+.navigation LI A EM {
+    WIDTH: 30px; DISPLAY: block; FLOAT: left; HEIGHT: 40px
+}
+.navigation LI A EM.home {
+    BACKGROUND-IMAGE: url(/res/nav_icons/home.png); BACKGROUND-REPEAT: no-repeat; BACKGROUND-POSITION: center center
+}
+.navigation LI A EM.templates {
+    BACKGROUND-IMAGE: url(/res/nav_icons/templates.png); BACKGROUND-REPEAT: no-repeat; BACKGROUND-POSITION: center center
+}
+.navigation LI A EM.psd {
+    BACKGROUND-IMAGE: url(/res/nav_icons/psd.png); BACKGROUND-REPEAT: no-repeat; BACKGROUND-POSITION: center center
+}
+.navigation LI A EM.tutorials {
+    BACKGROUND-IMAGE: url(/res/nav_icons/tutorials.png); BACKGROUND-REPEAT: no-repeat; BACKGROUND-POSITION: center center
+}
+.navigation LI A EM.shop {
+    BACKGROUND-IMAGE: url(/res/nav_icons/shop.png); BACKGROUND-REPEAT: no-repeat; BACKGROUND-POSITION: center center
+}
+.navigation LI A EM.contact {
+    BACKGROUND-IMAGE: url(/res/nav_icons/contact.png); BACKGROUND-REPEAT: no-repeat; BACKGROUND-POSITION: center center
+}
+
+a:link { color:#66FF00; text-decoration:none; font-size:16px}
+a:visited { color:#66FF00; text-decoration:none; font-size:16px}
+a:hover { color: #FFFFFF; text-decoration:none; font-size:16px; background:url(/res/navigation/nav_hover.gif)}
