@@ -92,7 +92,7 @@ bool EngineConfig::save(const String& cfg) {
     val["LogPath"] = mLogPath.c_str();
     val["PidFile"] = mPidFile.c_str();
     val["ShareMem"] = mMemName.c_str();
-    val["ShareMemSize"] = mMemSize / (1024 * 1024);
+    val["ShareMemSize"] = (Json::Value::Int64)mMemSize / (1024 * 1024);
     val["AcceptPost"] = mMaxPostAccept;
     val["ThreadPool"] = mMaxThread;
 
@@ -135,7 +135,7 @@ bool EngineConfig::load(const String& runPath, const String& cfg) {
         mLogPath = val["LogPath"].asCString();
         mPidFile = val["PidFile"].asCString();
         mMemName = val["ShareMem"].asCString();
-        mMemSize = 1024 * 1024 * AppClamp(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
+        mMemSize = 1024 * 1024 * AppClamp<s64>(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
         mMaxPostAccept = AppClamp<u8>(val["AcceptPost"].asInt(), 1, 255);
         mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
         if (val.isMember("Proxy")) {

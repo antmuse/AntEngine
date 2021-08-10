@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Depend\http_parser\http_parser.cpp" />
+    <ClCompile Include="..\..\Depend\jsoncpp\json_reader.cpp" />
+    <ClCompile Include="..\..\Depend\jsoncpp\json_value.cpp" />
+    <ClCompile Include="..\..\Depend\jsoncpp\json_writer.cpp" />
+    <ClCompile Include="..\..\Source\CodecBase64.cpp" />
+    <ClCompile Include="..\..\Source\CheckCRC.cpp" />
+    <ClCompile Include="..\..\Source\CheckSum.cpp" />
+    <ClCompile Include="..\..\Source\EngineConfig.cpp" />
+    <ClCompile Include="..\..\Source\FileReader.cpp" />
+    <ClCompile Include="..\..\Source\FileWriter.cpp" />
+    <ClCompile Include="..\..\Source\HashDict.cpp" />
+    <ClCompile Include="..\..\Source\EncoderMD5.cpp" />
+    <ClCompile Include="..\..\Source\Logger.cpp" />
+    <ClCompile Include="..\..\Source\MemoryHub.cpp" />
+    <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\TlsContext.cpp" />
+    <ClCompile Include="..\..\Source\Net\HandleTLS.cpp" />
+    <ClCompile Include="..\..\Source\Net\TlsSession.cpp" />
+    <ClCompile Include="..\..\Source\Net\EventPoller.cpp" />
+    <ClCompile Include="..\..\Source\Net\Hostcheck.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpCookie.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpHead.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpLayer.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpMsg.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpRequest.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpResponse.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpURL.cpp" />
+    <ClCompile Include="..\..\Source\Net\NetAddress.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisBitMap.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisGeography.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisHyperLogLog.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisPublish.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisClient.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisClientCluster.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisClientPool.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisCluster.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisCommand.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisConnection.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisHash.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisKey.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisList.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisRequest.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisResponse.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisSet.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisSortedSet.cpp" />
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisString.cpp" />
+    <ClCompile Include="..\..\Source\Net\Socket.cpp" />
+    <ClCompile Include="..\..\Source\Net\TcpProxy.cpp" />
+    <ClCompile Include="..\..\Source\Packet.cpp" />
+    <ClCompile Include="..\..\Source\RingBuffer.cpp" />
+    <ClCompile Include="..\..\Source\StrConverterGBK.cpp" />
+    <ClCompile Include="..\..\Source\Timer.cpp" />
+    <ClCompile Include="..\..\Source\TimerWheel.cpp" />
+    <ClCompile Include="..\..\Source\HashMurmur.cpp" />
+    <ClCompile Include="..\..\Source\HashSIP.cpp" />
+    <ClCompile Include="..\..\Source\StrConverter.cpp" />
+    <ClCompile Include="..\..\Source\Engine.cpp" />
+    <ClCompile Include="..\..\Source\Windows\HandleTCP.cpp" />
+    <ClCompile Include="..\..\Source\Windows\Loop.cpp" />
+    <ClCompile Include="..\..\Source\Windows\MapFile.cpp" />
+    <ClCompile Include="..\..\Source\Windows\System.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Depend\http_parser\http_parser.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\assertions.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\config.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\forwards.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\json.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\json_features.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\reader.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\value.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\version.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json\writer.h" />
+    <ClInclude Include="..\..\Depend\jsoncpp\json_tool.h" />
+    <ClInclude Include="..\..\Include\Certs.h" />
+    <ClInclude Include="..\..\Include\CodecBase64.h" />
+    <ClInclude Include="..\..\Include\CheckCRC.h" />
+    <ClInclude Include="..\..\Include\CheckSum.h" />
+    <ClInclude Include="..\..\Include\EngineConfig.h" />
+    <ClInclude Include="..\..\Include\FileReader.h" />
+    <ClInclude Include="..\..\Include\FileWriter.h" />
+    <ClInclude Include="..\..\Include\FuncSort.h" />
+    <ClInclude Include="..\..\Include\Handle.h" />
+    <ClInclude Include="..\..\Include\IntID.h" />
+    <ClInclude Include="..\..\Include\Loop.h" />
+    <ClInclude Include="..\..\Include\MapFile.h" />
+    <ClInclude Include="..\..\Include\MsgHeader.h" />
+    <ClInclude Include="..\..\Include\Net\Acceptor.h" />
+    <ClInclude Include="..\..\Include\Net\HandleTLS.h" />
+    <ClInclude Include="..\..\Include\Net\TlsContext.h" />
+    <ClInclude Include="..\..\Include\Net\TlsSession.h" />
+    <ClInclude Include="..\..\Include\Net\EventPoller.h" />
+    <ClInclude Include="..\..\Include\Net\HandleTCP.h" />
+    <ClInclude Include="..\..\Include\Net\Hostcheck.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpLayer.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpMsg.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpRequest.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpResponse.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpURL.h" />
+    <ClInclude Include="..\..\Include\Net\NetAddress.h" />
+    <ClInclude Include="..\..\Include\Net\NetHeader.h" />
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisClient.h" />
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisClientCluster.h" />
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisClientPool.h" />
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisCommand.h" />
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisRequest.h" />
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisResponse.h" />
+    <ClInclude Include="..\..\Include\Net\Socket.h" />
+    <ClInclude Include="..\..\Include\Net\TcpProxy.h" />
+    <ClInclude Include="..\..\Include\Packet.h" />
+    <ClInclude Include="..\..\Include\RingBuffer.h" />
+    <ClInclude Include="..\..\Include\Spinlock.h" />
+    <ClInclude Include="..\..\Include\System.h" />
+    <ClInclude Include="..\..\Include\ThreadPool.h" />
+    <ClInclude Include="..\..\Include\Timer.h" />
+    <ClInclude Include="..\..\Include\TimerWheel.h" />
+    <ClInclude Include="..\..\Include\HashFunctions.h" />
+    <ClInclude Include="..\..\Include\TMap.h" />
+    <ClInclude Include="..\..\Include\TList.h" />
+    <ClInclude Include="..\..\Include\BinaryHeap.h" />
+    <ClInclude Include="..\..\Include\HashDict.h" />
+    <ClInclude Include="..\..\Include\EncoderMD5.h" />
+    <ClInclude Include="..\..\Include\Logger.h" />
+    <ClInclude Include="..\..\Include\MemoryHub.h" />
+    <ClInclude Include="..\..\Include\MemoryPool.h" />
+    <ClInclude Include="..\..\Include\Config.h" />
+    <ClInclude Include="..\..\Include\Converter.h" />
+    <ClInclude Include="..\..\Include\Engine.h" />
+    <ClInclude Include="..\..\Include\Nocopy.h" />
+    <ClInclude Include="..\..\Include\Node.h" />
+    <ClInclude Include="..\..\Include\StrConverter.h" />
+    <ClInclude Include="..\..\Include\Strings.h" />
+    <ClInclude Include="..\..\Include\TAllocator.h" />
+    <ClInclude Include="..\..\Include\TVector.h" />
+    <ClInclude Include="..\..\Include\Windows\Request.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\.gitignore" />
+    <None Include="..\..\Bin\Config\config.json" />
+    <None Include="..\..\Depend\http_parser\LICENSE-MIT" />
+    <None Include="..\..\Depend\jsoncpp\LICENSE" />
+    <None Include="..\..\LICENSE" />
+    <None Include="..\..\README.md" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{323CA6C7-FB56-4590-BF44-9B151281E81D}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>AntEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

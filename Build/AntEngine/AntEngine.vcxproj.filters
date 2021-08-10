@@ -1,0 +1,482 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source\Net">
+      <UniqueIdentifier>{58ec856f-78a2-4fda-b825-d66a0507b3fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Windows">
+      <UniqueIdentifier>{933ca345-9886-47b7-86d8-32bbbb65a9cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Include\Net">
+      <UniqueIdentifier>{a532923e-2a03-4813-84de-ca3f489ac2ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Windows">
+      <UniqueIdentifier>{530d158b-cebd-4065-a0d1-4cc2544399a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Depend">
+      <UniqueIdentifier>{f4500cdb-7793-43c3-bc01-2afb176ecbcf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Depend\jsoncpp">
+      <UniqueIdentifier>{753de7cd-980c-4e8e-b3da-8545df2e4685}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Depend\http_parser">
+      <UniqueIdentifier>{8bc83d3a-04f7-4ca0-848f-7313640b4ae0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Depend\jsoncpp\json">
+      <UniqueIdentifier>{239493b2-782a-4a3e-8477-cbff66e7b57b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{7fd83348-ca04-47cf-b605-2a2e5baa395f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Net\HTTP">
+      <UniqueIdentifier>{751584a5-bfe7-4776-8d9f-9e51d764230b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Net\HTTP">
+      <UniqueIdentifier>{e8cf3673-eb9a-4d6d-b80c-7f909acf5916}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Net\RedisClient">
+      <UniqueIdentifier>{ebdfb711-ddfe-4b46-8d40-013f8ad85788}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Net\RedisClient">
+      <UniqueIdentifier>{90b155f3-22ee-486b-83f4-d4c2e0f28208}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\StrConverter.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Engine.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\HashMurmur.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\HashSIP.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\EncoderMD5.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Logger.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\MemoryHub.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\TimerWheel.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Timer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Packet.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\CheckCRC.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\CheckSum.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\CodecBase64.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\Socket.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\NetAddress.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\EventPoller.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\HashDict.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FileReader.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\FileWriter.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\Loop.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\System.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\HandleTCP.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\StrConverterGBK.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\MapFile.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\EngineConfig.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\jsoncpp\json_reader.cpp">
+      <Filter>Source\Depend\jsoncpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\jsoncpp\json_value.cpp">
+      <Filter>Source\Depend\jsoncpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\jsoncpp\json_writer.cpp">
+      <Filter>Source\Depend\jsoncpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpCookie.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpHead.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpMsg.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpRequest.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpResponse.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpURL.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpLayer.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\Acceptor.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\TcpProxy.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisBitMap.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisGeography.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisHyperLogLog.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisPublish.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisClient.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisClientCluster.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisClientPool.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisCluster.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisCommand.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisConnection.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisHash.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisKey.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisList.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisRequest.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisResponse.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisSet.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisSortedSet.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\RedisClient\RedisString.cpp">
+      <Filter>Source\Net\RedisClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\RingBuffer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\Hostcheck.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\TlsSession.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HandleTLS.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\TlsContext.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\http_parser\http_parser.cpp">
+      <Filter>Source\Depend\http_parser</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Include\BinaryHeap.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Config.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Nocopy.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Node.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\StrConverter.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Strings.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Engine.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Converter.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\TAllocator.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\MemoryPool.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\EncoderMD5.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\MemoryHub.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\TVector.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\TList.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\TMap.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Logger.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Timer.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\TimerWheel.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Spinlock.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\HashFunctions.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Packet.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\CheckCRC.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\CheckSum.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\CodecBase64.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\Socket.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\NetAddress.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\EventPoller.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\System.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Loop.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Handle.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Windows\Request.h">
+      <Filter>Include\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HandleTCP.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\IntID.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\FuncSort.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\HashDict.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\FileReader.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\FileWriter.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\NetHeader.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ThreadPool.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\EngineConfig.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\http_parser\http_parser.h">
+      <Filter>Source\Depend\http_parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\assertions.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\config.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\forwards.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\json.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\json_features.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\reader.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\value.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\version.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json\writer.h">
+      <Filter>Source\Depend\jsoncpp\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\jsoncpp\json_tool.h">
+      <Filter>Source\Depend\jsoncpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\MapFile.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\MsgHeader.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpMsg.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpRequest.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpResponse.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpURL.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpLayer.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\Acceptor.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\TcpProxy.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisClient.h">
+      <Filter>Include\Net\RedisClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisClientCluster.h">
+      <Filter>Include\Net\RedisClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisClientPool.h">
+      <Filter>Include\Net\RedisClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisCommand.h">
+      <Filter>Include\Net\RedisClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisRequest.h">
+      <Filter>Include\Net\RedisClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\RedisClient\RedisResponse.h">
+      <Filter>Include\Net\RedisClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Certs.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RingBuffer.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\Hostcheck.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\TlsSession.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HandleTLS.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\TlsContext.h">
+      <Filter>Include\Net</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Depend\jsoncpp\LICENSE">
+      <Filter>Source\Depend\jsoncpp</Filter>
+    </None>
+    <None Include="..\..\Bin\Config\config.json">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\.gitignore" />
+    <None Include="..\..\LICENSE" />
+    <None Include="..\..\README.md" />
+    <None Include="..\..\Depend\http_parser\LICENSE-MIT">
+      <Filter>Source\Depend\http_parser</Filter>
+    </None>
+  </ItemGroup>
+</Project>

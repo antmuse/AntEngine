@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     eng.init(argv[0]);
     Loop& loop = eng.getLoop();
     net::Acceptor* conn= new net::Acceptor(loop, net::Linker::funcOnLink, true?"TLS":nullptr);
-    succ = conn->open(argv[2]);
+    succ = conn->open("0.0.0.0:443");
     while (loop.run()) {    }
     eng.uninit();
     return 0;
