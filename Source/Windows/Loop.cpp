@@ -27,6 +27,7 @@
 #include "System.h"
 #include "Timer.h"
 #include "Logger.h"
+#include "HandleFile.h"
 #include "Net/HandleTCP.h"
 //#include "Engine.h"
 
@@ -416,6 +417,22 @@ s32 Loop::openHandle(Handle* it) {
         HandleTime* nd = reinterpret_cast<HandleTime*>(it);
         nd->mTimeout += Timer::getRelativeTime();
         mTimeHub.insert(&nd->mLink);
+        break;
+    }
+    case EHT_FILE:
+    {
+        HandleFile* nd = reinterpret_cast<HandleFile*>(it);
+        if (!mPoller.add(nd->getHandle(), nd)) {
+            ret = System::getAppError();
+            Logger::log(ELL_ERROR, "Loop::openHandle>>file=%s, ecode=%d", nd->getFileName().c_str(), ret);
+            nd->close();
+        } else {
+            nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
+            if (nd->mCallTime) {
+                nd->mTimeout += Timer::getRelativeTime();
+                mTimeHub.insert(&nd->mLink);
+            }
+        }
         break;
     }
     case EHT_UNKNOWN:

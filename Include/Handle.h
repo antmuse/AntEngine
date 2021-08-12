@@ -56,6 +56,7 @@ enum EHandleType {
     EHT_TCP_CONNECT = 3,
     EHT_TCP_LINK = 4,
     EHT_UDP = 5,
+    EHT_FILE = 6,
     EHT_COUNT
 };
 
@@ -82,6 +83,10 @@ public:
         mUser(nullptr),
         mCallClose(nullptr),
         mType(EHT_UNKNOWN) {
+#if defined(DOS_ANDROID) || defined(DOS_LINUX)
+        mReadQueue = nullptr;
+        mWriteQueue = nullptr;
+#endif
     }
 
     ~Handle() {

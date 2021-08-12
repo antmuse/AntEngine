@@ -237,6 +237,9 @@
     <ClCompile Include="..\..\Depend\http_parser\http_parser.cpp">
       <Filter>Source\Depend\http_parser</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\HandleFile.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\BinaryHeap.h">
@@ -463,6 +466,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\TlsContext.h">
       <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\HandleFile.h">
+      <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

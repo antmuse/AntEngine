@@ -1,76 +1,56 @@
+/***************************************************************************************************
+ * MIT License
+ *
+ * Copyright (c) 2021 antmuse@live.cn/antmuse@qq.com
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+***************************************************************************************************/
+
 #include "Handle.h"
+
 #if defined(DOS_ANDROID) || defined(DOS_LINUX)
 #include "Linux/Request.h"
 
 namespace app {
 
 Request* Handle::popReadReq() {
-    Request* head = nullptr;
-    if (mReadQueue) {
-        head = mReadQueue->mNext;
-        if (head == mReadQueue) {
-            mReadQueue = nullptr;
-        } else {
-            mReadQueue->mNext = head->mNext;
-        }
-        head->mNext = nullptr;
-    }
-    return head;
+    return AppPopRingQueueHead_1(mReadQueue);
 }
 
 Request* Handle::popWriteReq() {
-    Request* head = nullptr;
-    if (mWriteQueue) {
-        head = mWriteQueue->mNext;
-        if (head == mWriteQueue) {
-            mWriteQueue = nullptr;
-        } else {
-            mWriteQueue->mNext = head->mNext;
-        }
-        head->mNext = nullptr;
-    }
-    return head;
+    return AppPopRingQueueHead_1(mWriteQueue);
 }
 
 void Handle::addReadPendingTail(Request* it) {
-    if (mReadQueue) {
-        it->mNext = mReadQueue->mNext;
-        mReadQueue->mNext = it;
-    } else {
-        it->mNext = it;
-    }
-    mReadQueue = it;
+    AppPushRingQueueTail_1(mReadQueue, it);
 }
 
 void Handle::addReadPendingHead(Request* it) {
-    if (mReadQueue) {
-        it->mNext = mReadQueue->mNext;
-        mReadQueue->mNext = it;
-    } else {
-        it->mNext = it;
-        mReadQueue = it;
-    }
+    AppPushRingQueueHead_1(mReadQueue, it);
 }
 
 void Handle::addWritePendingTail(Request* it) {
-    if (mWriteQueue) {
-        it->mNext = mWriteQueue->mNext;
-        mWriteQueue->mNext = it;
-    } else {
-        it->mNext = it;
-    }
-    mWriteQueue = it;
+    AppPushRingQueueTail_1(mWriteQueue, it);
 }
 
-
 void Handle::addWritePendingHead(Request* it) {
-    if (mWriteQueue) {
-        it->mNext = mWriteQueue->mNext;
-        mWriteQueue->mNext = it;
-    } else {
-        it->mNext = it;
-        mWriteQueue = it;
-    }
+    AppPushRingQueueHead_1(mWriteQueue, it);
 }
 
 } //namespace app

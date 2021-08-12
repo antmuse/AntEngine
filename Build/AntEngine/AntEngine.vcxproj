@@ -76,6 +76,7 @@
     <ClCompile Include="..\..\Source\HashSIP.cpp" />
     <ClCompile Include="..\..\Source\StrConverter.cpp" />
     <ClCompile Include="..\..\Source\Engine.cpp" />
+    <ClCompile Include="..\..\Source\Windows\HandleFile.cpp" />
     <ClCompile Include="..\..\Source\Windows\HandleTCP.cpp" />
     <ClCompile Include="..\..\Source\Windows\Loop.cpp" />
     <ClCompile Include="..\..\Source\Windows\MapFile.cpp" />
@@ -103,6 +104,7 @@
     <ClInclude Include="..\..\Include\FileWriter.h" />
     <ClInclude Include="..\..\Include\FuncSort.h" />
     <ClInclude Include="..\..\Include\Handle.h" />
+    <ClInclude Include="..\..\Include\HandleFile.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Loop.h" />
     <ClInclude Include="..\..\Include\MapFile.h" />

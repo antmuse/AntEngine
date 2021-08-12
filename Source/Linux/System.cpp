@@ -245,5 +245,14 @@ s32 System::removeFile(const String& it) {
 }
 
 
+s32 System::isExist(const String& it) {
+    return 0;
+}
+
+
+void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
+}
+
+
 } //namespace app
 
