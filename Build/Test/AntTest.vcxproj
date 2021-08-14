@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Source\Test\App.cpp" />
     <ClCompile Include="..\..\Source\Test\AppTicker.cpp" />
+    <ClCompile Include="..\..\Source\Test\AsyncFile.cpp" />
     <ClCompile Include="..\..\Source\Test\Connector.cpp" />
     <ClCompile Include="..\..\Source\Test\NetClient.cpp" />
     <ClCompile Include="..\..\Source\Test\NetServer.cpp" />
@@ -38,10 +39,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Test\AppTicker.h" />
+    <ClInclude Include="..\..\Source\Test\AsyncFile.h" />
     <ClInclude Include="..\..\Source\Test\Connector.h" />
     <ClInclude Include="..\..\Source\Test\HttpsClient.h" />
     <ClInclude Include="..\..\Source\Test\Linker.h" />
     <ClInclude Include="..\..\Source\Test\TlsConnector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\Test\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Source\Test\Makefile" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

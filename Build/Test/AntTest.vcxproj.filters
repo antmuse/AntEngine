@@ -66,6 +66,9 @@
     <ClCompile Include="..\..\Source\Test\NetServer.cpp">
       <Filter>源文件\Test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Test\AsyncFile.cpp">
+      <Filter>源文件\Test</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Test\AppTicker.h">
@@ -83,5 +86,18 @@
     <ClInclude Include="..\..\Source\Test\TlsConnector.h">
       <Filter>源文件\Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\Test\AsyncFile.h">
+      <Filter>源文件\Test</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\Test\CMakeLists.txt">
+      <Filter>源文件\Test</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Source\Test\Makefile">
+      <Filter>源文件\Test</Filter>
+    </None>
   </ItemGroup>
 </Project>

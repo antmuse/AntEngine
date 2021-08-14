@@ -45,6 +45,10 @@ namespace app {
 
 s32 System::gSignal = 0;
 
+static u32 AppGetDiskSectorSize() {
+    //TODO>>
+    return 0;
+}
 
 static u32 AppGetCoreCount() {
     return get_nprocs();
@@ -131,7 +135,7 @@ s32 System::daemon() {
     if (dup2(fd, STDERR_FILENO) == -1) {
         Logger::logError("System::daemon>>dup2(STDERR) failed,ecode=%d", getError());
         return EE_ERROR;
-    }
+}
 #endif
 
     if (fd > STDERR_FILENO) {
@@ -189,6 +193,10 @@ s32 System::getAppError() {
     return getAppError(getError());
 }
 
+u32 System::getDiskSectorSize() {
+    static u32 ret = AppGetDiskSectorSize();
+    return ret;
+}
 
 u32 System::getCoreCount() {
     static u32 ret = AppGetCoreCount();

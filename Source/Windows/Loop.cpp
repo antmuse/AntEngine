@@ -100,14 +100,14 @@ void Loop::updatePending() {
                 nd->mError = System::convNtstatus2NetError((NTSTATUS)(nd->mOverlapped.Internal));
                 closeHandle(hnd);
             }
-            nd->mCall(nd);
+            nd->mCall(nd); //nd maybe deleted
             unbindFly(hnd);
             break;
         }
         case ERT_READ:
-        {
+        {//read on HandleTCP or HandleFile
             net::RequestTCP* nd = (net::RequestTCP*)req;
-            net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
+            Handle* hnd = nd->mHandle;
             if ((NTSTATUS)(nd->mOverlapped.Internal) >= 0) {
                 nd->mUsed += (u32)nd->mOverlapped.InternalHigh;
                 nd->mError = 0;
@@ -120,14 +120,14 @@ void Loop::updatePending() {
                 nd->mError = System::convNtstatus2NetError((NTSTATUS)(nd->mOverlapped.Internal));
                 closeHandle(hnd);
             }
-            nd->mCall(nd);
+            nd->mCall(nd); //nd maybe deleted
             unbindFly(hnd);
             break;
         }
         case ERT_WRITE:
-        {
+        {//write on HandleTCP or HandleFile
             net::RequestTCP* nd = (net::RequestTCP*)req;
-            net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
+            Handle* hnd = nd->mHandle;
             if ((NTSTATUS)(nd->mOverlapped.Internal) >= 0) {
                 nd->mError = (nd->mUsed) ^ ((u32)nd->mOverlapped.InternalHigh);
                 relinkTime((HandleTime*)hnd);
@@ -135,7 +135,7 @@ void Loop::updatePending() {
                 nd->mError = System::convNtstatus2NetError((NTSTATUS)(nd->mOverlapped.Internal));
                 closeHandle(hnd);
             }
-            nd->mCall(nd);
+            nd->mCall(nd); //nd maybe deleted
             unbindFly(hnd);
             break;
         }
@@ -162,7 +162,7 @@ void Loop::updatePending() {
                 nd->mError = System::convNtstatus2NetError((NTSTATUS)(nd->mOverlapped.Internal));
                 closeHandle(hnd);
             }
-            nd->mCall(nd);
+            nd->mCall(nd); //nd maybe deleted
             unbindFly(hnd);
             break;
         }
@@ -304,6 +304,15 @@ s32 Loop::closeHandle(Handle* it) {
     {
         HandleTime* nd = reinterpret_cast<HandleTime*>(it);
         mTimeHub.remove(&nd->mLink);
+        break;
+    }
+    case EHT_FILE:
+    {
+        HandleFile* nd = reinterpret_cast<HandleFile*>(it);
+        ret = nd->close();
+        if (nd->mCallTime) {
+            mTimeHub.remove(&nd->mLink);
+        }
         break;
     }
     default:

@@ -44,7 +44,7 @@ s32 AppTestNetClient(s32 argc, s8** argv);
 s32 AppTestRedis(s32 argc, s8** argv);
 s32 AppTestDefault(s32 argc, s8** argv);
 s32 AppTestHttpsClient(s32 argc, s8** argv);
-
+s32 AppTestFile(s32 argc, s8** argv);
 } //namespace app
 
 
@@ -91,6 +91,10 @@ int main(int argc, char** argv) {
     case 5:
         //exe 5
         ret = 2 == argc ? AppTestHttpsClient(argc, argv) : argc;
+        break;
+    case 6:
+        //exe 6 af.html 1
+        ret = 4 == argc ? AppTestFile(argc, argv) : argc;
         break;
     default:
         if (true) {

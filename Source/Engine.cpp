@@ -84,6 +84,7 @@ bool Engine::init(const s8* fname) {
     Timer::getTimeZone();
     System::getCoreCount();
     System::getPageSize();
+    System::getDiskSectorSize();
 
     System::createPath(mConfig.mLogPath);
 

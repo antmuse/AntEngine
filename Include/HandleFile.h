@@ -33,6 +33,11 @@
 namespace app {
 using RequestFD = net::RequestTCP;
 
+
+/**
+* @class HandleFile
+* @brief 异步文件
+*/
 class HandleFile : public HandleTime {
 public:
     HandleFile();
@@ -47,16 +52,26 @@ public:
         return mFilename;
     }
 
-    s32 write(RequestFD* it);
+    usz getFileSize()const {
+        return mFileSize;
+    }
 
-    s32 read(RequestFD* it);
+    /**
+    * @param offset 写入起始处
+    */
+    s32 write(RequestFD* it, usz offset = 0);
+
+    /**
+    * @param offset 读取起始处
+    */
+    s32 read(RequestFD* it, usz offset = 0);
 
     s32 close();
 
     /**
     * @brief open file
     * @param fname file name
-    * @param flag 0=not share, 1=share read, 2=share write, 4=create, 8=clear
+    * @param flag 0=not share, 1=share read, 2=share write, 4=create if not exists
     * @return 0 if success, else failed.
     */
     s32 open(const String& fname, s32 flag = 1);
@@ -65,6 +80,7 @@ public:
 protected:
     friend class app::Loop;
     void* mFile;
+    usz mFileSize;
     String mFilename;
 };
 

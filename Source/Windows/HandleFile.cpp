@@ -24,13 +24,16 @@
 
 
 #include "HandleFile.h"
+#include "System.h"
 #include "Engine.h"
 
 
 namespace app {
 
 HandleFile::HandleFile()
-    :mFile(nullptr) {
+    :mFile(INVALID_HANDLE_VALUE)
+    , mFileSize(0) {
+    mType = EHT_FILE;
     mLoop = &Engine::getInstance().getLoop();
 }
 
@@ -43,14 +46,19 @@ HandleFile::~HandleFile() {
 s32 HandleFile::close() {
     if (INVALID_HANDLE_VALUE != mFile) {
         CloseHandle(mFile);
-        mFile = nullptr;
+        mFile = INVALID_HANDLE_VALUE;
         mFilename.setLen(0);
+        mFileSize = 0;
     }
     return EE_OK;
 }
 
+//要截断或扩展文件，请使用SetEndOfFile函数
+
+
 
 s32 HandleFile::open(const String& fname, s32 flag) {
+    close();
     mFilename = fname;
 
     tchar tmp[_MAX_PATH];
@@ -60,60 +68,86 @@ s32 HandleFile::open(const String& fname, s32 flag) {
     usz len = AppUTF8ToGBK(fname.c_str(), tmp, sizeof(tmp));
 #endif
 
-    //FILE_APPEND_DATA
+
     DWORD fmode = (flag & 1) > 0 ? FILE_SHARE_READ : 0;
     fmode |= (flag & 2) > 0 ? FILE_SHARE_WRITE : 0;
 
-    DWORD cmod = 0;
-    if ((flag & 4) > 0) {
-        cmod = (flag & 8) > 0 ? CREATE_ALWAYS : OPEN_ALWAYS;
-    } else {
-        cmod = (flag & 8) > 0 ? CREATE_NEW : OPEN_EXISTING;
-    }
+    /*
+     * CREATE_NEW 创建文件；如文件存在则会出错
+     * CREATE_ALWAYS 创建文件，会改写前一个文件
+     * OPEN_EXISTING 文件必须已经存在。由设备提出要求
+     * OPEN_ALWAYS 如文件不存在则创建它
+     * TRUNCATE_EXISTING 将现有文件缩短为零长度
+     */
+    DWORD cmod = (flag & 4) > 0 ? OPEN_ALWAYS : OPEN_EXISTING;
 
-    mFile = CreateFile(tmp,
-        GENERIC_READ | GENERIC_WRITE,
-        fmode, //FILE_SHARE_READ | FILE_SHARE_WRITE,
-        NULL,
-        cmod, //OPEN_EXISTING,
-        FILE_FLAG_OVERLAPPED,
-        NULL);
+    /*
+     * 使用FILE_FLAG_NO_BUFFERING时，有严格要求，
+     * 读写起始偏移量及写入大小，需为磁盘扇区大小整数倍，否则失败
+     * https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering
+     */
+    DWORD attr = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED
+        | FILE_FLAG_RANDOM_ACCESS | FILE_FLAG_WRITE_THROUGH;
+
+    mFile = CreateFile(tmp, GENERIC_READ | ((flag & (2 | 4)) > 0 ? GENERIC_WRITE : 0),
+        fmode, nullptr, cmod, attr, nullptr);
 
     if (INVALID_HANDLE_VALUE == mFile) {
         return EE_NO_OPEN;
     }
+
+    LARGE_INTEGER fsize;
+    if (TRUE == GetFileSizeEx(mFile, &fsize)) {
+        mFileSize = fsize.QuadPart;
+    }
+    //SetFilePointerEx
     return mLoop->openHandle(this);
 }
 
 
-s32 HandleFile::write(RequestFD* req) {
+s32 HandleFile::write(RequestFD* req, usz offset) {
+    if (0 == (EHF_WRITEABLE & mFlag)) {
+        return EE_NO_WRITEABLE;
+    }
     DASSERT(req && req->mCall);
     req->mError = 0;
     req->mType = ERT_WRITE;
     req->mHandle = this;
 
     req->clearOverlap();
-    if (TRUE == WriteFileEx(mFile, req->mData + req->mUsed,
-        req->mAllocated - req->mUsed, &req->mOverlapped, nullptr)) {
-
+    req->mOverlapped.Pointer = (void*)offset;
+    
+    if (FALSE == WriteFile(mFile, req->mData, req->mUsed, nullptr, &req->mOverlapped)) {
+        const s32 ecode = System::getError();
+        if (ERROR_IO_PENDING != ecode) {
+            return mLoop->closeHandle(this);
+        }
     }
+    mLoop->bindFly(this);
     return EE_OK;
 }
 
 
-s32 HandleFile::read(RequestFD* req) {
+s32 HandleFile::read(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
+    if (0 == (EHF_READABLE & mFlag)) {
+        return EE_NO_READABLE;
+    }
     req->mError = 0;
     req->mType = ERT_READ;
     req->mHandle = this;
 
     req->clearOverlap();
-    if (TRUE == ReadFileEx(mFile, req->mData + req->mUsed,
-        req->mAllocated - req->mUsed, &req->mOverlapped, nullptr)) {
+    req->mOverlapped.Pointer = (void*)offset;
 
+    if (FALSE == ReadFile(mFile, req->mData + req->mUsed,
+        req->mAllocated - req->mUsed, nullptr, &req->mOverlapped)) {
+        const s32 ecode = System::getError();
+        if (ERROR_IO_PENDING != ecode) {
+            return mLoop->closeHandle(this);
+        }
     }
-
-
+    mLoop->bindFly(this);
     return EE_OK;
 }
 

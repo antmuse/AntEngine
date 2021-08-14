@@ -54,6 +54,10 @@ public:
         return gSignal;
     }
 
+    /**
+     * @return 程序所在磁盘扇区大小，字节*/
+    static u32 getDiskSectorSize();
+
     static u32 getCoreCount();
 
     static u32 getPageSize();

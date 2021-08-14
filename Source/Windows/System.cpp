@@ -72,6 +72,18 @@ private:
 };
 
 
+//@param disk NULL表示程序当前磁盘
+static u32 AppGetDiskSectorSize(const tchar* disk = nullptr/*DSTR("C:\\")*/) {
+    DWORD sectorsPerCluster;     //磁盘一个簇内的扇区数
+    DWORD bytesPerSector;        //磁盘一个扇区内的字节数
+    DWORD numberOfFreeClusters;  //磁盘总簇数
+    DWORD totalNumberOfClusters; //磁盘的剩余簇数
+    if ((TRUE == GetDiskFreeSpace(nullptr, &sectorsPerCluster, &bytesPerSector,
+        &numberOfFreeClusters, &totalNumberOfClusters))) {
+        return bytesPerSector;
+    }
+    return 0;
+}
 
 static u32 AppGetCoreCount() {
     SYSTEM_INFO	info;
@@ -110,6 +122,11 @@ u32 System::getCoreCount() {
 
 u32 System::getPageSize() {
     static u32 ret = AppGetPageSize();
+    return ret;
+}
+
+u32 System::getDiskSectorSize() {
+    static u32 ret = AppGetDiskSectorSize();
     return ret;
 }
 
