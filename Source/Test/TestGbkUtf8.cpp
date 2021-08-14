@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <memory>
 #include "StrConverter.h"
+#include "System.h"
+#include "Engine.h"
 
 namespace app {
 
@@ -37,5 +39,15 @@ s32 AppTestStrConvGBKU8(s32 argc, s8** argv) {
     free(gbkbuffer);
     return 0;
 }
+
+
+s32 AppTestSystem(s32 argc, s8** argv) {
+    TVector<FileInfo> nds;
+    s32 eee = System::isExist(Engine::getInstance().getAppPath());
+    eee = System::isExist(Engine::getInstance().getAppPath() + "Config/config.json");
+    System::getPathNodes(Engine::getInstance().getAppPath(), 0, nds);
+    return 0;
+}
+
 
 } //namespace app

@@ -57,7 +57,7 @@ DEPS := $(addprefix $(DEP_DIR)/,$(DEPS))
 
 #------------------------------------------------------
 all:$(DEPS) $(OBJS) $(BIN)
-	@echo "bin=$(BIN)"
+	@echo "------------------------bin=$(BIN)"
 
 
 ifneq ("$(wildcard $(DEPS))","")

@@ -82,16 +82,16 @@ public:
     }
 
     s8* getBuf()const {
-        return (s8*)(this + 1);
+        return mData;
     }
 
     StringView getReadBuf()const {
-        StringView ret((s8*)(this + 1), mUsed);
+        StringView ret(mData, mUsed);
         return ret;
     }
 
     StringView getWriteBuf()const {
-        StringView ret((s8*)(this + 1) + mUsed, mAllocated - mUsed);
+        StringView ret(mData + mUsed, mAllocated - mUsed);
         return ret;
     }
 

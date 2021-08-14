@@ -1,4 +1,4 @@
-/***************************************************************************************************
+ï»¿/***************************************************************************************************
  * MIT License
  *
  * Copyright (c) 2021 antmuse@live.cn/antmuse@qq.com
@@ -197,9 +197,7 @@ bool HttpLayer::onHttpFinish() {
     http_parser_init(&mParser, (http_parser_type)mParser.type);
     mParser.data = this;
     mReaded = 0;
-    //mFiles.clear();
-    //mReadFile.close();
-
+    mResp.clear();
     mResp.writeStatus(HTTP_STATUS_OK);
     StringView svv = mRequest.getURL().getPath();
     svv.mLen = HttpURL::decodeURL(svv.mData, svv.mLen);
@@ -393,7 +391,6 @@ void HttpLayer::onLink(net::RequestTCP* it) {
 void HttpLayer::clear() {
     mReadFile.close();
     mRequest.clear();
-    mResp.clear();
     mFiles.clear();
     mReaded = 0;
 }
@@ -444,7 +441,7 @@ void HttpLayer::onWrite(net::RequestTCP* it) {
                 usz uss = snprintf(mResp.getCache().getWritePointer(),
                     leftover,
                     "<tr><td>%s</td><td><a href=\"%s\">%s</a></td></tr>\r\n",
-                    1 & mFiles[mReaded].mFlag ? u8"ÎÄ¼þ¼Ð" : u8"ÎÄ¼þ",
+                    1 & mFiles[mReaded].mFlag ? u8"æ–‡ä»¶å¤¹" : u8"æ–‡ä»¶",
                     mFiles[mReaded].mFileName,
                     mFiles[mReaded].mFileName
                     );
