@@ -30,14 +30,14 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(RequestFD* it) {
+    static void funcOnWrite(net::RequestTCP* it) {
         AsyncFile& nd = *(AsyncFile*)it->mUser;
-        nd.onWrite(it);
+        nd.onWrite((RequestFD*)it);
     }
 
-    static void funcOnRead(RequestFD* it) {
+    static void funcOnRead(net::RequestTCP* it) {
         AsyncFile& nd = *(AsyncFile*)it->mUser;
-        nd.onRead(it);
+        nd.onRead((RequestFD*)it);
     }
 
     static void funcOnClose(Handle* it) {

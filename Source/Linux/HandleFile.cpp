@@ -23,18 +23,33 @@
 ***************************************************************************************************/
 
 
+#include <stdio.h>
+#include <errno.h>
+#include <aio.h>
+#include <sys/eventfd.h>
+#include <sys/epoll.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <inttypes.h>
 #include "HandleFile.h"
 #include "System.h"
 #include "Engine.h"
 
+//TODO>>
 
 namespace app {
 
 HandleFile::HandleFile()
-    :mFile(INVALID_HANDLE_VALUE)
+    :mFile(0)
     , mFileSize(0) {
     mType = EHT_FILE;
     mLoop = &Engine::getInstance().getLoop();
+
+    //const usz aaa = sizeof(struct iocb);
 }
 
 
@@ -44,73 +59,43 @@ HandleFile::~HandleFile() {
 
 
 s32 HandleFile::close() {
-    if (INVALID_HANDLE_VALUE != mFile) {
-        CloseHandle(mFile);
-        mFile = INVALID_HANDLE_VALUE;
+    if (0 != mFile) {
+        ::close(mFile);
+        mFile = 0;
         mFilename.setLen(0);
         mFileSize = 0;
     }
     return EE_OK;
 }
 
-
 bool HandleFile::setFileSize(usz fsz) {
-    if (INVALID_HANDLE_VALUE != mFile) {
-        LARGE_INTEGER pos;
-        pos.QuadPart = fsz;
-        if (TRUE == SetFilePointerEx(mFile, pos, nullptr, FILE_BEGIN)) {
-            if (TRUE == SetEndOfFile(mFile)) {
-                mFileSize = pos.QuadPart;
-                return true;
-            }
-        }
-    }
-    return false;
+    //TODO>>
+    return true;
 }
 
 s32 HandleFile::open(const String& fname, s32 flag) {
     close();
     mFilename = fname;
 
-    tchar tmp[_MAX_PATH];
-#if defined(DWCHAR_SYS)
-    usz len = AppUTF8ToWchar(fname.c_str(), tmp, sizeof(tmp));
-#else
-    usz len = AppUTF8ToGBK(fname.c_str(), tmp, sizeof(tmp));
-#endif
+    s32 fmode = (flag & 1) > 0 ? 1 : 0;
+    fmode |= (flag & 2) > 0 ? 2 : 0;
 
+    s32 cmod = (flag & 4) > 0 ? 1 : 0;
 
-    DWORD fmode = (flag & 1) > 0 ? FILE_SHARE_READ : 0;
-    fmode |= (flag & 2) > 0 ? FILE_SHARE_WRITE : 0;
+    s32 attr = 0;
 
-    /*
-     * CREATE_NEW 创建文件；如文件存在则会出错
-     * CREATE_ALWAYS 创建文件，会改写前一个文件
-     * OPEN_EXISTING 文件必须已经存在。由设备提出要求
-     * OPEN_ALWAYS 如文件不存在则创建它
-     * TRUNCATE_EXISTING 将现有文件缩短为零长度
-     */
-    DWORD cmod = (flag & 4) > 0 ? OPEN_ALWAYS : OPEN_EXISTING;
+    mFile = ::open(mFilename.c_str(), O_NONBLOCK | O_CREAT | O_RDWR | O_DIRECT, 0644);
 
-    /*
-     * 使用FILE_FLAG_NO_BUFFERING时，有严格要求，
-     * 读写起始偏移量及写入大小，需为磁盘扇区大小整数倍，否则失败
-     * https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering
-     */
-    DWORD attr = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED
-        | FILE_FLAG_RANDOM_ACCESS | FILE_FLAG_WRITE_THROUGH;
-
-    mFile = CreateFile(tmp, GENERIC_READ | ((flag & (2 | 4)) > 0 ? GENERIC_WRITE : 0),
-        fmode, nullptr, cmod, attr, nullptr);
-
-    if (INVALID_HANDLE_VALUE == mFile) {
+    if (0 == mFile) {
         return EE_NO_OPEN;
     }
 
-    LARGE_INTEGER fsize;
+    /*LARGE_INTEGER fsize;
     if (TRUE == GetFileSizeEx(mFile, &fsize)) {
         mFileSize = fsize.QuadPart;
-    }
+    }*/
+    //s32 efd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    //TODO>>
 
     return mLoop->openHandle(this);
 }
@@ -125,15 +110,10 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
     req->mType = ERT_WRITE;
     req->mHandle = this;
 
-    req->clearOverlap();
-    req->mOverlapped.Pointer = (void*)offset;
-    
-    if (FALSE == WriteFile(mFile, req->mData, req->mUsed, nullptr, &req->mOverlapped)) {
-        const s32 ecode = System::getError();
-        if (ERROR_IO_PENDING != ecode) {
-            return mLoop->closeHandle(this);
-        }
-    }
+    //io_submit
+    //io_getevents
+    //TODO>>
+
     mLoop->bindFly(this);
     return EE_OK;
 }
@@ -148,16 +128,11 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
     req->mType = ERT_READ;
     req->mHandle = this;
 
-    req->clearOverlap();
-    req->mOverlapped.Pointer = (void*)offset;
 
-    if (FALSE == ReadFile(mFile, req->mData + req->mUsed,
-        req->mAllocated - req->mUsed, nullptr, &req->mOverlapped)) {
-        const s32 ecode = System::getError();
-        if (ERROR_IO_PENDING != ecode) {
-            return mLoop->closeHandle(this);
-        }
-    }
+    //io_submit
+    //TODO>>
+
+
     mLoop->bindFly(this);
     return EE_OK;
 }

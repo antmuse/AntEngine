@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <sys/sysctl.h>
 #include <sys/sysinfo.h>
+#include <sys/statfs.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
@@ -45,8 +46,11 @@ namespace app {
 
 s32 System::gSignal = 0;
 
-static u32 AppGetDiskSectorSize() {
-    //TODO>>
+static u32 AppGetDiskSectorSize(const tchar* disk = DSTR("/")) {
+    struct statfs64 sfs;
+    if (0 == statfs64(disk, &sfs)) { //fstatfs(fd,s);
+        return sfs.f_bsize;
+    }
     return 0;
 }
 
@@ -62,13 +66,6 @@ static u32 AppGetPageSize() {
 s32 System::mFatherPID = 0;
 
 System::System() {
-    mFatherPID = getPID();
-    signal(SIGINT, System::onSignal);
-    //signal(SIGILL, System::onSignal);
-    signal(SIGTERM, System::onSignal);
-    signal(SIGKILL, System::onSignal);
-    signal(SIGQUIT, System::onSignal);
-    signal(SIGCHLD, System::onSignal);
 }
 
 System::~System() {
@@ -149,6 +146,14 @@ s32 System::daemon() {
 }
 
 s32 System::loadNetLib() {
+    //TODO>>signal¥¶¿Ì,sigaction
+    mFatherPID = getPID();
+    signal(SIGINT, System::onSignal);
+    //signal(SIGILL, System::onSignal);
+    signal(SIGTERM, System::onSignal);
+    signal(SIGKILL, System::onSignal);
+    signal(SIGQUIT, System::onSignal);
+    signal(SIGCHLD, System::onSignal);
     return 0;
 }
 

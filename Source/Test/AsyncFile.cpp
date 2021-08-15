@@ -23,7 +23,8 @@ s32 AsyncFile::open(const String& addr, s32 flag) {
     if (EE_OK != mHandleFile.open(addr, flag)) {
         return EE_NO_OPEN;
     }
-    RequestFD* it = RequestFD::newRequest(4 * System::getDiskSectorSize());
+    //mHandleFile.setFileSize(2048);
+    RequestFD* it = (RequestFD*)RequestFD::newRequest(4 * System::getDiskSectorSize());
     it->mUser = this;
 
     if (6 & flag) {

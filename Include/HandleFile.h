@@ -31,7 +31,17 @@
 
 
 namespace app {
+
+#if defined(DOS_WINDOWS)
+using FD = void*;
 using RequestFD = net::RequestTCP;
+#else //defined(DOS_LINUX) || defined(DOS_ANDROID)
+using FD = s32;
+class RequestFD : public net::RequestTCP {
+public:
+};
+#endif
+
 
 
 /**
@@ -44,7 +54,7 @@ public:
 
     ~HandleFile();
 
-    void* getHandle()const {
+    FD getHandle()const {
         return mFile;
     }
 
@@ -76,10 +86,12 @@ public:
     */
     s32 open(const String& fname, s32 flag = 1);
 
+    //截断或扩展文件
+    bool setFileSize(usz fsz);
 
 protected:
     friend class app::Loop;
-    void* mFile;
+    FD mFile;
     usz mFileSize;
     String mFilename;
 };

@@ -5,6 +5,10 @@ export BUILD_DIR = $(shell pwd)
 MK_DIRS = $(BUILD_DIR)/Source \
           $(BUILD_DIR)/Source/Test
 
+
+$(shell mkdir -p "$(BUILD_DIR)/Lib")
+
+
 .DEFAULT:
 all:
 	@for dir in $(MK_DIRS); \
