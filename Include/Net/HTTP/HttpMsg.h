@@ -42,6 +42,13 @@ public:
     static StringView getMethodStr(http_method it);
 
     /**
+    * @brief 支持<=18的后缀
+    * @param filename, 文件名, 可以不以\0结尾，不用在意大小写。
+    * @return mime if success, else "application/octet-stream" as default.
+    */
+    static const StringView getMimeType(const s8* filename, usz iLen);
+
+    /**
     * @param flag, 组合值, 0=只写入, 1=写入并加索引, 2=结束
     */
     void writeLength(usz sz, s32 flag = 0) {

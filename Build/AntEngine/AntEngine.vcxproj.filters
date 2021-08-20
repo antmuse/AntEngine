@@ -52,6 +52,9 @@
     <Filter Include="Source\Net\RedisClient">
       <UniqueIdentifier>{90b155f3-22ee-486b-83f4-d4c2e0f28208}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Include\gzip">
+      <UniqueIdentifier>{e941447a-6757-4490-97b9-adfc61e5c4dc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\StrConverter.cpp">
@@ -469,6 +472,15 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\HandleFile.h">
       <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\gzip\CodecGzip.h">
+      <Filter>Include\gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\gzip\DecoderGzip.h">
+      <Filter>Include\gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\gzip\EncoderGzip.h">
+      <Filter>Include\gzip</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

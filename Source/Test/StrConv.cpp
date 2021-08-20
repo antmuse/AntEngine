@@ -10,6 +10,12 @@
 #include "Spinlock.h"
 #include "CodecBase64.h"
 #include "EncoderMD5.h"
+#include "FileReader.h"
+#include "FileWriter.h"
+#include "Packet.h"
+#include "Net/HTTP/HttpMsg.h"
+#include "gzip/EncoderGzip.h"
+#include "gzip/DecoderGzip.h"
 
 namespace app {
 
@@ -167,6 +173,19 @@ void AppTestStr() {
     str1.trimPath(2);
     str1.deletePathFromFilename();
     printf("str1=%s\n", str1.c_str());
+
+    str1 = "fss/filss.doc";
+    StringView mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen());
+    printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
+    str1 = "fss/filss.ddnss";
+    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen());
+    printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
+    str1 = "fss/filss.HtMl";
+    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen());
+    printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
+    str1 = "fss/filss.CPpSSV";
+    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen() - 3);
+    printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
 }
 
 void AppPrintIntVector(s32* in, usz max) {
@@ -256,9 +275,66 @@ void AppTestVector() {
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
     vnds.setUsed(2); //mem leak
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
-    delete &vnds;
+    delete& vnds;
     printf("mem leak=5-2, G_BUILD_CNT=%d\n", G_BUILD_CNT);
 }
+
+#if defined(DUSE_ZLIB)
+//7 zip Log/ff.ico Log/ff.gz
+//7 unzip Log/ff.gz Log/ff.ico
+s32 AppTestZlib(s32 argc, s8** argv) {
+    FileReader rfile;
+    if (!rfile.openFile(argv[3])) {
+        printf("could not open in file\n");
+        return 0;
+    }
+    printf("in file size = %llu\n", rfile.getFileSize());
+    FileWriter wfile;
+    if (!wfile.openFile(argv[4], false)) {
+        printf("could not open out file\n");
+        return 0;
+    }
+    std::vector<s8> output;
+    s8 tmp[1024];
+
+    if ('z' == argv[2][0]) {//zip
+        s32 level = true ? Z_BEST_COMPRESSION : Z_NO_COMPRESSION;
+        EncoderGzip comp(level);
+        for (usz rdsz = rfile.read(tmp, sizeof(tmp));
+            rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
+            comp.compress(output, tmp, rdsz);
+        }
+        comp.finish(output);
+        if (output.size()) {
+            wfile.write(output.data(), output.size());
+            output.clear();
+        }
+    } else {//unzip
+        size_t limit = 2LL * 1024 * 1024 * 1024;
+        DecoderGzip decomp(limit);
+        
+        for (usz rdsz = rfile.read(tmp, sizeof(tmp));
+            rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
+            decomp.decompress(output, tmp, rdsz);
+            if (output.size()) {
+                wfile.write(output.data(), output.size());
+                output.clear();
+            }
+        }
+        decomp.finish(output);
+        if (output.size()) {
+            wfile.write(output.data(), output.size());
+            output.clear();
+        }
+        limit = output.size();
+        printf("file should be about 500 mb uncompressed, output size = %llu\n", limit / 1024 / 1024);
+        rfile.close();
+    }
+
+    printf("out file size = %llu\n", wfile.getFileSize());
+    return 0;
+}
+#endif //DUSE_ZLIB
 
 
 } //namespace app

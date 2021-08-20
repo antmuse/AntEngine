@@ -45,6 +45,9 @@ s32 AppTestRedis(s32 argc, s8** argv);
 s32 AppTestDefault(s32 argc, s8** argv);
 s32 AppTestHttpsClient(s32 argc, s8** argv);
 s32 AppTestFile(s32 argc, s8** argv);
+#if defined(DUSE_ZLIB)
+s32 AppTestZlib(s32 argc, s8** argv);
+#endif
 } //namespace app
 
 
@@ -96,9 +99,13 @@ int main(int argc, char** argv) {
         //exe 6 af.html 1
         ret = 4 == argc ? AppTestFile(argc, argv) : argc;
         break;
+    case 7:
+        //exe 7 zip/unzip af.html out.gz
+        ret = 5 == argc ? AppTestZlib(argc, argv) : argc;
+        break;
     default:
         if (true) {
-            AppTestSystem(argc, argv);
+            AppTestStr();
         } else {
             AppTestStrConvGBKU8(argc, argv);
             AppTestThreadPool(argc, argv);
@@ -106,12 +113,12 @@ int main(int argc, char** argv) {
             AppTestNetAddress();
             AppTestVector();
             AppTestRBTreeMap();
-            AppTestStr();
             AppTestMD5();
             AppTestBase64();
             AppTestDict();
             AppTestTree2heap();
             AppTestStrConv();
+            AppTestSystem(argc, argv);
         }
         break;
     }

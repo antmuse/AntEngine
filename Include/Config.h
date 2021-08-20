@@ -37,6 +37,7 @@
 #define DVERSION_ID    10000
 
 #define DUSE_OPENSSL
+#define DUSE_ZLIB
 
 
 #if !defined(DDEBUG)

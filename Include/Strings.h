@@ -99,6 +99,18 @@ static s32 AppStrNocaseCMP(const T* s1, const T* s2, usz n) {
     return ca - cb;
 }
 
+template<class T>
+static s32 AppStrCMP(const T* s1, const T* s2, usz n) {
+    if (s1 == s2 || n == 0) {
+        return 0;
+    }
+    s32 ca, cb;
+    do {
+        ca = *s1++;
+        cb = *s2++;
+    } while (--n > 0 && ca == cb && ca != '\0');
+    return ca - cb;
+}
 
 /**
 * @brief
