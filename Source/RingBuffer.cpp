@@ -31,8 +31,11 @@
 
 namespace app {
 
-RingBuffer::RingBuffer() {
-    init();
+RingBuffer::RingBuffer()
+    :mEmptyList(nullptr)
+    , mSize(0)
+    , mRet(-1) {
+    //init();
 }
 
 RingBuffer::~RingBuffer() {
@@ -63,17 +66,13 @@ void RingBuffer::popFront() {
     head_block->mNext = empty_block;
 }
 
-s32 RingBuffer::init() {
-    SRingBufNode* block = new SRingBufNode();
-    if (!block) {
-        return EE_ERROR;
+void RingBuffer::init() {
+    if (!mHeadPos.mNode) {
+        SRingBufNode* block = new SRingBufNode();
+        mEmptyList = nullptr;
+        mHeadPos.init(0, block);
+        mTailPos.init(0, block);
     }
-    mEmptyList = nullptr;
-    mHeadPos.init(0, block);
-    mTailPos.init(0, block);
-    mSize = 0;
-    mRet = -1;
-    return 0;
 }
 
 void RingBuffer::uninit() {
@@ -90,6 +89,9 @@ void RingBuffer::uninit() {
         delete curr;
         curr = mHeadPos.mNode;
     }
+    //mTailPos.mNode = nullptr;
+    //mHeadPos.mPosition = 0;
+    //mTailPos.mPosition = 0;
 }
 
 s32 RingBuffer::getSize() const {
@@ -245,4 +247,4 @@ void RingBuffer::commitHeadPos(SRingBufPos& pos) {
     mHeadPos = pos;
 }
 
-}//namespace app {
+}//namespace app

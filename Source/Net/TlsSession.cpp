@@ -41,6 +41,7 @@ static RingBuffer* AppGetBufOfBIO(BIO* bio) {
 static s32 AppCreateBIOBuffer(BIO* bio) {
     BIO_set_shutdown(bio, 1);
     BIO_set_init(bio, 1);
+    //AppGetBufOfBIO(bio)->init();
     return 1;
 }
 
@@ -48,7 +49,7 @@ static s32 AppDeleteBIOBuffer(BIO* bio) {
     if (bio == nullptr) {
         return 0;
     }
-    AppGetBufOfBIO(bio)->uninit();
+    //AppGetBufOfBIO(bio)->uninit();
     return 1;
 }
 

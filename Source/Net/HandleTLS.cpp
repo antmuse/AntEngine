@@ -41,27 +41,36 @@ HandleTLS::HandleTLS() :
     mLandWrites(nullptr),
     mLandReads(nullptr) {
     mLoop = &Engine::getInstance().getLoop();
-    init();
+    mHostName[0] = 0;
+    mHostName[sizeof(mHostName) - 1] = 0;
 }
 
 
 HandleTLS::~HandleTLS() {
+    uninit();
+}
+
+void HandleTLS::uninit() {
     if (mTlsSession) {
         TlsSession* session = (TlsSession*)(mTlsSession);
         delete session;
         mTlsSession = nullptr;
+        mInBuffers.uninit();
+        mOutBuffers.uninit();
     }
 }
 
-
-s32 HandleTLS::init() {
+void HandleTLS::init() {
+    if (!mTlsSession) {
+        mInBuffers.init();
+        mOutBuffers.init();
+        TlsContext& tlseng = Engine::getInstance().getTlsContext();
+        mTlsSession = new TlsSession(&mInBuffers, &mOutBuffers);
+    }
     mRead.mUser = nullptr; //null表示未在使用中，否则为占用中
     mWrite.mUser = nullptr; //null表示未在使用中，否则为占用中
     mHostName[0] = 0;
-    TlsContext& tlseng = Engine::getInstance().getTlsContext();
     mCommitPos = mOutBuffers.getHead();
-    mTlsSession = new TlsSession(&mInBuffers, &mOutBuffers);
-    return 0;
 }
 
 
@@ -184,6 +193,8 @@ s32 HandleTLS::setHost(const s8* host, usz length) {
 
 
 s32 HandleTLS::open(const String& addr, RequestTCP* oit) {
+    init();
+
     mType = EHT_TCP_CONNECT;
     mTCP.setClose(EHT_TCP_CONNECT, HandleTLS::funcOnClose, this);
 
@@ -205,6 +216,8 @@ s32 HandleTLS::open(const String& addr, RequestTCP* oit) {
 
 
 s32 HandleTLS::open(const RequestAccept& accp, RequestTCP* oit) {
+    init();
+
     mType = EHT_TCP_LINK;
     mTCP.setClose(EHT_TCP_LINK, HandleTLS::funcOnClose, this);
 
@@ -297,11 +310,7 @@ void HandleTLS::onClose(Handle* it) {
     landWrites();
     landQueue(mFlyWrites);
     landQueue(mFlyReads);
-    if (mTlsSession) {
-        TlsSession* session = (TlsSession*)mTlsSession;
-        delete session;
-        mTlsSession = nullptr;
-    }
+    uninit();
     drop();
     mCallClose(this);
 }

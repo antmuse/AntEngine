@@ -303,6 +303,10 @@ s32 AppTestZlib(s32 argc, s8** argv) {
         for (usz rdsz = rfile.read(tmp, sizeof(tmp));
             rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
             comp.compress(output, tmp, rdsz);
+            if (output.size()) {
+                wfile.write(output.data(), output.size());
+                output.clear();
+            }
         }
         comp.finish(output);
         if (output.size()) {

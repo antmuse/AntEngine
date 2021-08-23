@@ -46,6 +46,9 @@ struct SRingBufNode {
 struct SRingBufPos {
     s32 mPosition;
     SRingBufNode* mNode;
+    SRingBufPos(s32 pos = 0, SRingBufNode* bk = nullptr)
+        :mPosition(pos), mNode(bk) {
+    }
     void init(s32 pos, SRingBufNode* bk) {
         mPosition = pos;
         mNode = bk;
@@ -58,15 +61,11 @@ public:
 
     ~RingBuffer();
 
-    s32 init();
+    void init();
 
     void uninit();
 
     void reset();
-
-    void popFront();
-
-    void pushBack();
 
     long getRet()const {
         return mRet;
@@ -116,6 +115,11 @@ private:
     SRingBufNode* mEmptyList;
     s32 mSize;
     long mRet; //for tls
+
+
+    void popFront();
+
+    void pushBack();
 };
 
 }//namespace app {

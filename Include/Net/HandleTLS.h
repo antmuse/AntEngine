@@ -131,7 +131,9 @@ protected:
         nd.onClose(it);
     }
 
-    s32 init();
+    void init();
+
+    void uninit();
 
     //Ω‚√‹Œƒ
     void doRead();
