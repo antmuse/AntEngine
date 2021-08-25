@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +6,7 @@
 #include <vector>
 #include "Timer.h"
 #include "TVector.h"
+#include "Converter.h"
 #include "Strings.h"
 #include "Spinlock.h"
 #include "CodecBase64.h"
@@ -81,8 +82,39 @@ void AppTestMD5() {
     printf("\n");
 }
 
+//String::find()性能测试
+void AppTestStrFind(s32 cnt) {
+    const s32 mx = 2;
+    ssz pos[mx];
+    String stdsrc[mx] = {
+        "固实压缩：把要压缩的视为同一个文件以加大压缩比，代价是取用包中任何文件需解压整个压缩包。",
+        "恢复记录：加入冗余数据用于修复，在压缩包本身损坏但恢复记录够多时可对损坏压缩包进行恢复。",
+    };
+    const s8* pattern[] = {
+        "任何文件",
+        "恢复记录够多",
+    };
 
-void AppTestStr() {
+    s64 tm0 = Timer::getRelativeTime();
+    for (s32 c = 0; c < cnt; ++c) {
+        for (s32 i = 0; i < mx; ++i) {
+            pos[i] = stdsrc[i].find(pattern[i], 0);
+        }
+    }
+    s64 tm1 = Timer::getRelativeTime();
+    for (s32 i = 0; i < mx; ++i) {
+        printf("String::find>>src len=%llu, pos[%d] = %lld, %s\n",
+            stdsrc[i].getLen(), i, pos[i],
+            pos[i] < 0 ? "-" : stdsrc[i].c_str() + pos[i]);
+    }
+    f32 spd = (f32)(tm1 - tm0);
+    printf("String::find>>%llums/%d, speed=%.2fms\n\n\n\n", tm1 - tm0, cnt, spd / mx);
+}
+
+
+void AppTestStr(s32 argc, s8** argv) {
+    AppTestStrFind(argc > 2 ? App10StrToS32(argv[2]) : 1);
+
     std::string stds1, stds2;
     const s8* ss1 = stds1.c_str();
     const s8* ss2 = stds2.c_str();

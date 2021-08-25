@@ -33,7 +33,7 @@ void AppTestStrConv();
 void AppTestDict();
 void AppTestBase64();
 void AppTestMD5();
-void AppTestStr();
+void AppTestStr(s32 argc, s8** argv);
 void AppTestVector();
 void AppTestRBTreeMap();
 s32 AppTestThreadPool(s32 argc, s8** argv);
@@ -105,11 +105,10 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestStr();
+            AppTestStr(argc, argv);
         } else {
             AppTestStrConvGBKU8(argc, argv);
             AppTestThreadPool(argc, argv);
-            AppTestStr();
             AppTestNetAddress();
             AppTestVector();
             AppTestRBTreeMap();

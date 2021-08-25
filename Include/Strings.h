@@ -112,6 +112,41 @@ static s32 AppStrCMP(const T* s1, const T* s2, usz n) {
     return ca - cb;
 }
 
+
+
+
+/**
+* @brief Sunday算法，查找子串, 常用于字符串的模式匹配
+* @param txt 查找空间, 不可为null
+* @param txtLen 查找空间长度，单位=sizeof(T)
+* @param pattern 待查找内容, 不可为null
+* @param patLen 待查找内容长度，单位=sizeof(P)
+* @return 为\p txt中首次出现\p pattern的位置(>=0)，<0则未找到
+*/
+template<typename T, typename P>
+static ssz AppSundayFind(const T* txt, ssz txtLen, const P* pattern, ssz patLen) {
+    DASSERT(txt && pattern);
+    if (patLen > 0 && txtLen >= patLen) {
+        txtLen -= patLen;
+        ssz i, j, pos;
+        T ch;
+        for (ssz start = 0; start <= txtLen; ) {
+            for (i = start, j = 0; j < patLen && txt[i] == pattern[j]; ++i, ++j) {
+            }
+            if (j == patLen) {
+                return start;
+            }
+            ch = txt[start + patLen];
+            pos = patLen - 1;
+            for (; pos >= 0 && ch != pattern[pos]; --pos) {
+            }
+            start += patLen - pos;
+        }
+    }
+    return -1;  //not find
+}
+
+
 /**
 * @brief
 * 此类不管理任何内存
@@ -725,11 +760,16 @@ public:
             while (str[len]) {
                 ++len;
             }
+            return AppSundayFind(mBuffer, mLen, str, len);
+#if (0)
+            //暴力查找，性能比AppSundayFind()慢一倍以上
             if (len > mLen) {
                 return -1;
             }
-            for (usz i = start; i < mLen - len; ++i) {
-                usz j = 0;
+            const usz mx = mLen - len;
+            usz j;
+            for (usz i = start; i < mx; ++i) {
+                j = 0;
                 while (str[j] && mBuffer[i + j] == str[j]) {
                     ++j;
                 }
@@ -737,6 +777,7 @@ public:
                     return i;
                 }
             }
+#endif
         }
 
         return -1;
