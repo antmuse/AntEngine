@@ -29,6 +29,7 @@
     <ClCompile Include="..\..\Source\Test\Linker.cpp" />
     <ClCompile Include="..\..\Source\Test\NetAddr.cpp" />
     <ClCompile Include="..\..\Source\Test\StrConv.cpp" />
+    <ClCompile Include="..\..\Source\Test\TestDataBase.cpp" />
     <ClCompile Include="..\..\Source\Test\TestDict.cpp" />
     <ClCompile Include="..\..\Source\Test\TestGbkUtf8.cpp" />
     <ClCompile Include="..\..\Source\Test\TestHttpsClient.cpp" />
@@ -133,14 +134,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/MySQL</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -153,6 +155,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -173,6 +176,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -193,8 +197,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/MySQL</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -202,7 +207,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

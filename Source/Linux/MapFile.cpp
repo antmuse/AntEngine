@@ -57,7 +57,7 @@ usz MapFile::getFileSize()const {
     usz fsz = 0;
     if (-1 != mFile) {
         struct stat statbuff;
-        if (0 == fstat(mFile, &statbuff) < 0) {
+        if (0 == fstat(mFile, &statbuff)) {
             fsz = statbuff.st_size;
         }
     }

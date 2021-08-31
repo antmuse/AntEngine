@@ -4,8 +4,13 @@ AntEngine
 
 # 依赖
 ----
-Openssl, zlib, jsoncpp, http_parser
+openssl, zlib, jsoncpp, http_parser, mysql
 
+# 环境
+----
+1. debian10, 64bit, kernal-v4.19.0, gcc-v8.3
+2. windows10, 64bit, VS2019
+3. c++14
 
 # Usage
 ----
@@ -23,3 +28,10 @@ int main(int argc, char** argv) {
     return 0;
 }
 ```
+
+
+# TODO
+----
+1 Linux AIO
+2 IPC
+3 WebSite, 分离HTTP基础代码和业务代码

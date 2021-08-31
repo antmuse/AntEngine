@@ -26,6 +26,15 @@
     <ClCompile Include="..\..\Source\CodecBase64.cpp" />
     <ClCompile Include="..\..\Source\CheckCRC.cpp" />
     <ClCompile Include="..\..\Source\CheckSum.cpp" />
+    <ClCompile Include="..\..\Source\db\ConnectConfig.cpp" />
+    <ClCompile Include="..\..\Source\db\Database.cpp" />
+    <ClCompile Include="..\..\Source\db\Connector.cpp" />
+    <ClCompile Include="..\..\Source\db\ConnectorHolder.cpp" />
+    <ClCompile Include="..\..\Source\db\ConnectorPool.cpp" />
+    <ClCompile Include="..\..\Source\db\Row.cpp" />
+    <ClCompile Include="..\..\Source\db\Task.cpp" />
+    <ClCompile Include="..\..\Source\db\Util.cpp" />
+    <ClCompile Include="..\..\Source\db\Value.cpp" />
     <ClCompile Include="..\..\Source\EngineConfig.cpp" />
     <ClCompile Include="..\..\Source\FileReader.cpp" />
     <ClCompile Include="..\..\Source\FileWriter.cpp" />
@@ -99,6 +108,15 @@
     <ClInclude Include="..\..\Include\CodecBase64.h" />
     <ClInclude Include="..\..\Include\CheckCRC.h" />
     <ClInclude Include="..\..\Include\CheckSum.h" />
+    <ClInclude Include="..\..\Include\db\ConnectConfig.h" />
+    <ClInclude Include="..\..\Include\db\Database.h" />
+    <ClInclude Include="..\..\Include\db\Connector.h" />
+    <ClInclude Include="..\..\Include\db\ConnectorHolder.h" />
+    <ClInclude Include="..\..\Include\db\ConnectorPool.h" />
+    <ClInclude Include="..\..\Include\db\Row.h" />
+    <ClInclude Include="..\..\Include\db\Task.h" />
+    <ClInclude Include="..\..\Include\db\Util.h" />
+    <ClInclude Include="..\..\Include\db\Value.h" />
     <ClInclude Include="..\..\Include\EngineConfig.h" />
     <ClInclude Include="..\..\Include\FileReader.h" />
     <ClInclude Include="..\..\Include\FileWriter.h" />
@@ -251,8 +269,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -269,6 +288,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -287,6 +307,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -305,8 +326,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

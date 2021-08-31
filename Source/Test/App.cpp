@@ -26,7 +26,7 @@
 
 
 namespace app {
-
+s32 AppTestDBClient(s32 argc, s8** argv);
 void AppTestNetAddress();
 void AppTestTree2heap();
 void AppTestStrConv();
@@ -105,8 +105,9 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestStr(argc, argv);
+            AppTestDBClient(argc, argv);
         } else {
+            AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);
             AppTestThreadPool(argc, argv);
             AppTestNetAddress();

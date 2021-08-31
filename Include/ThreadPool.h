@@ -36,15 +36,16 @@
 
 namespace app {
 
-using FunTask = void (*)(void*);
-using FunTaskClass = void (*)(const void*, void*);
+using FuncVoid = void (*)();
+using FuncTask = void (*)(void*);
+using FuncTaskClass = void (*)(const void*, void*);
 
 class ThreadPool {
 public:
     class Task {
     public:
         Task* mNext;
-        FunTask mCall;
+        FuncTask mCall;
         const void* mThis;
         void* mData;
         Task() :mNext(nullptr), mCall(nullptr), mThis(nullptr), mData(nullptr) {
@@ -52,30 +53,50 @@ public:
         ~Task() { }
         void operator()() {
             if (mThis) {
-                ((FunTaskClass)mCall)(mThis, mData);
+                ((FuncTaskClass)mCall)(mThis, mData);
             } else {
                 mCall(mData);
             }
         }
     };
-    ThreadPool() : mRunning(false), mTaskCount(0), mAllocated(0), mMaxAllocated(1000),
-        mAllTask(nullptr), mIdleTask(nullptr) {
+
+
+    ThreadPool() : mRunning(false), mTaskCount(0),
+        mAllocated(0), mMaxAllocated(1000),
+        mAllTask(nullptr), mIdleTask(nullptr),
+        mThreadInit(nullptr), mThreadUninit(nullptr) {
     }
-    ThreadPool(u32 cnt) : mRunning(false), mTaskCount(0), mAllocated(0), mMaxAllocated(1000),
-        mAllTask(nullptr), mIdleTask(nullptr) {
+
+    ThreadPool(u32 cnt, FuncVoid init = nullptr, FuncVoid uninit = nullptr)
+        : mRunning(false), mTaskCount(0),
+        mAllocated(0), mMaxAllocated(1000),
+        mAllTask(nullptr), mIdleTask(nullptr),
+        mThreadInit(init), mThreadUninit(uninit) {
         start(cnt);
     }
+
     ~ThreadPool() {
         stop();
         clear();
     }
+
     ThreadPool(const ThreadPool&) = delete;
     ThreadPool(const ThreadPool&&) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
     ThreadPool& operator=(const ThreadPool&&) = delete;
 
-    bool empty()const {
-        return 0 == mTaskCount.load();
+    /**
+    * @brief 在ThreadPool::start前设置每个线程需要调用的初始化或清理函数.
+    * @param init 线程开始时回调函数
+    * @param uninit 线程结束时回调函数
+    */
+    void setThreadCalls(FuncVoid init, FuncVoid uninit) {
+        mThreadInit = init;
+        mThreadUninit = uninit;
+    }
+
+    s64 getTaskCount()const {
+        return mTaskCount.load();
     }
 
     u32 getAllocated()const {
@@ -92,7 +113,7 @@ public:
         Task* task = popFreeTask();
         task->mThis = hold;
         void* fff = reinterpret_cast<void*>(&func);
-        task->mCall = *(FunTask*)fff;
+        task->mCall = *(FuncTask*)fff;
         task->mData = dat;
         pushTask(task, urgent);
         mCondition.notify_one();
@@ -106,7 +127,7 @@ public:
             return false;
         }
         Task* task = popFreeTask();
-        task->mCall = reinterpret_cast<FunTask>(func);
+        task->mCall = reinterpret_cast<FuncTask>(func);
         task->mData = dat;
         pushTask(task, urgent);
         mCondition.notify_one();
@@ -154,16 +175,23 @@ private:
     std::vector<std::thread> mWorkers;
     mutable std::mutex mMutex;
     std::condition_variable mCondition;
-    std::atomic_int64_t mTaskCount;
+    std::atomic<s64> mTaskCount;
     u32 mAllocated;
     u32 mMaxAllocated;
     bool mRunning;
     Task* mAllTask;     //单向环型链表，指向队尾
     Task* mIdleTask;    //单向链表
+    FuncVoid mThreadInit;
+    FuncVoid mThreadUninit;
 
     void run(u32 idx) {
-        //printf("ThreadPool::run>>start thread[%d] id=%u\n", idx, std::this_thread::get_id());
+        //std::this_thread::get_id();
+        //std::thread.native_handle();
 
+        //printf("ThreadPool::run>>start thread[%d] id=%u\n", idx, std::this_thread::get_id());
+        if (mThreadInit) {
+            mThreadInit();
+        }
         Task* task = nullptr;
         for (;;) {
             {
@@ -182,7 +210,9 @@ private:
             //do it
             (*task)();
         }
-
+        if (mThreadUninit) {
+            mThreadUninit();
+        }
         //printf("ThreadPool::run>>stop thread[%d] id=%u\n", idx, std::this_thread::get_id());
     }
 

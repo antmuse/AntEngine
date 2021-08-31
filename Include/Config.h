@@ -38,6 +38,7 @@
 
 #define DUSE_OPENSSL
 #define DUSE_ZLIB
+#define DUSE_MYSQL
 
 
 #if !defined(DDEBUG)

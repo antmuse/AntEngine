@@ -37,7 +37,7 @@ namespace app {
 * @param it, 入队结点
 */
 template<class T>
-void AppPushRingQueueTail_1(T*& que, T* it) {
+DFINLINE void AppPushRingQueueTail_1(T*& que, T* it) {
     if (que) {
         it->mNext = que->mNext;
         que->mNext = it;
@@ -54,7 +54,7 @@ void AppPushRingQueueTail_1(T*& que, T* it) {
 * @param it, 入队结点
 */
 template<class T>
-void AppPushRingQueueHead_1(T*& que, T* it) {
+DFINLINE void AppPushRingQueueHead_1(T*& que, T* it) {
     if (que) {
         it->mNext = que->mNext;
         que->mNext = it;
@@ -71,7 +71,7 @@ void AppPushRingQueueHead_1(T*& que, T* it) {
 * @return 出队结点或null
 */
 template<class T>
-T* AppPopRingQueueHead_1(T*& que) {
+DFINLINE T* AppPopRingQueueHead_1(T*& que) {
     if (que) {
         T* head = (T*)(que->mNext);
         if (head == que) {

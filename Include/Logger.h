@@ -47,8 +47,9 @@ enum EErrorCode {
     EE_NO_WRITEABLE = -3,    //FD不可写
     EE_CLOSING = -4,         //FD已关闭
     EE_INVALID_HANDLE = -5,  //FD无效
-    EE_RETRY = -6,
-    EE_TIMEOUT = -8,         //
+    EE_INVALID_PARAM = -6,   //参数无效
+    EE_RETRY = -7,
+    EE_TIMEOUT = -8,
     EE_INTR = -10,           //中断
     EE_POSTED = -11,         //发起异步请求成功
     EE_TOO_MANY_FD = -24,    //打开过多句柄, ulimit -n

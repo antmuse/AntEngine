@@ -104,7 +104,7 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
         urgent = (0x8 & rand()) > 0;
         pool.postTask(AppMyTask, urgent ? &urg : &cnt, urgent);
     }
-    while (!pool.empty()) {
+    while (pool.getTaskCount() > 0) {
         std::this_thread::sleep_for(gap);
     }
     printf("step1>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n",
@@ -119,7 +119,7 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
         urgent = (0x4 & rand()) > 0;
         pool.postTask(&MyTask::run, &tsk, urgent ? &urg : &cnt, urgent);
     }
-    while (!pool.empty()) {
+    while (pool.getTaskCount() > 0) {
         std::this_thread::sleep_for(gap);
     }
     printf("step3>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n",

@@ -17,13 +17,14 @@ INC_DIR = -I$(BUILD_DIR)/Include \
 		  -I$(BUILD_DIR)/Depend/http_parser \
 		  -I$(BUILD_DIR)/Depend/jsoncpp \
 		  -I$(BUILD_DIR)/Depend/openssl \
+		  -I/usr/include/mysql \
 
 
 BIN = AntTest.bin
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
-LIBS = -L$(BUILD_DIR)/Lib -lpthread -lAntEngine -lssl -lcrypto
+LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -lssl -lcrypto -lz -lpthread
 BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
 
 OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/test

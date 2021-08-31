@@ -17,11 +17,13 @@ INC_DIR = -I$(BUILD_DIR)/Include \
 		  -I$(BUILD_DIR)/Depend/http_parser \
 		  -I$(BUILD_DIR)/Depend/jsoncpp \
 		  -I$(BUILD_DIR)/Depend/openssl \
+		  -I/usr/include/mysql \
 
 
 SRCS = $(wildcard *.cpp)
 SRCS += $(wildcard Linux/*.cpp)
 SRCS += $(wildcard Net/*.cpp)
+SRCS += $(wildcard db/*.cpp)
 SRCS += $(wildcard Net/HTTP/*.cpp)
 SRCS += $(wildcard Net/RedisClient/*.cpp)
 SRCS += $(wildcard ../Depend/http_parser/*.cpp)
@@ -39,6 +41,7 @@ DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/all
 $(shell mkdir -p $(OBJ_DIR))
 $(shell mkdir -p $(OBJ_DIR)/Linux)
 $(shell mkdir -p $(OBJ_DIR)/Net)
+$(shell mkdir -p $(OBJ_DIR)/db)
 $(shell mkdir -p $(OBJ_DIR)/Net/HTTP)
 $(shell mkdir -p $(OBJ_DIR)/Net/RedisClient)
 $(shell mkdir -p $(OBJ_DIR)/../Depend/http_parser)
@@ -46,6 +49,7 @@ $(shell mkdir -p $(OBJ_DIR)/../Depend/jsoncpp)
 $(shell mkdir -p $(DEP_DIR))
 $(shell mkdir -p $(DEP_DIR)/Linux)
 $(shell mkdir -p $(DEP_DIR)/Net)
+$(shell mkdir -p $(DEP_DIR)/db)
 $(shell mkdir -p $(DEP_DIR)/Net/HTTP)
 $(shell mkdir -p $(DEP_DIR)/Net/RedisClient)
 $(shell mkdir -p $(DEP_DIR)/../Depend/http_parser)

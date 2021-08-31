@@ -55,6 +55,12 @@
     <Filter Include="Include\gzip">
       <UniqueIdentifier>{e941447a-6757-4490-97b9-adfc61e5c4dc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\db">
+      <UniqueIdentifier>{7e7e9371-a96c-4fc8-9d4f-1fee6b3ccefc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\db">
+      <UniqueIdentifier>{59231db9-e252-4524-b67d-b39de5733c0f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\StrConverter.cpp">
@@ -242,6 +248,33 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Windows\HandleFile.cpp">
       <Filter>Source\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\Row.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\Util.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\Value.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\Connector.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\ConnectorHolder.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\Task.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\Database.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\ConnectorPool.cpp">
+      <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\db\ConnectConfig.cpp">
+      <Filter>Source\db</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -481,6 +514,33 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\gzip\EncoderGzip.h">
       <Filter>Include\gzip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\Row.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\Util.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\Value.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\Connector.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\ConnectorHolder.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\Task.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\Database.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\ConnectorPool.h">
+      <Filter>Include\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\db\ConnectConfig.h">
+      <Filter>Include\db</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
