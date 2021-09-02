@@ -8,7 +8,39 @@
 namespace app {
 namespace db {
 
-Connector::~Connector(){
+Connector::Connector(ConnectorPool& dbpool, const ConnectConfig& connection)
+    : mPool(dbpool)
+    , mNext(nullptr)
+    , mConInfo(connection)
+    , mConnected(false)
+    , mHaveError(false)
+    , mStatus(EE_NO_OPEN)
+    , mParsedResult(false) {
+
+    mysql_init(&mMySQL);
+
+    setTimeout(10);
+
+    u32 connect_timeout = 1;
+    mysql_options(&mMySQL, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+
+    u64 auto_reconnect = 1;
+    mysql_options(&mMySQL, MYSQL_OPT_RECONNECT, &auto_reconnect);
+
+#ifdef D_MYSQL_OPT_SSL_ENFORCE_DISABLED
+    bool ssl = false;
+    mysql_options(&mMySQL, MYSQL_OPT_SSL_ENFORCE, &ssl);
+#endif
+
+    //  Some mysql libraries do not support SSL_MODE_DISABLED
+#ifdef D_PERCONA_SSL_DISABLED
+    u32 ssl_mode = SSL_MODE_DISABLED;
+    mysql_options(&mMySQL, MYSQL_OPT_SSL_MODE, &ssl_mode);
+#endif
+}
+
+
+Connector::~Connector() {
     reset();
     mysql_close(&mMySQL);
 }
@@ -37,53 +69,21 @@ const Row& Connector::getRow(usz idx) const {
     return mRows.at(idx);
 }
 
-Connector::Connector(ConnectorPool& dbpool, const ConnectConfig& connection,
-    FuncDBTask funcFinish, u32 timeout, Task task)
-    : mPool(dbpool)
-    , mNext(nullptr)
-    , mConInfo(connection)
-    , mFuncFinish(funcFinish)
-    , mTimeout(timeout)
-    , mTask(std::move(task))
-    , mConnected(false)
-    , mHaveError(false)
-    , mStatus(EE_NO_OPEN)
-    , mParsedResult(false) {
-
-    mysql_init(&mMySQL);
-
-    setTimeout();
-
-    u32 connect_timeout = 1;
-    mysql_options(&mMySQL, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
-
-    u64 auto_reconnect = 1;
-    mysql_options(&mMySQL, MYSQL_OPT_RECONNECT, &auto_reconnect);
-
-#ifdef D_MYSQL_OPT_SSL_ENFORCE_DISABLED
-    bool ssl = false;
-    mysql_options(&mMySQL, MYSQL_OPT_SSL_ENFORCE, &ssl);
-#endif
-
-    //  Some mysql libraries do not support SSL_MODE_DISABLED
-#ifdef D_PERCONA_SSL_DISABLED
-    u32 ssl_mode = SSL_MODE_DISABLED;
-    mysql_options(&mMySQL, MYSQL_OPT_SSL_MODE, &ssl_mode);
-#endif
-}
-
 void Connector::reset() {
     freeResult();
-    mTask.clear();
     mStatus = EE_NO_OPEN;
     mHaveError = false;
 }
 
-void Connector::setTimeout() {
-    mysql_options(&mMySQL, MYSQL_OPT_READ_TIMEOUT, &mTimeout);
+void Connector::setTimeout(u32 seconds) {
+    mysql_options(&mMySQL, MYSQL_OPT_READ_TIMEOUT, &seconds);
 }
 
-EErrorCode Connector::execute() {
+EErrorCode Connector::execute(Task* task) {
+    DASSERT(task);
+
+    setTimeout(task->mTimeout);
+
     if (!mConnected) {
         if (!connect()) {
             mStatus = EE_NO_OPEN;
@@ -95,7 +95,7 @@ EErrorCode Connector::execute() {
     freeResult();
 
     try {
-        mFinalRequest = mTask.prepareCMD(
+        mFinalRequest = task->prepareCMD(
             [this](const std::string& str_value) {
             if (str_value.empty()) {
                 throw std::invalid_argument("Empty task part passed");
@@ -153,7 +153,7 @@ bool Connector::connect() {
             mConInfo.getUnixSocket().c_str(),
             mConInfo.getClientFlags());
 
-        mConnected = nullptr!= success;
+        mConnected = nullptr != success;
     }
     return mConnected;
 }
@@ -183,6 +183,5 @@ void Connector::freeResult() {
 }
 
 
-//using namespace std::string_literals;
 } //namespace db
 } //namespace app

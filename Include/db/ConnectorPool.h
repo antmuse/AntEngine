@@ -34,19 +34,9 @@ public:
         return mConInfo;
     }
 
-    usz getBusyCount() const {
-        return mBusyCount.load();
-    }
-
-    usz getIdleCount() const {
-        return mIdleCount.load();
-    }
 
 private:
     std::mutex mMutex;
-    bool mRunning;
-    std::atomic<s32> mBusyCount;
-    std::atomic<s32> mIdleCount;
     Connector* mConQueue;
     ConnectConfig mConInfo;
 
@@ -55,12 +45,9 @@ private:
 
     /**
      * @brief pop a Connector from the pool with the provided task, timeout and on complete callback.
-     * @param task The SQL task, can contain bind parameters.
-     * @param timeout The timeout for this task in seconds.
-     * @param on_complete Completion callback.
      * @return A Connector handle.
      */
-    Connector* pop(Task task, u32 timeout, FuncDBTask on_complete);
+    Connector* pop();
 
 
     /**

@@ -24,8 +24,8 @@ public:
      * @brief wait all task finished, then stop all threads.
     */
     void stop() {
-        usz closed = mPool.close();
         mThreads.stop();
+        usz closed = mPool.close();
         printf("closed db connectors=%llu\n", closed);
     }
 
@@ -43,13 +43,13 @@ public:
      * @param funcFinish The on complete callback.
      * @return true if success, else flase.
      */
-    bool postTask(Task task, u32 timeout, FuncDBTask funcFinish);
+    bool postTask(Task* task);
 
 private:
     ConnectorPool mPool;
     ThreadPool mThreads;
 
-    void executor(Connector* con);
+    void executor(Task* task);
 };
 
 } //namespace db

@@ -27,7 +27,6 @@ class ConnectorPool;
 class ConnectorHolder;
 class Database;
 class Connector;
-using FuncDBTask = void (*)(Connector*);
 
 class Connector {
     friend ConnectorPool;
@@ -94,21 +93,20 @@ private:
      * @brief
      * @param timeout in seconds
     */
-    Connector(ConnectorPool& query_pool, const ConnectConfig& connection,
-        FuncDBTask on_complete, u32 timeout, Task task);
+    Connector(ConnectorPool& query_pool, const ConnectConfig& connection);
 
     /**
      * Resets Connector, free result and clear task.
      */
     void reset();
 
-    void setTimeout();
+    void setTimeout(u32 seconds);
 
     /**
      * Executes the task synchronously.
      * @return 0 if success, else error or timeout.
      */
-    EErrorCode execute();
+    EErrorCode execute(Task* task);
 
     /**
      * @brief 如果句柄尚未连接，将阻塞并连接。
@@ -123,12 +121,8 @@ private:
     ConnectorPool& mPool;
     const ConnectConfig& mConInfo;
 
-    FuncDBTask mFuncFinish;
-
-    /// The timeout in seconds.
-    u32 mTimeout;
-
     mutable MYSQL mMySQL;
+
     MYSQL_RES* mResult{nullptr};
 
     /// True if the result has already been parsed (to avoid doing it multiple times).
@@ -148,9 +142,6 @@ private:
 
     /// The status of the last query.
     EErrorCode mStatus;
-
-    /// The SQL task for this query
-    Task mTask;
 
     /// The SQL task that was last executed
     std::string mFinalRequest;

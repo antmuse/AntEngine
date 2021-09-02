@@ -11,36 +11,35 @@ static void AppThreadUninit() {
     mysql_thread_end();
 }
 
-Database::Database(ConnectConfig dbinfo) : mPool(std::move(dbinfo)) {
+Database::Database(ConnectConfig dbinfo)
+    : mPool(std::move(dbinfo)) {
 }
 
 Database::~Database() {
     stop();
 }
 
+
 void Database::start(u32 pmax) {
+    mThreads.setMaxAllocated(1000);
     mThreads.setThreadCalls(AppThreadInit, AppThreadUninit);
     mThreads.start(pmax);
 }
 
 
-bool Database::postTask(Task task, u32 timeout, FuncDBTask funcFinish) {
-    Connector* con = mPool.pop(std::move(task), timeout, funcFinish);
-    if (con) {
-        if (mThreads.postTask(&Database::executor, this, con)) {
-            return true;
-        }
-        mPool.push(con);
+bool Database::postTask(Task* task) {
+    if (!task || !task->mFuncFinish) {
+        return false;
     }
-    return false;
+    return mThreads.postTask(&Database::executor, this, task);
 }
 
 
 //thread callback
-void Database::executor(Connector* con) {
-    con->execute();
-    auto funcFinish = con->mFuncFinish;
-    funcFinish(con); //callback user's func
+void Database::executor(Task* task) {
+    Connector* con = mPool.pop();
+    con->execute(task);
+    task->mFuncFinish(task, con); //callback user's func
     mPool.push(con);
 }
 

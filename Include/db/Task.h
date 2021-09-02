@@ -4,11 +4,13 @@
 #include "Config.h"
 #include <string>
 #include <vector>
-#include <type_traits>
 #include "db/Util.h"
 
 namespace app {
 namespace db {
+class Connector;
+class Task;
+using FuncDBTask = void (*)(Task*, Connector*);
 
 /**
  * @brief 封装DB请求数据
@@ -16,6 +18,7 @@ namespace db {
  */
 class Task {
     friend class Connector;
+    friend class Database;
 
 public:
 
@@ -32,6 +35,10 @@ public:
         std::string mValStr;
         bool mRequiresEscaping;
     };
+
+    Task(FuncDBTask func, u32 timeout = 10) :mFuncFinish(func), mTimeout(timeout) {
+
+    }
 
     ~Task() = default;
     Task() = default;
@@ -56,6 +63,16 @@ public:
      */
     Task& operator<<(Arg tpart);
 
+    /**
+     * @brief must set the FuncDBTask of task
+     * @param timeout The timeout for this task, in seconds.
+     * @param func The on complete callback.
+     */
+    void setFuncFinish(FuncDBTask func, u32 timeout = 10) {
+        mFuncFinish = func;
+        mTimeout = AppClamp(timeout, 1U, 0x7FFFFFFFU);
+    }
+
 private:
     /**
      * 内部结构，类似于Arg，但不执行转义且不推断是否需要转义。
@@ -67,6 +84,8 @@ private:
         bool mRequiresEscaping;
     };
 
+    u32 mTimeout = 10;
+    FuncDBTask mFuncFinish = nullptr;
     std::vector<TaskPart> mTaskPart;
 
     void clear() {
