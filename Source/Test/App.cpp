@@ -103,9 +103,13 @@ int main(int argc, char** argv) {
         //exe 7 zip/unzip af.html out.gz
         ret = 5 == argc ? AppTestZlib(argc, argv) : argc;
         break;
+    case 8:
+        //exe 8 127.0.0.1:5000 user passowrd
+        ret = 5 == argc ? AppTestDBClient(argc, argv) : argc;
+        break;
     default:
         if (true) {
-            AppTestDBClient(argc, argv);
+
         } else {
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);

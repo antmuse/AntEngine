@@ -7,7 +7,6 @@
 #include "Timer.h"
 #include "db/Database.h"
 
-
 namespace app {
 static std::atomic<s32> gCOUNT(0);
 
@@ -39,19 +38,21 @@ void DBCallBack(db::Task* task, db::Connector* it) {
 }
 
 
-void AppMySQLtest() {
+void AppMySQLtest(s32 argc, s8** argv) {
     s32 posted = 0;
-    static const std::string TEST_DB_ADDR = "127.0.0.1";
-    static const std::string TEST_DB_USER = "root";
-    static const std::string TEST_DB_PWD = "witcore.cn";
-    static const u16 TEST_DB_PORT = 5000;
     static const std::string TEST_DB = "temp_db";
+    s8* curr = argv[2];
+    while (*curr != ':' && *curr != '\0') {
+        ++curr;
+    }
+    *curr = 0;
+    const u16 port = (u16)App10StrToU32(++curr);
 
     std::vector<std::string> table_names{
         //"User", "Task"
     };
 
-    db::ConnectConfig connection{TEST_DB_ADDR, TEST_DB_PORT, TEST_DB_USER, TEST_DB_PWD};
+    db::ConnectConfig connection{argv[2], port, argv[3], argv[4]};
     db::Database executor(std::move(connection));
     executor.start(6);
 
@@ -133,10 +134,6 @@ void AppMySQLtest() {
 
 
 s32 AppTestDBClient(s32 argc, s8** argv) {
-    const char* serveraddr = argc > 2 ? argv[2] : "127.0.0.1:9981";
-
-    Logger::log(ELL_INFO, "AppTestDBClient>>connect server=%s", serveraddr);
-
     Engine& eng = Engine::getInstance();
     Loop& loop = eng.getLoop();
     AppTicker tick(loop);
@@ -147,7 +144,7 @@ s32 AppTestDBClient(s32 argc, s8** argv) {
     s32 post = 0;
     while (loop.run()) {
         if (post < 1) {
-            AppMySQLtest();
+            AppMySQLtest(argc, argv);
             post = 1;
         }
     }
