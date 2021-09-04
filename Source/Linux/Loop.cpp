@@ -213,9 +213,7 @@ void Loop::updatePending() {
                         }
                     }
                 } else {
-                    DASSERT(0 != err);
-                    //Logger::log(ELL_ERROR, "Loop::updatePending>>read sock=%d", hnd->mSock.getValue());
-                    nd->mError = err;
+                    nd->mError = EE_NO_READABLE;
                 }
 
                 nd->mCall(nd);
@@ -266,9 +264,7 @@ void Loop::updatePending() {
                         }
                     }
                 } else {
-                    DASSERT(0 != err);
-                    //Logger::log(ELL_ERROR, "Loop::updatePending>>write sock=%d", hnd->mSock.getValue());
-                    nd->mError = err;
+                    nd->mError = EE_NO_WRITEABLE;
                 }
 
                 nd->mCall(nd);
@@ -313,9 +309,8 @@ void Loop::updatePending() {
                         }
                     }
                 } else {
-                    DASSERT(0 != err);
                     Logger::log(ELL_ERROR, "Loop::updatePending>>accept fail, sock=%d", nd->mSocket.getValue());
-                    nd->mError = err;
+                    nd->mError = EE_NO_READABLE;
                 }
                 nd->mCall(nd);
                 nd = (net::RequestAccept*)hnd->popReadReq();
