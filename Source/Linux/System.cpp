@@ -38,13 +38,28 @@
 #include <sys/statfs.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-
+#include <sys/wait.h>
 #include "Logger.h"
 #include "Engine.h"
 
 namespace app {
 
-s32 System::gSignal = 0;
+struct EngSignal {
+    s32 mSig;
+    const s8* mName;
+};
+EngSignal gSignals[] = {
+    {SIGALRM, "SIGALRM"},
+    {SIGINT, "SIGINT.ctl-c"},
+    {SIGTERM, "SIGTERM.kill-15"},
+    {SIGIO, "SIGIO"},
+    {SIGCHLD, "SIGCHLD"},
+    {SIGSYS, "SIGSYS, SIG_IGN"},
+    {SIGPIPE, "SIGPIPE, SIG_IGN"},
+    {50, "ENG.kill-50"},   //should in range [SIGRTMIN-SIGRTMAX]
+    {51, "ENG.kill-51"},
+    {0, NULL}
+};
 
 static u32 AppGetDiskSectorSize(const tchar* disk = DSTR("/")) {
     struct statfs64 sfs;
@@ -63,6 +78,7 @@ static u32 AppGetPageSize() {
 }
 
 
+s32 System::gSignal = 0;
 s32 System::mFatherPID = 0;
 
 System::System() {
@@ -72,22 +88,115 @@ System::~System() {
 }
 
 
-void System::onSignal(s32 val) {
-    gSignal = val;
-    Logger::log(ELL_INFO, "System::onSignal>>recv signal = %d", val);
+static void System_getStatus() {
+    s32 status;
+    const s8* process;
+    pid_t pid;
+    s32 err;
+
+    for (;;) {
+        pid = waitpid(-1, &status, WNOHANG);
+        if (pid == 0) {
+            return;
+        }
+
+        if (pid == -1) {
+            err = errno;
+            if (err == EINTR) {
+                continue;
+            }
+            Logger::log(ELL_INFO, "waitpid() failed, ecode=%d", err);
+            return;
+        }
+
+
+        process = "unknown process";
+
+        s32 max = Engine::getInstance().getChildCount();
+        Process* procs = Engine::getInstance().getChilds();
+        s32 i;
+        for (i = 0; i < max; i++) {
+            if (procs[i].mID == pid) {
+                procs[i].mStatus = status;
+                procs[i].mAlive = false;
+                process = "mychild";
+                break;
+            }
+        }
+
+        if (WTERMSIG(status)) {
+#ifdef WCOREDUMP
+            Logger::log(ELL_INFO, "%s %P exited on signal %d%s",
+                process, pid, WTERMSIG(status),
+                WCOREDUMP(status) ? " (core dumped)" : "");
+#else
+            ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                "%s %P exited on signal %d",
+                process, pid, WTERMSIG(status));
+#endif
+
+        } else {
+            Logger::log(ELL_INFO, "%s %P exited with code %d", process, pid, WEXITSTATUS(status));
+        }
+
+        if (WEXITSTATUS(status) == 2) {
+            Logger::log(ELL_INFO, "%s %P exited with fatal code %d and cannot be respawned",
+                process, pid, WEXITSTATUS(status));
+        } else {
+            //respawn
+        }
+    }
+}
+
+
+static void AppOnSignal(s32 val, siginfo_t* info, void* pit) {
+    if (info) {
+        Logger::log(ELL_INFO, "System::onSignal>>recv signal = %d,from=%d,user=%d",
+            val, info->si_pid, info->si_uid);
+    } else {
+        Logger::log(ELL_INFO, "System::onSignal>>recv signal = %d", val);
+    }
+    //System::gSignal = val;
+
+    /*EngSignal* sig;
+    for (sig = gSignals; sig->mName; sig++) {
+        if (val == sig->mSig) {
+            break;
+        }
+    }*/
+
     switch (val) {
     case SIGINT: //ctrl+c
-    case SIGKILL: //kill
+        Engine::getInstance().postCommand(ECT_ACTIVE);
+        break;
+
+    case SIGTERM: //kill-15
         Engine::getInstance().postCommand(ECT_EXIT);
         break;
+
+    case SIGCHLD: //child exit
+        System_getStatus();
+        break;
+
+    case 50:
+        printf("cmd=50-----------------\n");
+        break;
+
+    case 51:
+        printf("cmd=51-----------------\n");
+        break;
+
     default:
         break;
     }
 }
 
+
+
 s32 System::getPID() {
     return getpid();
 }
+
 
 s32 System::daemon() {
     s32 pid = fork();
@@ -132,7 +241,7 @@ s32 System::daemon() {
     if (dup2(fd, STDERR_FILENO) == -1) {
         Logger::logError("System::daemon>>dup2(STDERR) failed,ecode=%d", getError());
         return EE_ERROR;
-}
+    }
 #endif
 
     if (fd > STDERR_FILENO) {
@@ -145,15 +254,23 @@ s32 System::daemon() {
     return EE_OK;
 }
 
+
 s32 System::loadNetLib() {
-    //TODO>>signal´¦Àí,sigaction
     mFatherPID = getPID();
-    signal(SIGINT, System::onSignal);
-    //signal(SIGILL, System::onSignal);
-    signal(SIGTERM, System::onSignal);
-    signal(SIGKILL, System::onSignal);
-    signal(SIGQUIT, System::onSignal);
-    signal(SIGCHLD, System::onSignal);
+
+    EngSignal* sig;
+    struct sigaction sa;
+    for (sig = gSignals; sig->mName; sig++) {
+        memset(&sa, 0, sizeof(struct sigaction));
+        sa.sa_sigaction = AppOnSignal;
+        sa.sa_flags = SA_SIGINFO; //SIG_IGN;
+        sigemptyset(&sa.sa_mask);
+
+        if (sigaction(sig->mSig, &sa, NULL) == -1) {
+            Logger::logError("sigaction(%d,%s) failed", sig->mSig, sig->mName);
+            return EE_ERROR;
+        }
+    }
     return 0;
 }
 

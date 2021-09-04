@@ -39,15 +39,13 @@
 #if defined(DOS_WINDOWS)
 namespace app {
 
-EventPoller::EventPoller() {
+EventPoller::EventPoller() :mHandle(INVALID_HANDLE_VALUE) {
     DASSERT(sizeof(SEvent::mKey) == sizeof(ULONG_PTR));
     DASSERT(sizeof(OVERLAPPED_ENTRY) == sizeof(SEvent));
     DASSERT(DOFFSET(SEvent, mBytes) == DOFFSET(OVERLAPPED_ENTRY, dwNumberOfBytesTransferred));
     DASSERT(DOFFSET(SEvent, mInternal) == DOFFSET(OVERLAPPED_ENTRY, Internal));
     DASSERT(DOFFSET(SEvent, mKey) == DOFFSET(OVERLAPPED_ENTRY, lpCompletionKey));
     DASSERT(DOFFSET(SEvent, mPointer) == DOFFSET(OVERLAPPED_ENTRY, lpOverlapped));
-
-    mHandle = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
 }
 
 
@@ -55,7 +53,17 @@ EventPoller::~EventPoller() {
     close();
 }
 
+
+bool EventPoller::open(const s8* unpath) {
+    mHandle = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+    if (INVALID_HANDLE_VALUE == mHandle) {
+        return false;
+    }
+    return mSocketPair.open(unpath);
+}
+
 void EventPoller::close() {
+    mSocketPair.close();
     if(INVALID_HANDLE_VALUE != mHandle) {
         ::CloseHandle(mHandle);
         mHandle = INVALID_HANDLE_VALUE;
@@ -154,20 +162,31 @@ bool EventPoller::postEvent(SEvent& iEvent) {
 
 namespace app {
 
-EventPoller::EventPoller() {
+EventPoller::EventPoller() :mEpollFD(-1) {
     DASSERT(sizeof(SEvent) == sizeof(epoll_event));
     DASSERT(DOFFSET(SEvent, mEvent) == DOFFSET(epoll_event, events));
     DASSERT(DOFFSET(SEvent, mData) == DOFFSET(epoll_event, data));
-
-    mEpollFD = ::epoll_create(0x7ffffff);
-    bool ret = mSocketPair.open();
-    DASSERT(ret);
 }
 
 
 EventPoller::~EventPoller() {
+    close();
+}
+
+bool EventPoller::open() {
+    mEpollFD = ::epoll_create(0x7ffffff);
+    if (0 == mEpollFD) {
+        return false;
+    }
+    return mSocketPair.open();
+}
+
+void EventPoller::close() {
     mSocketPair.close();
-    ::close(mEpollFD);
+    if (mEpollFD >= 0) {
+        ::close(mEpollFD);
+        mEpollFD = -1;
+    }
 }
 
 s32 EventPoller::getEvent(SEvent& iEvent, u32 iTime) {

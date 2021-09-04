@@ -107,9 +107,9 @@ System::System() {
 System::~System() {
 }
 
-void System::onSignal(s32 val) {
-
-}
+//void System::onSignal(s32 val) {
+//    gSignal = val;
+//}
 
 s32 System::getPID() {
     return ::GetCurrentProcessId();

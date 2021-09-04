@@ -365,22 +365,22 @@ protected:
 
 
 
-#if defined(DOS_LINUX) || defined(DOS_ANDROID)
-class CNetSocketPair {
+class SocketPair {
 public:
-    CNetSocketPair();
+    SocketPair();
 
-    ~CNetSocketPair();
+    ~SocketPair();
 
     bool close();
 
     /**
-    * @brief Open a local socket pair.
+    * @brief Open a local socket pair with AF_UNIX & SOCK_STREAM.
+    * @param unpath path for sockaddr_un, windows only.
     * @return true if success to open, else false.
     */
-    bool open();
+    bool open(const s8* unpath = "");
 
-    bool open(s32 domain, s32 type, s32 protocol);
+    bool open(s32 domain, s32 type, s32 protocol, const s8* unpath = "");
 
     Socket& getSocketA() {
         return mSockA;
@@ -394,7 +394,6 @@ private:
     Socket mSockA;
     Socket mSockB;
 };
-#endif //OS DOS_LINUX  DOS_ANDROID
 
 
 } //namespace net 

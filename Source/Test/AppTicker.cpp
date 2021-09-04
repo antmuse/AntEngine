@@ -25,7 +25,7 @@ usz AppTicker::gTotalActiveResp = 0;
 
 AppTicker::AppTicker(Loop& loop) :
     mLoop(loop) {
-    mTime.setClose(EHT_TIME,AppTicker::funcOnClose, this);
+    mTime.setClose(EHT_TIME, AppTicker::funcOnClose, this);
     mTime.setTime(AppTicker::funcOnTime, 2000, 1000, -1);
 }
 
@@ -45,27 +45,29 @@ void AppTicker::onClose(Handle* it) {
 
 s32 AppTicker::onTimeout(HandleTime* it) {
     s8 ch = 0;
-#ifdef DOS_LINUX
-    if (0 == System::getSignal()) {
-#else
+#ifdef DOS_WINDOWS
     //32=blank,27=esc
-    if (!_kbhit() || (ch = _getch()) != 27) {
+    if (!_kbhit() || (ch = _getch()) != 27)
 #endif
+    {
         if (32 == ch) {
             ch = 0;
-            Logger::log(ELL_INFO, "AppTicker::onTimeout>>%p, timeout=%lld, gap=%lld", it, it->getTimeout(), it->getTimeGap());
+            Logger::log(ELL_INFO, "AppTicker::onTimeout>>%p, timeout=%lld, gap=%lld",
+                it, it->getTimeout(), it->getTimeGap());
+            Engine::getInstance().postCommand(ECT_ACTIVE);
         } else {
             printf("Handle=%d, Fly=%d, In=%llu/%llu, Out=%llu/%llu, Active=%llu/%llu\n",
                 mLoop.getHandleCount(), mLoop.getFlyRequest(),
                 gTotalPacketIn, gTotalSizeIn, gTotalPacketOut, gTotalSizeOut, gTotalActive, gTotalActiveResp);
         }
-        if (++G_LOG_FLUSH_CNT >= 10) {
+        if (++G_LOG_FLUSH_CNT >= 20) {
             G_LOG_FLUSH_CNT = 0;
             Logger::flush();
         }
         return EE_OK;
     }
-    mLoop.stop();
+
+    Engine::getInstance().postCommand(ECT_EXIT);    //mLoop.stop();
     Logger::log(ELL_INFO, "AppTicker::onTimeout>>exiting...");
     return EE_ERROR;
 }

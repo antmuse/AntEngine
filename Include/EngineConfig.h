@@ -46,6 +46,7 @@ public:
 
     u8 mMaxPostAccept;
     u8 mMaxThread;
+    s16 mMaxProcess;
     u64 mMemSize;
     String mLogPath;
     String mPidFile;

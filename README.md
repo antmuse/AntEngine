@@ -1,18 +1,18 @@
 AntEngine
 ====
-¿çÆ½Ì¨£¬¶à½ø³Ì£¬ÍøÂç·şÎñ£¬Redis Client, TCP/TLS/HTTP/HTTPS
+è·¨å¹³å°ï¼Œå¤šè¿›ç¨‹ï¼Œç½‘ç»œæœåŠ¡ï¼ŒRedis Client, TCP/TLS/HTTP/HTTPS
 
-# ÒÀÀµ
+## ä¾èµ–
 ----
 openssl, zlib, jsoncpp, http_parser, mysql
 
-# »·¾³
+## ç¯å¢ƒ
 ----
-1. debian10, 64bit, kernal-v4.19.0, gcc-v8.3
-2. windows10, 64bit, VS2019
-3. c++14
++ 1. debian10, 64bit, kernal-v4.19.0, gcc-v8.3
++ 2. windows10, 64bit, VS2019
++ 3. c++11
 
-# Usage
+## Usage
 ----
 
 ```cpp
@@ -30,8 +30,8 @@ int main(int argc, char** argv) {
 ```
 
 
-# TODO
+## TODO
 ----
-1 Linux AIO
-2 IPC
-3 WebSite, ·ÖÀëHTTP»ù´¡´úÂëºÍÒµÎñ´úÂë
++ 1 Linux AIO
++ 2 IPC
++ 3 WebSite, åˆ†ç¦»HTTPåŸºç¡€ä»£ç å’Œä¸šåŠ¡ä»£ç 

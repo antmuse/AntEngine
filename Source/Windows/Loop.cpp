@@ -29,7 +29,7 @@
 #include "Logger.h"
 #include "HandleFile.h"
 #include "Net/HandleTCP.h"
-//#include "Engine.h"
+#include "Engine.h"
 
 namespace app {
 
@@ -46,8 +46,52 @@ Loop::~Loop() {
     DASSERT(0 == mGrabCount && 0 == mFlyRequest);
 }
 
+void Loop::onCommands(Packet& pack) {
+    net::Socket& sock = mPoller.getSocketPair().getSocketB();
+    for (s32 rsz = 1; rsz > 0;) {
+        rsz = sock.receive(pack.getWritePointer(), (s32)pack.getWriteSize());
+        if (rsz > 0) {
+            pack.resize(pack.size() + rsz);
+            u32 pksz = 0;
+            for (MsgHeader* cmd = (MsgHeader*)pack.getPointer();
+                pack.size() >= sizeof(MsgHeader) && pksz < pack.size();
+                cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
+                switch (cmd->mType) {
+                case ECT_EXIT:
+                    Logger::logInfo("Loop::onCommands>> exit");
+                    stop();
+                    break;
+                case ECT_ACTIVE:
+                    Logger::logInfo("Loop::onCommands>> active");
+                    break;
+                default:break;
+                }//switch
+                pksz += cmd->mSize;
+            }
+            pack.clear(pksz);
+        } else if (0 == rsz) {
+            const s32 ecode = System::getAppError();
+            Logger::log(ELL_ERROR, "Loop::onCommands>> read=0, ecode=%d", ecode);
+            stop();
+        } else {
+            s32 ecode = System::getAppError();
+            if (EE_RETRY != ecode) {
+                stop();
+                Logger::log(ELL_ERROR, "Loop::onCommands>> read<0, ecode=%d", ecode);
+            } else {
+                if (!sock.receive(&mReadCMD)) {
+                    ecode = System::getAppError();
+                    Logger::log(ELL_ERROR, "Loop::onCommands>>post cmd recv, ecode=%d", ecode);
+                    stop();
+                }
+            }
+        }
+    }//for
+}
+
 bool Loop::run() {
     const s32 pmax = 128;
+    Packet pack(256);
     u32 timeout = getWaitTime();
     EventPoller::SEvent evts[pmax];
     s32 max = mPoller.getEvents(evts, pmax, timeout);
@@ -56,7 +100,12 @@ bool Loop::run() {
         for (s32 i = 0; i < max; ++i) {
             if (evts[i].mPointer) {
                 req = DGET_HOLDER(evts[i].mPointer, Request, mOverlapped);
-                addPending(req);
+                if (req->mHandle) {
+                    addPending(req);
+                } else {//cmd
+                    DASSERT((&mReadCMD) == req);
+                    onCommands(pack);
+                }
             } else {
                 Logger::log(ELL_ERROR, "Loop::run>>Poll null");
             }
@@ -204,8 +253,28 @@ u32 Loop::getWaitTime() {
     return updateTimeHub();
 }
 
-void Loop::start() {
 
+bool Loop::start() {
+    String unpath = Engine::getInstance().getConfig().mLogPath;
+    unpath += System::getPID();
+    unpath += ".unpath";
+    mPoller.open(unpath.c_str());
+    net::Socket& sock = mPoller.getSocketPair().getSocketB();
+    if (0 != sock.setBlock(false)) {
+        return false;
+    }
+    if (!mPoller.add(sock, nullptr)) {
+        return false;
+    }
+    mReadCMD.mType = ERT_READ;
+    mReadCMD.mError = 0;
+    mReadCMD.mHandle = nullptr;
+    if (!sock.receive(&mReadCMD)) {
+        mReadCMD.mError = System::getAppError();
+        Logger::log(ELL_ERROR, "Loop::start>>cmd recv, ecode=%d", mReadCMD.mError);
+        return false;
+    }
+    return true;
 }
 
 
@@ -221,6 +290,8 @@ void Loop::stop() {
         next = next->mNext;
         closeHandle((Handle*)curr);
     }
+    net::Socket& sock = mPoller.getSocketPair().getSocketB();
+    sock.close();
 }
 
 

@@ -40,6 +40,7 @@ const s8* G_CFGFILE = "Config/config.json";
 Engine::Engine() :
     mPPID(0),
     mPID(0),
+    mChildCount(0),
     mMain(true) {
 }
 
@@ -51,11 +52,24 @@ void Engine::clear() {
     System::removeFile(mConfig.mPidFile.c_str());
 }
 
+
 void Engine::postCommand(s32 val) {
-    Logger::log(ELL_INFO, "Engine::postCommand>>post cmd = %d", val);
+    net::Socket& sock = mLoop.getEventPoller().getSocketPair().getSocketA();
+    MsgHeader cmd;
+    //Logger::log(ELL_INFO, "Engine::postCommand>>post cmd = %d", val);
     switch (val) {
     case ECT_EXIT:
+    {
+        cmd.finish(ECT_EXIT, ++cmd.gSharedSN, ECT_VERSION);
+        sock.sendAll(&cmd, sizeof(cmd));
         break;
+    }
+    case ECT_ACTIVE:
+    {
+        cmd.finish(ECT_ACTIVE, ++cmd.gSharedSN, ECT_VERSION);
+        sock.sendAll(&cmd, sizeof(cmd));
+        break;
+    }
     default:
         break;
     }

@@ -29,6 +29,7 @@
 #include "Strings.h"
 #include "BinaryHeap.h"
 #include "Handle.h"
+#include "Packet.h"
 #include "Net/EventPoller.h"
 
 #if defined(DOS_WINDOWS)
@@ -52,7 +53,7 @@ public:
         return mStop > 0;
     }
 
-    void start();
+    bool start();
 
     void stop();
 
@@ -134,7 +135,18 @@ protected:
     void relinkTime(HandleTime* it);
 
     //linux
-    void addPendingAll(Request* it);
+    void addPendingAll(Request* it) {
+        if (it) {
+            if (mRequest) {
+                Request* head = it->mNext;
+                it->mNext = mRequest->mNext;
+                mRequest->mNext = head;
+            }
+            mRequest = it;
+        }
+    }
+
+    void onCommands(Packet& pack);
 
 private:
     s64 mTime;
@@ -146,7 +158,9 @@ private:
     Node2 mHandleClose;
     Request* mRequest;
     EventPoller mPoller;
-
+#if defined(DOS_WINDOWS)
+    net::RequestTCP mReadCMD;
+#endif
     Loop(const Loop&) = delete;
     Loop(const Loop&&) = delete;
     const Loop& operator=(const Loop&) = delete;

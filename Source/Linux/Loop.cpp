@@ -24,11 +24,12 @@
 
 
 #include "Loop.h"
-#include <sys/epoll.h>
-#include "System.h"
 #include "Timer.h"
+#include "System.h"
+#include "Engine.h"
 #include "Logger.h"
 #include "Net/HandleTCP.h"
+#include <sys/epoll.h>
 
 
 namespace app {
@@ -44,14 +45,54 @@ Loop::Loop() :
 
 Loop::~Loop() {
     DASSERT(0 == mGrabCount && 0 == mFlyRequest);
+    //mPoller.close();
 }
+
+
+
+void Loop::onCommands(Packet& pack) {
+    net::Socket& sock = mPoller.getSocketPair().getSocketB();
+    for (s32 rsz = 1; rsz > 0;) {
+        rsz = sock.receive(pack.getWritePointer(), (s32)pack.getWriteSize());
+        if (rsz > 0) {
+            pack.resize(pack.size() + rsz);
+            u32 pksz = 0;
+            for (MsgHeader* cmd = (MsgHeader*)pack.getPointer();
+                pack.size() >= sizeof(MsgHeader) && pksz < pack.size();
+                cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
+                switch (cmd->mType) {
+                case ECT_EXIT:
+                    Logger::logInfo("Loop::onCommands>> exit");
+                    stop();
+                    break;
+                case ECT_ACTIVE:
+                    Logger::logInfo("Loop::onCommands>> active");
+                    break;
+                default:break;
+                }//switch
+                pksz += cmd->mSize;
+            }
+            pack.clear(pksz);
+        } else if (0 == rsz) {
+            const s32 ecode = System::getAppError();
+            Logger::log(ELL_ERROR, "Loop::onCommands>> read=0, ecode=%d", ecode);
+            stop();
+        } else {
+            s32 ecode = System::getAppError();
+            if (EE_RETRY != ecode) {
+                stop();
+                Logger::log(ELL_ERROR, "Loop::onCommands>> read<0, ecode=%d", ecode);
+            }
+        }
+    }//for
+}
+
 
 bool Loop::run() {
     const s32 pmax = 128;
+    Packet pack(256);
     EventPoller::SEvent evts[pmax];
     s32 ecode = 0;
-    net::Socket& sock = mPoller.getSocketPair().getSocketB();
-
     u32 timeout = getWaitTime();
     s32 max = mPoller.getEvents(evts, pmax, timeout);
     if (max > 0) {
@@ -67,26 +108,23 @@ bool Loop::run() {
                     req = han.popReadReq();
                     if (req) {
                         addPending(req);
-                        //Logger::log(ELL_ERROR, "Loop::run>>Poll=%s", ERT_ACCEPT == req->mType ? "accept" : "read");
                     } else {
                         han.mFlag |= EHF_SYNC_READ;
-                        //Logger::log(ELL_ERROR, "Loop::run>>Poll=EHF_SYNC_READ");
                     }
                 }
                 if (EPOLLOUT & eflag) {
                     req = han.popWriteReq();
                     if (req) {
                         addPending(req);
-                        //Logger::log(ELL_ERROR, "Loop::run>>Poll=write");
                     } else {
                         han.mFlag |= EHF_SYNC_WRITE;
-                        //Logger::log(ELL_ERROR, "Loop::run>>Poll=EHF_SYNC_WRITE");
                     }
                 }
             } else {//cmd
                 if (EPOLLIN & eflag) {
-                    s8 tmp[32];
-                    sock.receive(tmp, sizeof(tmp));
+                    onCommands(pack);
+                } else {
+                    Logger::log(ELL_ERROR, "Loop::run>>Poll cmd, have not write on socket B");
                 }
             }
         }//for
@@ -323,15 +361,26 @@ u32 Loop::getWaitTime() {
     return updateTimeHub();
 }
 
-void Loop::start() {
+
+bool Loop::start() {
+    if (!mPoller.open()) {
+        return false;
+    }
     EventPoller::SEvent evt;
     net::Socket& sock = mPoller.getSocketPair().getSocketB();
     evt.mEvent = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLHUP;
     evt.mData.mPointer = nullptr;
-    if (!mPoller.add(sock, evt)) {
-        Logger::log(ELL_ERROR, "Loop::start>>mPoller.add socket pair, err=%d", System::getAppError());
+    if (0 != sock.setBlock(false)) {
+        Logger::log(ELL_ERROR, "Loop::start>>Poller socket unblock, err=%d", System::getAppError());
+        return false;
     }
+    if (!mPoller.add(sock, evt)) {
+        Logger::log(ELL_ERROR, "Loop::start>>Poller add socket, err=%d", System::getAppError());
+        return false;
+    }
+    return true;
 }
+
 
 void Loop::stop() {
     if (0 != mStop) {
@@ -351,6 +400,7 @@ void Loop::stop() {
         closeHandle((Handle*)curr);
     }
 }
+
 
 void Loop::relinkTime(HandleTime* handle) {
     DASSERT(handle);
@@ -579,19 +629,6 @@ void Loop::addPending(Request* it) {
     }
     mRequest = it;
 }
-
-
-void Loop::addPendingAll(Request* it) {
-    if (it) {
-        if (mRequest) {
-            Request* head = it->mNext;
-            it->mNext = mRequest->mNext;
-            mRequest->mNext = head;
-        }
-        mRequest = it;
-    }
-}
-
 
 
 } //namespace app

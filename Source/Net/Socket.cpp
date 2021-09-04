@@ -30,6 +30,7 @@
 #include <mstcpip.h>
 #include <WS2tcpip.h>
 #include <MSWSock.h>
+#include <afunix.h>
 #include "Windows/Request.h"
 #elif defined(DOS_LINUX) || defined(DOS_ANDROID)
 #include <errno.h>
@@ -730,47 +731,113 @@ bool Socket::openSeniorTCP(bool ipv6) {
 
 
 
-#if defined(DOS_LINUX) || defined(DOS_ANDROID)
-CNetSocketPair::CNetSocketPair() {
+
+SocketPair::SocketPair() {
 }
 
-CNetSocketPair::~CNetSocketPair() {
-    //close();
+SocketPair::~SocketPair() {
+    close();
 }
 
-
-bool CNetSocketPair::close() {
+bool SocketPair::close() {
     return mSockB.close() && mSockA.close();
 }
 
-bool CNetSocketPair::open() {
+
+bool SocketPair::open(const s8* unpath) {
+    return open(AF_UNIX, SOCK_STREAM, 0, unpath);
+}
+
+
+#if defined(DOS_WINDOWS)
+bool SocketPair::open(s32 domain, s32 type, s32 protocol, const s8* unpath) {
+    SOCKET fd[2];
+    SOCKET lisock = socket(domain, type, 0);
+    if (INVALID_SOCKET == lisock) {
+        return false;
+    }
+
+    SOCKET consock = INVALID_SOCKET;
+    SOCKET acpsock = INVALID_SOCKET;
+    struct sockaddr_un listen_addr;
+
+    s32 ecode = -1;
+    memset(&listen_addr, 0, sizeof(listen_addr));
+    listen_addr.sun_family = domain;
+    snprintf(listen_addr.sun_path, sizeof(listen_addr.sun_path),
+        "%s", unpath ? unpath : "");
+
+    System::removeFile(listen_addr.sun_path);
+
+    if (bind(lisock, (struct sockaddr*)&listen_addr, sizeof(listen_addr)) == -1) {
+        goto GT_FAIL;
+    }
+
+    if (listen(lisock, 1) == -1) {
+        goto GT_FAIL;
+    }
+
+    consock = socket(domain, type, 0);
+    if (INVALID_SOCKET == consock) {
+        goto GT_FAIL;
+    }
+
+    if (connect(consock, (struct sockaddr*) & listen_addr, sizeof(listen_addr)) == -1) {
+        goto GT_FAIL;
+    }
+
+    acpsock = accept(lisock, nullptr, nullptr);
+    if (INVALID_SOCKET == acpsock) {
+        goto GT_FAIL;
+    }
+
+    closesocket(lisock);
+    System::removeFile(listen_addr.sun_path);
+
+    mSockA = consock;
+    mSockB = acpsock;
+    //mSockA.setBlock(false);
+    //mSockB.setBlock(false);
+    return true;
+
+
+
+    GT_FAIL:
+    ecode = WSAGetLastError();
+
+    if (INVALID_SOCKET == lisock) {
+        closesocket(lisock);
+    }
+    if (INVALID_SOCKET == consock) {
+        closesocket(consock);
+    }
+    if (INVALID_SOCKET == acpsock) {
+        closesocket(acpsock);
+    }
+    System::removeFile(listen_addr.sun_path);
+    return false;
+}
+
+#elif defined(DOS_LINUX) || defined(DOS_ANDROID)
+
+bool SocketPair::open(s32 domain, s32 type, s32 protocol, const s8* unpath) {
     netsocket sockpair[2];
-    if (::socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sockpair)) {
+    if (0 != socketpair(domain, type, protocol, sockpair)) {
         //printf("error %d on socketpair\n", errno);
         return false;
     }
     mSockA = sockpair[0];
     mSockB = sockpair[1];
+
+    //mSockA.setBlock(false);
+    //mSockB.setBlock(false);
     return true;
 }
 
+#else
+#error "OS NOT SUPPORTED!"
+#endif //DOS_WINDOWS
 
-bool CNetSocketPair::open(s32 domain, s32 type, s32 protocol) {
-    netsocket sockpair[2];
-    if (socketpair(domain, type, protocol, sockpair)) {
-        //printf("error %d on socketpair\n", errno);
-        return false;
-    }
-    mSockA = sockpair[0];
-    mSockB = sockpair[1];
-    u32 sz = 128 * sizeof(u32);
-    mSockA.setSendCache(sz);
-    mSockA.setReceiveCache(sz);
-    mSockB.setSendCache(sz);
-    mSockB.setReceiveCache(sz);
-    return true;
-}
 
-#endif //OS DOS_LINUX  DOS_ANDROID
 } //namespace net
 } //namespace app

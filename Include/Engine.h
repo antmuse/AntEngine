@@ -44,8 +44,12 @@ enum ECommandType {
     ECT_EXIT = 1,
     ECT_EXIT_RESP = ECT_RESP_BIT | ECT_EXIT,
 
+    ECT_ACTIVE = 2,
+    ECT_ACTIVE_RESP = ECT_RESP_BIT | ECT_ACTIVE,
+
     ECT_VERSION = 0xF001
 };
+
 struct CommandExit : public MsgHeader {
     void pack() {
         finish(ECT_EXIT, ++gSharedSN, ECT_VERSION);
@@ -53,6 +57,13 @@ struct CommandExit : public MsgHeader {
     void packResp(u32 sn) {
         finish(ECT_EXIT_RESP, sn, ECT_VERSION);
     }
+};
+
+
+struct Process {
+    s32 mID;
+    s32 mStatus;
+    bool mAlive;
 };
 
 class Engine {
@@ -90,6 +101,18 @@ public:
 
     void postCommand(s32 val);
 
+    Process* getChilds() {
+        return mChild;
+    }
+
+    s32 getChildCount()const {
+        return mChildCount;
+    }
+
+    const EngineConfig& getConfig()const {
+        return mConfig;
+    }
+
 protected:
     Engine();
     ~Engine();
@@ -109,6 +132,8 @@ private:
     bool mMain; //Ö÷½ø³Ì
     EngineConfig mConfig;
     net::TlsContext mTlsENG;
+    Process mChild[1024];
+    s32 mChildCount;
 };
 
 

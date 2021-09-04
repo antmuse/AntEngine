@@ -66,6 +66,7 @@ static DictFunctions gDictCalls = {
 EngineConfig::EngineConfig() :
     mMaxPostAccept(10),
     mMaxThread(3),
+    mMaxProcess(0),
     mMemSize(1024 * 1024 * 1),
     mLogPath("Log/"),
     mPidFile("Log/PID.txt"),
@@ -95,6 +96,7 @@ bool EngineConfig::save(const String& cfg) {
     val["ShareMemSize"] = (Json::Value::Int64)mMemSize / (1024 * 1024);
     val["AcceptPost"] = mMaxPostAccept;
     val["ThreadPool"] = mMaxThread;
+    val["Process"] = mMaxProcess;
 
     Json::StreamWriterBuilder builder;
     builder["emitUTF8"] = true;
@@ -138,6 +140,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg) {
         mMemSize = 1024 * 1024 * AppClamp<s64>(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
         mMaxPostAccept = AppClamp<u8>(val["AcceptPost"].asInt(), 1, 255);
         mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
+        mMaxProcess = AppClamp<s16>(val["Process"].asInt(), -1024, 1024);
+
         if (val.isMember("Proxy")) {
             ProxyCfg nd;
             u32 mx = val["Proxy"].size();

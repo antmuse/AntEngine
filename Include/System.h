@@ -48,8 +48,6 @@ public:
     static s32 daemon();
 #endif
 
-    static void onSignal(s32 val);
-
     static s32 getSignal() {
         return gSignal;
     }
