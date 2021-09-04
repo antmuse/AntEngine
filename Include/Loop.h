@@ -146,7 +146,7 @@ protected:
         }
     }
 
-    void onCommands(Packet& pack);
+    void onCommands();
 
 private:
     s64 mTime;
@@ -158,6 +158,7 @@ private:
     Node2 mHandleClose;
     Request* mRequest;
     EventPoller mPoller;
+    Packet mPackCMD;
 #if defined(DOS_WINDOWS)
     net::RequestTCP mReadCMD;
 #endif

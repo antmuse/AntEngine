@@ -38,6 +38,7 @@ Loop::Loop() :
     mRequest(nullptr),
     mTime(Timer::getRelativeTime()),
     mStop(0),
+    mPackCMD(256),
     mFlyRequest(0),
     mGrabCount(0) {
 }
@@ -46,15 +47,15 @@ Loop::~Loop() {
     DASSERT(0 == mGrabCount && 0 == mFlyRequest);
 }
 
-void Loop::onCommands(Packet& pack) {
+void Loop::onCommands() {
     net::Socket& sock = mPoller.getSocketPair().getSocketB();
     for (s32 rsz = 1; rsz > 0;) {
-        rsz = sock.receive(pack.getWritePointer(), (s32)pack.getWriteSize());
+        rsz = sock.receive(mPackCMD.getWritePointer(), (s32)mPackCMD.getWriteSize());
         if (rsz > 0) {
-            pack.resize(pack.size() + rsz);
+            mPackCMD.resize(mPackCMD.size() + rsz);
             u32 pksz = 0;
-            for (MsgHeader* cmd = (MsgHeader*)pack.getPointer();
-                pack.size() >= sizeof(MsgHeader) && pksz < pack.size();
+            for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer();
+                mPackCMD.size() >= sizeof(MsgHeader) && pksz < mPackCMD.size();
                 cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
                 switch (cmd->mType) {
                 case ECT_EXIT:
@@ -68,7 +69,7 @@ void Loop::onCommands(Packet& pack) {
                 }//switch
                 pksz += cmd->mSize;
             }
-            pack.clear(pksz);
+            mPackCMD.clear(pksz);
         } else if (0 == rsz) {
             const s32 ecode = System::getAppError();
             Logger::log(ELL_ERROR, "Loop::onCommands>> read=0, ecode=%d", ecode);
@@ -91,7 +92,6 @@ void Loop::onCommands(Packet& pack) {
 
 bool Loop::run() {
     const s32 pmax = 128;
-    Packet pack(256);
     u32 timeout = getWaitTime();
     EventPoller::SEvent evts[pmax];
     s32 max = mPoller.getEvents(evts, pmax, timeout);
@@ -104,7 +104,7 @@ bool Loop::run() {
                     addPending(req);
                 } else {//cmd
                     DASSERT((&mReadCMD) == req);
-                    onCommands(pack);
+                    onCommands();
                 }
             } else {
                 Logger::log(ELL_ERROR, "Loop::run>>Poll null");
