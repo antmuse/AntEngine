@@ -167,9 +167,6 @@ static void AppOnSignal(s32 val, siginfo_t* info, void* pit) {
 
     switch (val) {
     case SIGINT: //ctrl+c
-        Engine::getInstance().postCommand(ECT_ACTIVE);
-        break;
-
     case SIGTERM: //kill-15
         Engine::getInstance().postCommand(ECT_EXIT);
         break;
@@ -179,7 +176,7 @@ static void AppOnSignal(s32 val, siginfo_t* info, void* pit) {
         break;
 
     case 50:
-        printf("cmd=50-----------------\n");
+        Engine::getInstance().postCommand(ECT_ACTIVE);
         break;
 
     case 51:
