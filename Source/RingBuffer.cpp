@@ -73,6 +73,7 @@ void RingBuffer::init() {
         mHeadPos.init(0, block);
         mTailPos.init(0, block);
     }
+    mRet = -1;
 }
 
 void RingBuffer::uninit() {
@@ -105,6 +106,7 @@ void RingBuffer::reset() {
     mHeadPos.mPosition = 0;
     mTailPos.mPosition = 0;
     mSize = 0;
+    mRet = -1;
 }
 
 void RingBuffer::write(const void* data, s32 size) {
@@ -241,9 +243,10 @@ void RingBuffer::commitHeadPos(SRingBufPos& pos) {
         mSize -= D_RBUF_BLOCK_SIZE - mHeadPos.mPosition;
         popFront();
     }
-    if (pos.mNode == mTailPos.mNode) {
-        mSize -= pos.mPosition - mHeadPos.mPosition;
-    }
+    //if (pos.mNode == mTailPos.mNode) {
+    //    mSize -= pos.mPosition - mHeadPos.mPosition;
+    //}
+    mSize -= pos.mPosition - mHeadPos.mPosition;
     mHeadPos = pos;
 }
 

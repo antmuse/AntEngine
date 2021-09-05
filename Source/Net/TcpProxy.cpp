@@ -24,6 +24,7 @@
 
 
 #include "Net/TcpProxy.h"
+#include "EngineConfig.h"
 #include "Net/Acceptor.h"
 
 namespace app {
@@ -31,16 +32,17 @@ namespace net {
 
 const u32 gCacheSZ = 4 * 1024;
 
+
 TcpProxy::TcpProxy(Loop& loop) :
-    mLoop(loop) {
+    mLoop(loop), mType(0) {
 
     //front
-    mTCP.setClose(EHT_TCP_LINK, TcpProxy::funcOnClose, this);
-    mTCP.setTime(TcpProxy::funcOnTime, 20 * 1000, 30 * 1000, -1);
+    mTLS.getHandleTCP().setClose(EHT_TCP_LINK, TcpProxy::funcOnClose, this);
+    mTLS.getHandleTCP().setTime(TcpProxy::funcOnTime, 20 * 1000, 30 * 1000, -1);
 
     //backend
-    mTcpBackend.setClose(EHT_TCP_CONNECT, TcpProxy::funcOnClose2, this);
-    mTcpBackend.setTime(TcpProxy::funcOnTime2, 30 * 1000, 30 * 1000, -1);
+    mTLS2.getHandleTCP().setClose(EHT_TCP_CONNECT, TcpProxy::funcOnClose2, this);
+    mTLS2.getHandleTCP().setTime(TcpProxy::funcOnTime2, 30 * 1000, 30 * 1000, -1);
 }
 
 
@@ -49,36 +51,34 @@ TcpProxy::~TcpProxy() {
 
 s32 TcpProxy::onTimeout(HandleTime& it) {
     Logger::log(ELL_INFO, "TcpProxy::onTimeout>>time=%lld", mLoop.getTime());
-    mLoop.closeHandle(&mTcpBackend);
+    mLoop.closeHandle(&mTLS2.getHandleTCP());
     return EE_ERROR;
 }
 
 
 s32 TcpProxy::onTimeout2(HandleTime& it) {
     Logger::log(ELL_INFO, "TcpProxy::onTimeout2>>time=%lld", mLoop.getTime());
-    DASSERT(&mTcpBackend == &it);
-    mLoop.closeHandle(&mTCP);
+    mLoop.closeHandle(&mTLS.getHandleTCP());
     return EE_ERROR;
 }
 
 
 void TcpProxy::onClose(Handle* it) {
-    DASSERT(&mTCP == it);
-    if (mTcpBackend.isClose()) {
+    if ((2 & mType) > 0 ? mTLS2.isClose(): mTLS2.getHandleTCP().isClose()) {
+        Logger::log(ELL_INFO, "TcpProxy::onClose>>front=%s", mTLS.getRemote().getStr());
         delete this;
     } else {
-        mLoop.closeHandle(&mTcpBackend);
+        mLoop.closeHandle(&mTLS2.getHandleTCP());
     }
 }
 
 
 void TcpProxy::onClose2(Handle* it) {
-    DASSERT(&mTcpBackend == it);
-    if (mTCP.isClose()) {
+    if ((1 & mType) > 0 ? mTLS.isClose() : mTLS.getHandleTCP().isClose()) {
+        Logger::log(ELL_INFO, "TcpProxy::onClose2>>backend=%s", mTLS2.getRemote().getStr());
         delete this;
     } else {
-        Logger::log(ELL_INFO, "TcpProxy::onClose2>>server=%s", mTcpBackend.getRemote().getStr());
-        mLoop.closeHandle(&mTCP);
+        mLoop.closeHandle(&mTLS.getHandleTCP());
     }
 }
 
@@ -104,12 +104,12 @@ void TcpProxy::onRead(net::RequestTCP* it) {
         net::RequestTCP* out = RequestTCP::newRequest(gCacheSZ);
         out->mUser = this;
         out->mCall = TcpProxy::funcOnRead;
-        if (0 != mTCP.read(out)) {
+        if (0 != ((1 & mType) > 0 ? mTLS.read(out) : mTLS.getHandleTCP().read(out))) {
             RequestTCP::delRequest(out);
         }
         it->mCall = TcpProxy::funcOnWrite2;
         it->setStepSize(0);
-        if (EE_OK != mTcpBackend.write(it)) {
+        if (EE_OK != ((2 & mType) > 0 ? mTLS2.write(it) : mTLS2.getHandleTCP().write(it))) {
             RequestTCP::delRequest(it);
         }
     } else {
@@ -124,13 +124,13 @@ void TcpProxy::onRead2(net::RequestTCP* it) {
         net::RequestTCP* out = RequestTCP::newRequest(gCacheSZ);
         out->mUser = this;
         out->mCall = TcpProxy::funcOnRead2;
-        if (0 != mTcpBackend.read(out)) {
+        if (0 != ((2 & mType) > 0 ? mTLS2.read(out) : mTLS2.getHandleTCP().read(out))) {
             RequestTCP::delRequest(out);
         }
 
         it->mCall = TcpProxy::funcOnWrite;
         it->setStepSize(0);
-        if (EE_OK != mTCP.write(it)) {
+        if (EE_OK != ((1 & mType) > 0 ? mTLS.write(it) : mTLS.getHandleTCP().write(it))) {
             RequestTCP::delRequest(it);
         }
     } else {
@@ -141,16 +141,16 @@ void TcpProxy::onRead2(net::RequestTCP* it) {
 
 
 void TcpProxy::onConnect(net::RequestTCP* it) {
-    if (0 == it->mError) {
+    if (EE_OK == it->mError) {
         it->mCall = TcpProxy::funcOnRead2;
-        if (0 == mTcpBackend.read(it)) {
+        if (0 == ((2 & mType) > 0 ? mTLS2.read(it) : mTLS2.getHandleTCP().read(it))) {
             net::RequestTCP* read = RequestTCP::newRequest(gCacheSZ);
             read->mUser = this;
             read->mCall = TcpProxy::funcOnRead;
-            if (0 != mTCP.read(read)) {
+            if (0 != ((1 & mType) > 0 ? mTLS.read(read) : mTLS.getHandleTCP().read(read))) {
                 RequestTCP::delRequest(read);
-                mLoop.closeHandle(&mTCP);
-                mLoop.closeHandle(&mTcpBackend);
+                mLoop.closeHandle(&mTLS.getHandleTCP());
+                mLoop.closeHandle(&mTLS2.getHandleTCP());
             }
             return;
         }
@@ -158,62 +158,92 @@ void TcpProxy::onConnect(net::RequestTCP* it) {
 
     Logger::log(ELL_ERROR, "TcpProxy::onConnect>>ecode=%d", it->mError);
     RequestTCP::delRequest(it);
-    mLoop.closeHandle(&mTCP);
+    mLoop.closeHandle(&mTLS.getHandleTCP());
 }
 
 
-s32 TcpProxy::open() {
-    s32 ret = mLoop.openHandle(&mTCP);
-    if (EE_OK == ret) {
-        if (EE_OK == mLoop.openHandle(&mTcpBackend)) {
-            net::RequestTCP* it = RequestTCP::newRequest(gCacheSZ);
-            it->mUser = this;
-            it->mCall = funcOnConnect;
-            if (EE_OK != mTcpBackend.connect(it)) {
-                RequestTCP::delRequest(it);
-                mLoop.closeHandle(&mTCP);
-                mLoop.closeHandle(&mTcpBackend);
-            }
-        }
-    } else {
-        mTCP.getSock().close();
-    }
-
-    return ret;
-}
+//s32 TcpProxy::open() {
+//    s32 ret = mLoop.openHandle(&mTLS.getHandleTCP()); //have not start receive yet
+//    if (EE_OK == ret) {
+//        if (EE_OK == mLoop.openHandle(&mTLS2.getHandleTCP())) {
+//            net::RequestTCP* it = RequestTCP::newRequest(gCacheSZ);
+//            it->mUser = this;
+//            it->mCall = funcOnConnect;
+//            if (EE_OK != mTLS2.getHandleTCP().connect(it)) {
+//                RequestTCP::delRequest(it);
+//                mLoop.closeHandle(&mTLS.getHandleTCP());
+//                mLoop.closeHandle(&mTLS2.getHandleTCP());
+//            }
+//        }
+//    } else {
+//        mTLS.getHandleTCP().getSock().close();
+//    }
+//
+//    return ret;
+//}
 
 
 void TcpProxy::onLink(net::RequestTCP* it) {
     net::Acceptor* accp = (net::Acceptor*)(it->mUser);
     net::RequestAccept* req = (net::RequestAccept*)it;
+    mType = reinterpret_cast<EngineConfig::ProxyCfg*>(accp->getUser())->mType;
+    s64 tmout = accp->getHandleTCP().getTimeout();
+    s64 tgap = accp->getHandleTCP().getTimeGap();
+    /*mTLS.getHandleTCP().setSocket(req->mSocket);
+    mTLS.getHandleTCP().setLocal(req->mLocal);
+    mTLS.getHandleTCP().setRemote(req->mRemote);
+    mTLS.getHandleTCP().setTimeout(tmout);
+    mTLS.getHandleTCP().setTimeGap(tgap);*/
 
-    mTCP.setSocket(req->mSocket);
-    mTCP.setLocal(req->mLocal);
-    mTCP.setRemote(req->mRemote);
-    mTCP.setTimeout(accp->getHandleTCP().getTimeout());
-    mTCP.setTimeGap(accp->getHandleTCP().getTimeGap());
+    mTLS2.getHandleTCP().setTimeout(tmout);
+    mTLS2.getHandleTCP().setTimeGap(tgap);
+    mTLS2.getHandleTCP().setLocal(accp->getHandleTCP().getLocal());
+    mTLS2.getHandleTCP().setRemote(accp->getHandleTCP().getRemote());
 
-    mTcpBackend.setTimeout(accp->getHandleTCP().getTimeout());
-    mTcpBackend.setTimeGap(accp->getHandleTCP().getTimeGap());
-    mTcpBackend.setLocal(accp->getHandleTCP().getLocal());
-    mTcpBackend.setRemote(accp->getHandleTCP().getRemote());
-
-    if (0 == mTCP.getTimeGap()) {
-        mTCP.setTimeCaller(nullptr);
+    if (0 == mTLS.getHandleTCP().getTimeGap()) {
+        mTLS.getHandleTCP().setTimeCaller(nullptr);
     }
-    if (0 == mTcpBackend.getTimeGap()) {
-        mTcpBackend.setTimeCaller(nullptr);
+    if (0 == mTLS2.getHandleTCP().getTimeGap()) {
+        mTLS2.getHandleTCP().setTimeCaller(nullptr);
     }
 
-    s32 ret = open();
-    if (0 == ret) {
-        Logger::log(ELL_INFO, "TcpProxy::onLink>> [%s->%s->%s]",
-            mTCP.getRemote().getStr(), mTcpBackend.getLocal().getStr(), mTcpBackend.getRemote().getStr());
+    //open first, have not start receive
+    s32 ecode = EE_OK;
+    if ((1 & mType) > 0) {
+        mTLS.setClose(EHT_TCP_LINK, TcpProxy::funcOnClose, this);
+        mTLS.setTime(TcpProxy::funcOnTime, tmout, tgap, -1);
+        ecode = mTLS.open(*req, nullptr);
     } else {
-        Logger::log(ELL_ERROR, "TcpProxy::onLink>> [%s->%s->%s], ecode=%d",
-            mTCP.getRemote().getStr(), mTcpBackend.getLocal().getStr(), mTcpBackend.getRemote().getStr(), ret);
-        delete this;
+        ecode = mTLS.getHandleTCP().open(*req, nullptr);
     }
+    if (EE_OK != ecode) {
+        mTLS.getHandleTCP().getSock().close();
+        delete this;
+        return;
+    }
+
+    //backend start connect
+    net::RequestTCP* conn = RequestTCP::newRequest(gCacheSZ);
+    conn->mUser = this;
+    conn->mCall = funcOnConnect;
+    if ((2 & mType) > 0) {
+        mTLS2.setClose(EHT_TCP_CONNECT, TcpProxy::funcOnClose2, this);
+        mTLS2.setTime(TcpProxy::funcOnTime2, tmout, tgap, -1);
+        ecode = mTLS2.open("", conn);
+    } else {
+        ecode = mTLS2.getHandleTCP().open("", conn);
+    }
+
+    if (EE_OK != ecode) {
+        Logger::log(ELL_ERROR, "TcpProxy::onLink>> [%s->%s->%s], ecode=%d",
+            mTLS.getRemote().getStr(), mTLS2.getLocal().getStr(), mTLS2.getRemote().getStr(), ecode);
+        RequestTCP::delRequest(it);
+        mLoop.closeHandle(&mTLS.getHandleTCP());
+        return;
+    }
+
+    Logger::log(ELL_INFO, "TcpProxy::onLink>> [%s->%s->%s]",
+        mTLS.getRemote().getStr(), mTLS2.getLocal().getStr(), mTLS2.getRemote().getStr());
 }
 
 } //namespace net

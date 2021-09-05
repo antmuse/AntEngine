@@ -89,7 +89,7 @@ public:
     /**
     * @brief launch connect
     * @param addr remote ip
-    * @param it request
+    * @param it connect request
     * @return 0 if success, else failed.
     */
     s32 open(const String& addr, RequestTCP* it);
@@ -97,7 +97,7 @@ public:
     /**
     * @brief launch linked sock
     * @param accp accpected request
-    * @param it request
+    * @param it read request, don't start reading if null.
     * @return 0 if success, else failed and close the socket.
     */
     s32 open(const RequestAccept& accp, RequestTCP* it);

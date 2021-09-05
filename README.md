@@ -8,9 +8,9 @@ openssl, zlib, jsoncpp, http_parser, mysql
 
 ## 环境
 ----
-+ 1. debian10, 64bit, kernal-v4.19.0, gcc-v8.3
-+ 2. windows10, 64bit, VS2019
-+ 3. c++11
++ 1 debian10, 64bit, kernal-v4.19.0, gcc-v8.3
++ 2 windows10, 64bit, VS2019
++ 3 c++11
 
 ## Usage
 ----

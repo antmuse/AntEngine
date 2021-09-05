@@ -27,7 +27,7 @@
 #define	APP_CONNECTOR_H
 
 #include "Loop.h"
-#include "Net/HandleTCP.h"
+#include "Net/HandleTLS.h"
 
 namespace app {
 namespace net {
@@ -109,11 +109,13 @@ private:
         nd.onConnect(it);
     }
 
-    s32 open();
 
+
+    //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
+    u8 mType;
     Loop& mLoop;
-    net::HandleTCP mTCP;
-    net::HandleTCP mTcpBackend;
+    net::HandleTLS mTLS;
+    net::HandleTLS mTLS2; //backend
 };
 
 

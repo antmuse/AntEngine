@@ -30,11 +30,11 @@
 
     "Proxy": [
         {
-            "Type": 0, //0=tcp, 1=tls tcp, 2=http, 3=https
+            "Type": 0, //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
             "MaxSpeed": 10240, //每个连接，字节每秒
             "Timeout": 30, //秒,0不超时
             "Lisen": "0.0.0.0:9900",
-            "Backend": "127.0.0.1:9901"
+            "Backend": "192.168.1.102:9901"
         }
     ]
 }

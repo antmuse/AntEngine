@@ -15,6 +15,7 @@ Linker::~Linker() {
 }
 
 s32 Linker::onTimeout(HandleTime& it) {
+    printf("Linker::onTimeout>>closed handle's flag = 0x%X\n", it.getFlag());
     return EE_ERROR;
 }
 

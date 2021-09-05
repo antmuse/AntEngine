@@ -72,7 +72,7 @@ public:
         }
     };
     struct ProxyCfg {
-        u8 mType;    //0=tcp, 1=tls tcp, 2=http, 3=https
+        u8 mType;    //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
         u32 mTimeout; //in milliseconds
         u32 mSpeed;  //in bytes per seconds
         net::NetAddress mLocal;

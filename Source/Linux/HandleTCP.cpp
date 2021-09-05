@@ -38,7 +38,6 @@ namespace app {
 namespace net {
 
 s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
-    DASSERT(it);
     mType = EHT_TCP_LINK;
     mLoop = &Engine::getInstance().getLoop();
 
@@ -53,7 +52,7 @@ s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
         mSock.close();
         return EE_ERROR;
     }
-    s32 ret = read(it);
+    s32 ret = it ? read(it) : EE_OK;
     if (EE_OK != ret) {
         mSock.close();
     }
@@ -64,7 +63,9 @@ s32 HandleTCP::open(const String& addr, RequestTCP* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;
     mLoop = &Engine::getInstance().getLoop();
-    mRemote.setIPort(addr.c_str());
+    if (addr.getLen() > 0) {
+        mRemote.setIPort(addr.c_str());
+    }
     if (EE_OK != mLoop->openHandle(this)) {
         return EE_ERROR;
     }

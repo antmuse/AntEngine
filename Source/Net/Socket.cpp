@@ -751,7 +751,6 @@ bool SocketPair::open(const s8* unpath) {
 
 #if defined(DOS_WINDOWS)
 bool SocketPair::open(s32 domain, s32 type, s32 protocol, const s8* unpath) {
-    SOCKET fd[2];
     SOCKET lisock = socket(domain, type, 0);
     if (INVALID_SOCKET == lisock) {
         return false;

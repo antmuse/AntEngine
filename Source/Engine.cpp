@@ -142,25 +142,16 @@ bool Engine::init(const s8* fname) {
 
 
     for (usz i = 0; i < mConfig.mProxy.size(); ++i) {
-        switch (mConfig.mProxy[i].mType) {
-        case 0: //tcp
-        {
-            net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxy::funcOnLink, nullptr);
-            nd->setTimeout(mConfig.mProxy[i].mTimeout);
-            nd->setBackend(mConfig.mProxy[i].mRemote);
-            if (0 == nd->open(mConfig.mProxy[i].mLocal)) {
-                Logger::log(ELL_INFO, "Engine::init>>start TcpProxy=[%s->%s]",
-                    mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
-            } else {
-                Logger::log(ELL_ERROR, "Engine::init>>fail TcpProxy=[%s->%s]",
-                    mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
-                delete nd;
-            }
-            break;
-        }
-        default:
-            Logger::log(ELL_ERROR, "Engine::init>>invalid Proxy=%lld, type=%d", i, mConfig.mProxy[i].mType);
-            break;
+        net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxy::funcOnLink, &mConfig.mProxy[i]);
+        nd->setTimeout(mConfig.mProxy[i].mTimeout);
+        nd->setBackend(mConfig.mProxy[i].mRemote);
+        if (0 == nd->open(mConfig.mProxy[i].mLocal)) {
+            Logger::log(ELL_INFO, "Engine::init>>start TcpProxy=[%s->%s]",
+                mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
+        } else {
+            Logger::log(ELL_ERROR, "Engine::init>>fail TcpProxy=[%s->%s]",
+                mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
+            delete nd;
         }
     }
 
