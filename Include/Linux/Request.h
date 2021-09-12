@@ -113,8 +113,9 @@ public:
         mRemote.setAddrSize(addrSize);
         mUser = iUser;
         mCall = func;
-        mUsed = (u32)(sizeof(RequestAccept) - sizeof(net::RequestTCP));
-        mAllocated = mUsed;
+        mData = (s8*)(this + 1);
+        mUsed = 0;
+        mAllocated = 0;
     }
 
     ~RequestAccept() {
