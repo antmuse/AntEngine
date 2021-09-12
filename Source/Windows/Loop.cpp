@@ -463,7 +463,7 @@ s32 Loop::openHandle(Handle* it) {
             ret = System::getAppError();
             Logger::log(ELL_ERROR, "Loop::openHandle>>tcp.acc, bind, addr=%s, ecode=%d", nd->mLocal.getStr(), ret);
             sock.close();
-        } else if (0 != sock.listen(0x7FFFFFFF)) {
+        } else if (0 != sock.listen(1024)) {
             ret = System::getAppError();
             Logger::log(ELL_ERROR, "Loop::openHandle>>tcp.acc, listen, addr=%s, ecode=%d", nd->mLocal.getStr(), ret);
             sock.close();

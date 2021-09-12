@@ -281,9 +281,10 @@ public:
 
     /**
     *@brief Listen peer.
+    *@param backlog range[1-65535] on windows, else min(net.core.somaxconn,backlog) on linux
     *@return 0 if successed, else failed.
     */
-    s32 listen(u32 max);
+    s32 listen(s32 backlog);
 
     /**
     *@brief Accpet a new client.

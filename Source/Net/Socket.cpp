@@ -381,8 +381,16 @@ s32 Socket::connect(const NetAddress& it) {
 }
 
 
-s32 Socket::listen(u32 max) {
-    return ::listen(mSocket, max);
+s32 Socket::listen(s32 backlog) {
+    backlog = AppClamp(backlog, 1, SOMAXCONN);
+#if defined(DOS_WINDOWS)
+    //SOMAXCONN_HINT for win only, range[200-65535]
+    //https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen
+    return ::listen(mSocket, SOMAXCONN_HINT(backlog));
+#else
+    //SOMAXCONN, pls set /proc/sys/net/core/somaxconn
+    return ::listen(mSocket, backlog);
+#endif
 }
 
 
