@@ -15,16 +15,16 @@
 
     "Website": [
         {
-            "Lisen": "0.0.0.0:80",
+            "Lisen": "0.0.0.0:9000",
             "Type": 0, //0=http,1=https
             "Timeout": 30, //秒,0不超时
-            "Path": "D:/Code/AntEngine/Bin/Web/"
+            "Path": "/home/ant/code/AntEngine/Bin/Web/"
         },
         {
-            "Lisen": "0.0.0.0:443",
+            "Lisen": "0.0.0.0:9001",
             "Type": 1,
             "Timeout": 30,
-            "Path": "D:/Code/AntEngine/Bin/Web/"
+            "Path": "/home/ant/code/AntEngine/Bin/Web/"
         }
     ],
 
@@ -33,8 +33,8 @@
             "Type": 0, //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
             "MaxSpeed": 10240, //每个连接，字节每秒
             "Timeout": 30, //秒,0不超时
-            "Lisen": "0.0.0.0:9900",
-            "Backend": "192.168.1.102:9901"
+            "Lisen": "0.0.0.0:9003",
+            "Backend": "127.0.0.1:80"
         }
     ]
 }
