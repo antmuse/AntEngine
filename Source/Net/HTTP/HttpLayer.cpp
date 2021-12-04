@@ -210,7 +210,7 @@ bool HttpLayer::onHttpFinish() {
 
         s8 gmtime[32];
         Timer::getTimeStr(gmtime, sizeof(gmtime), "%a, %d %b %Y %H:%M:%S GMT");
-        mResp.writeHead("Date", "gmtime", 0);
+        mResp.writeHead("Date", gmtime, 0);
 
         mResp.writeHead("Access-Control-Allow-Origin", "*", 0);
         mResp.writeHead("Access-Control-Allow-Credentials", "true", 0);
