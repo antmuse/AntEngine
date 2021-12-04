@@ -112,10 +112,8 @@ static void System_getStatus() {
 
         process = "unknown process";
 
-        s32 max = Engine::getInstance().getChildCount();
-        Process* procs = Engine::getInstance().getChilds();
-        s32 i;
-        for (i = 0; i < max; i++) {
+        TVector<Process>& procs = Engine::getInstance().getChilds();
+        for (usz i = 0; i < procs.size(); i++) {
             if (procs[i].mID == pid) {
                 procs[i].mStatus = status;
                 procs[i].mAlive = false;

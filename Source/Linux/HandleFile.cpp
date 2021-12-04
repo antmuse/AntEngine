@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <aio.h>
+#include <sys/syscall.h>
 #include <sys/eventfd.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
@@ -39,9 +39,40 @@
 #include "System.h"
 #include "Engine.h"
 
-//TODO>>
-
 namespace app {
+
+static int io_setup(u32 nr_reqs, u32* ctx) {
+    return syscall(SYS_io_setup, nr_reqs, ctx);
+}
+
+static int io_destroy(u32 ctx) {
+    return syscall(SYS_io_destroy, ctx);
+}
+
+static int io_getevents(u32 ctx, long min_nr, long nr,
+    struct io_event* events, struct timespec* tmo) {
+    return syscall(SYS_io_getevents, ctx, min_nr, nr, events, tmo);
+}
+
+class HandleAIO {
+public:
+    HandleAIO() :mEventFD(-1) {
+    }
+    void init() {
+        mEventFD = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+        // SYS_gettid
+                // if (posix_memalign(&buf, ALIGN_SIZE, RD_WR_SIZE))        {
+                //     perror("posix_memalign");
+                //     return 5;
+                // }
+    }
+
+
+private:
+    u32 mContext;
+    s32 mEventFD;
+};
+
 
 HandleFile::HandleFile()
     :mFile(0)

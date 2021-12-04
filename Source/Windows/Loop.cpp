@@ -47,47 +47,53 @@ Loop::~Loop() {
     DASSERT(0 == mGrabCount && 0 == mFlyRequest);
 }
 
-void Loop::onCommands() {
-    net::Socket& sock = mPoller.getSocketPair().getSocketB();
-    for (s32 rsz = 1; rsz > 0;) {
-        rsz = sock.receive(mPackCMD.getWritePointer(), (s32)mPackCMD.getWriteSize());
-        if (rsz > 0) {
-            mPackCMD.resize(mPackCMD.size() + rsz);
-            u32 pksz = 0;
-            for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer();
-                mPackCMD.size() >= sizeof(MsgHeader) && pksz < mPackCMD.size();
-                cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
-                switch (cmd->mType) {
-                case ECT_EXIT:
-                    Logger::logInfo("Loop::onCommands>> exit");
-                    stop();
-                    break;
-                case ECT_ACTIVE:
-                    Logger::logInfo("Loop::onCommands>> active");
-                    break;
-                default:break;
-                }//switch
-                pksz += cmd->mSize;
-            }
-            mPackCMD.clear(pksz);
-        } else if (0 == rsz) {
-            const s32 ecode = System::getAppError();
-            Logger::log(ELL_ERROR, "Loop::onCommands>> read=0, ecode=%d", ecode);
+s32 Loop::onTimeout(HandleTime& it) {
+    DASSERT(mCMD.getGrabCount() > 0);
+    //do something?
+    return EE_OK;
+}
+
+void Loop::onClose(Handle* it) {
+    DASSERT(&mCMD == it && "Loop::onClose closed cmd handle?");
+    //delete this;
+}
+
+void Loop::onRead(net::RequestTCP* it) {
+    if (it->mError) {
+        Logger::logCritical("Loop::onRead>>CMD read err=%d", it->mError);
+        stop();
+        return;
+    }
+
+    mPackCMD.resize(mPackCMD.size() + it->mUsed);
+    u32 pksz = 0;
+    for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer();
+        mPackCMD.size() >= sizeof(MsgHeader) && pksz < mPackCMD.size();
+        cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
+        switch (cmd->mType) {
+        case ECT_EXIT:
+            Logger::logInfo("Loop::onCommands>> exit");
             stop();
-        } else {
-            s32 ecode = System::getAppError();
-            if (EE_RETRY != ecode) {
-                stop();
-                Logger::log(ELL_ERROR, "Loop::onCommands>> read<0, ecode=%d", ecode);
-            } else {
-                if (!sock.receive(&mReadCMD)) {
-                    ecode = System::getAppError();
-                    Logger::log(ELL_ERROR, "Loop::onCommands>>post cmd recv, ecode=%d", ecode);
-                    stop();
-                }
-            }
-        }
-    }//for
+            break;
+        case ECT_ACTIVE:
+            Logger::logInfo("Loop::onCommands>> active");
+            break;
+        default:break;
+        }//switch
+        pksz += cmd->mSize;
+    }
+
+    if (0 != mStop) {
+        return;
+    }
+    mPackCMD.clear(pksz);
+    mReadCMD.mData = mPackCMD.getWritePointer();
+    mReadCMD.mAllocated = (u32)mPackCMD.getWriteSize();
+    mReadCMD.mUsed = 0;
+    if (EE_OK != mCMD.read(&mReadCMD)) {
+        Logger::logCritical("Loop::onRead>>CMD read err=%d", mReadCMD.mError);
+        stop();
+    }
 }
 
 bool Loop::run() {
@@ -102,9 +108,8 @@ bool Loop::run() {
                 req = DGET_HOLDER(evts[i].mPointer, Request, mOverlapped);
                 if (req->mHandle) {
                     addPending(req);
-                } else {//cmd
-                    DASSERT((&mReadCMD) == req);
-                    onCommands();
+                } else {
+                    Logger::log(ELL_ERROR, "Loop::run>>Handle null");
                 }
             } else {
                 Logger::log(ELL_ERROR, "Loop::run>>Poll null");
@@ -254,23 +259,31 @@ u32 Loop::getWaitTime() {
 }
 
 
-bool Loop::start() {
-    String unpath = Engine::getInstance().getConfig().mLogPath;
-    unpath += System::getPID();
-    unpath += ".unpath";
-    mPoller.open(unpath.c_str());
-    net::Socket& sock = mPoller.getSocketPair().getSocketB();
-    if (0 != sock.setBlock(false)) {
+bool Loop::start(net::Socket& sock) {
+    mCMD.mSock = sock;
+    sock = DINVALID_SOCKET;
+    mCMD.setClose(EHT_TCP_LINK, LoopOnClose, this);
+    mCMD.setTime(LoopOnTime, 15 * 1000, 20 * 1000, -1);
+
+    if(!mPoller.open()) {
         return false;
     }
-    if (!mPoller.add(sock, nullptr)) {
+    if (0 != mCMD.mSock.setBlock(false)) {
+        return false;
+    }
+    if (EE_OK != openHandle(&mCMD)) {
         return false;
     }
     mReadCMD.mType = ERT_READ;
     mReadCMD.mError = 0;
-    mReadCMD.mHandle = nullptr;
-    if (!sock.receive(&mReadCMD)) {
-        mReadCMD.mError = System::getAppError();
+    mReadCMD.mHandle = &mCMD;
+    mReadCMD.mUser = this;
+    mReadCMD.mCall = LoopOnRead;
+    mReadCMD.mData = mPackCMD.getWritePointer();
+    mReadCMD.mAllocated = (u32)mPackCMD.getWriteSize();
+    mReadCMD.mUsed = 0;
+
+    if (EE_OK != mCMD.read(&mReadCMD)) {
         Logger::log(ELL_ERROR, "Loop::start>>cmd recv, ecode=%d", mReadCMD.mError);
         return false;
     }
@@ -283,6 +296,7 @@ void Loop::stop() {
         return;
     }
     mStop = 1;
+    Logger::flush();
 
     const Node2* head = &mHandleActive;
     Node2* next = mHandleActive.mNext;
@@ -290,8 +304,7 @@ void Loop::stop() {
         next = next->mNext;
         closeHandle((Handle*)curr);
     }
-    net::Socket& sock = mPoller.getSocketPair().getSocketB();
-    sock.close();
+    mCMD.mSock.close();
 }
 
 

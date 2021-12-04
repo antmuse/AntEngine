@@ -54,16 +54,12 @@ EventPoller::~EventPoller() {
 }
 
 
-bool EventPoller::open(const s8* unpath) {
+bool EventPoller::open() {
     mHandle = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
-    if (INVALID_HANDLE_VALUE == mHandle) {
-        return false;
-    }
-    return mSocketPair.open(unpath);
+    return INVALID_HANDLE_VALUE != mHandle;
 }
 
 void EventPoller::close() {
-    mSocketPair.close();
     if(INVALID_HANDLE_VALUE != mHandle) {
         ::CloseHandle(mHandle);
         mHandle = INVALID_HANDLE_VALUE;
@@ -175,14 +171,10 @@ EventPoller::~EventPoller() {
 
 bool EventPoller::open() {
     mEpollFD = ::epoll_create(0x7ffffff);
-    if (0 == mEpollFD) {
-        return false;
-    }
-    return mSocketPair.open();
+    return 0 != mEpollFD;
 }
 
 void EventPoller::close() {
-    mSocketPair.close();
     if (mEpollFD >= 0) {
         ::close(mEpollFD);
         mEpollFD = -1;
@@ -232,7 +224,8 @@ bool EventPoller::modify(s32 fd, SEvent& iEvent) {
 
 
 bool EventPoller::postEvent(SEvent& iEvent) {
-    return sizeof(iEvent.mEvent) == mSocketPair.getSocketB().sendAll(&iEvent.mEvent, sizeof(iEvent.mEvent));
+    return false;
+    //return sizeof(iEvent.mEvent) == mSocketPair.getSocketB().sendAll(&iEvent.mEvent, sizeof(iEvent.mEvent));
 }
 
 

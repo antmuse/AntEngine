@@ -63,6 +63,7 @@ public:
     }
 
 private:
+    void sendResp();
 
     bool onHttpFinish();
 

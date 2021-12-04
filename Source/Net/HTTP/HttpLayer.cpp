@@ -26,6 +26,7 @@
 #include "Net/HTTP/HttpLayer.h"
 #include "Net/Acceptor.h"
 #include "Loop.h"
+#include "Timer.h"
 
 namespace app {
 namespace net {
@@ -198,6 +199,32 @@ bool HttpLayer::onHttpFinish() {
     mParser.data = this;
     mReaded = 0;
     mResp.clear();
+
+    if (HTTP_OPTIONS == mRequest.getMethod()) { //跨域
+        mResp.writeStatus(HTTP_STATUS_NO_CONTENT, "No Content");
+        mResp.writeHead("Server", "AntEngine", 0);
+
+        mKeepAlive = mRequest.isKeepAlive();
+        mResp.setKeepAlive(mKeepAlive);
+        //mResp.writeHead("Connection", "keep-alive", 0);
+
+        s8 gmtime[32];
+        Timer::getTimeStr(gmtime, sizeof(gmtime), "%a, %d %b %Y %H:%M:%S GMT");
+        mResp.writeHead("Date", "gmtime", 0);
+
+        mResp.writeHead("Access-Control-Allow-Origin", "*", 0);
+        mResp.writeHead("Access-Control-Allow-Credentials", "true", 0);
+        mResp.writeHead("Access-Control-Allow-Methods", "GET, POST, OPTIONS", 0);
+        mResp.writeHead("Access-Control-Allow-Headers", "Content-Type,Content-Length,Content-Range", 0);
+        mResp.writeHead("Access-Control-Expose-Headers", "Content-Type,Content-Length,Content-Range", 0);
+        mResp.writeHead("Access-Control-Max-Age", "1728000", 0);
+        mResp.writeHead("Content-Type", "text/plain; charset=utf-8", 0);
+        mResp.writeHead("Content-Length", "0", 2);
+        sendResp();
+        return true;
+    }
+
+
     mResp.writeStatus(HTTP_STATUS_OK);
     StringView svv = mRequest.getURL().getPath();
     svv.mLen = HttpURL::decodeURL(svv.mData, svv.mLen);
@@ -273,9 +300,12 @@ bool HttpLayer::onHttpFinish() {
         writeRespError(HTTP_STATUS_NOT_FOUND);
     }
 
+    sendResp();
+    //show(mRequest, mResp);
+    return true;
+}
 
-
-
+void HttpLayer::sendResp() {
     net::RequestTCP* nd = net::RequestTCP::newRequest(0);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnWrite;
@@ -286,9 +316,6 @@ bool HttpLayer::onHttpFinish() {
     if (0 != ret) {
         net::RequestTCP::delRequest(nd);
     }
-
-    //show(mRequest, mResp);
-    return true;
 }
 
 

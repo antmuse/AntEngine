@@ -53,10 +53,7 @@ public:
 
     ~EventPoller();
 
-    /**
-    * @param unpath path for sockaddr_un, windows only.
-    */
-    bool open(const s8* unpath = "");
+    bool open();
 
     void close();
 
@@ -99,13 +96,8 @@ public:
 
     bool postEvent(SEvent& iEvent);
 
-    net::SocketPair& getSocketPair() {
-        return mSocketPair;
-    }
-
 protected:
     void* mHandle;
-    net::SocketPair mSocketPair; ///<send command to epoll
 };
 
 
@@ -169,13 +161,9 @@ public:
 
     bool postEvent(SEvent& iEvent);
 
-    net::SocketPair& getSocketPair() {
-        return mSocketPair;
-    }
 
 protected:
     s32 mEpollFD;
-    net::SocketPair mSocketPair; ///<send command to epoll
 };
 
 } //namespace app

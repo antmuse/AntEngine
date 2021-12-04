@@ -18,13 +18,13 @@
             "Lisen": "0.0.0.0:9000",
             "Type": 0, //0=http,1=https
             "Timeout": 30, //秒,0不超时
-            "Path": "/home/ant/code/AntEngine/Bin/Web/"
+            "Path": "/home/antmuse/all/code/AntEngine/Bin/Web/"
         },
         {
             "Lisen": "0.0.0.0:9001",
             "Type": 1,
             "Timeout": 30,
-            "Path": "/home/ant/code/AntEngine/Bin/Web/"
+            "Path": "/home/antmuse/all/code/AntEngine/Bin/Web/"
         }
     ],
 

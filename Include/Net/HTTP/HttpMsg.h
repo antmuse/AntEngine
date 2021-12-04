@@ -86,28 +86,24 @@ public:
     }
 
     StringView getBody() const {
-        DASSERT(mCache.size() >= mHeadSize);
-        StringView ret(mCache.getPointer() + mHeadSize, mCache.size() - mHeadSize);
+        DASSERT(mCache.size() > 0);
+        StringView ret(mCache.getPointer(), mCache.size());
         return ret;
     }
 
     void onHeadName(const void* buf, usz sz) {
-        mTemp.set((s8*)mCache.size(), sz);
-        mCache.write(buf, sz);
-        mCache.writeU8(':');
+        mTemp.setLen(0);
+        mTemp.append((s8*)buf, sz);
     }
 
     //Range: bytes=200-1000, 2000-6576, 19000-
     void onHeadValue(const void* buf, usz sz) {
-        StringView vvv((s8*)mCache.size(), sz);
-        mCache.write(buf, sz);
-        mCache.writeU16(App2Char2S16("\r\n"));
+        String vvv((s8*)buf, sz);
         mHead.add(mTemp, vvv);
     }
 
     void clear() {
         mFlag = 0;
-        mHeadSize = 0;
         mHead.clear();
         mCache.shrink(512);
     }
@@ -145,26 +141,21 @@ public:
     }
 
     void clearBody() {
-        mCache.resize(mHeadSize);
-    }
-
-    usz getHeadSize()const {
-        return mHeadSize;
+        mCache.resize(0);
     }
 
     usz getBodySize()const {
-        return mCache.size() - mHeadSize;
+        return mCache.size();
     }
 
     void onChunkHead(usz chunksz) {
-        mCache.reallocate(mHeadSize + chunksz);
+        mCache.reallocate(mCache.size() + chunksz);
     }
 
 
 protected:
     s32 mFlag;
-    u32 mHeadSize;
-    StringView mTemp;
+    String mTemp;
     Packet mCache;
     HttpHead mHead;
 };

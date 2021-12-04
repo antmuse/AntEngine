@@ -42,7 +42,7 @@ bool HttpHead::isChunked()const {
     return 7 == par.mLen && 0 == AppStrNocaseCMP("chunked", par.mData, sizeof("chunked") - 1);
 }
 
-void HttpHead::add(const StringView& key, const StringView& val) {
+void HttpHead::add(const String& key, const String& val) {
     HeadLine nd = {key, val};
     mData.pushBack(nd);
 }
@@ -51,7 +51,7 @@ void HttpHead::add(const StringView& key, const StringView& val) {
 void HttpHead::remove(const StringView& key, s32 cnt) {
     usz mx = mData.size();
     for (usz i = 0; i < mx; ++i) {
-        if (key.mLen == mData[i].mKey.mLen && 0 == AppStrNocaseCMP(mData[i].mKey.mData, key.mData, key.mLen)) {
+        if (key.mLen == mData[i].mKey.getLen() && 0 == AppStrNocaseCMP(mData[i].mKey.c_str(), key.mData, key.mLen)) {
             mData[i] = mData[mx - 1];
             mData.resize(mx - 1);
             if (--cnt < 1) {
@@ -66,8 +66,8 @@ StringView HttpHead::get(const StringView& key, usz pos)const {
     StringView ret;
     size_t mx = mData.size();
     for (; pos < mx; ++pos) {
-        if (key.mLen == mData[pos].mKey.mLen && 0 == AppStrNocaseCMP(mData[pos].mKey.mData, key.mData, key.mLen)) {
-            ret = mData[pos].mVal;
+        if (key.mLen == mData[pos].mKey.getLen() && 0 == AppStrNocaseCMP(mData[pos].mKey.c_str(), key.mData, key.mLen)) {
+            ret.set(mData[pos].mVal.c_str(), mData[pos].mVal.getLen());
             break;
         }
     }

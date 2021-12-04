@@ -11,11 +11,9 @@
             "program": "${workspaceFolder}/Bin/AntTest.bin",
             "args": [
                 "2"
-                //"-c",
-                //"${workspaceFolder}/Config/config.json"
             ],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}/Bin",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

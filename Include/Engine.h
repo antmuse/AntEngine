@@ -59,11 +59,22 @@ struct CommandExit : public MsgHeader {
     }
 };
 
+//ping-pong
+struct CommandActive : public MsgHeader {
+    void pack() {
+        finish(ECT_ACTIVE, ++gSharedSN, ECT_VERSION);
+    }
+    void packResp(u32 sn) {
+        finish(ECT_ACTIVE_RESP, sn, ECT_VERSION);
+    }
+};
+
 
 struct Process {
     s32 mID;
     s32 mStatus;
     bool mAlive;
+    net::Socket mSocket; //write socket of pair
 };
 
 class Engine {
@@ -74,7 +85,7 @@ public:
     }
 
     bool init(const s8* fname);
-
+    bool run(bool step = false);
     bool uninit();
 
     const String& getAppPath()const {
@@ -101,12 +112,12 @@ public:
 
     void postCommand(s32 val);
 
-    Process* getChilds() {
+    TVector<Process>& getChilds() {
         return mChild;
     }
 
-    s32 getChildCount()const {
-        return mChildCount;
+    usz getChildCount()const {
+        return mChild.size();
     }
 
     const EngineConfig& getConfig()const {
@@ -129,11 +140,14 @@ private:
     ThreadPool mThreadPool;
     s32 mPPID;
     s32 mPID;
-    bool mMain; //Ö÷½ø³Ì
+    bool mMain; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     EngineConfig mConfig;
     net::TlsContext mTlsENG;
-    Process mChild[1024];
-    s32 mChildCount;
+    TVector<Process> mChild;
+
+    void createProcess();
+    void runMainProcess();
+    void runChildProcess();
 };
 
 

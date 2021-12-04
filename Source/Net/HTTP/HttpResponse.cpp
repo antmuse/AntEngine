@@ -38,18 +38,11 @@ HttpResponse::~HttpResponse() {
 }
 
 
-void HttpResponse::writeStatus(s32 val) {
-    DASSERT(mCache.capacity() > 18);//18="HTTP/1.1 %d OK\r\n"
+void HttpResponse::writeStatus(s32 val, const s8* str) {
+    DASSERT(mCache.capacity() > 18 && str);//18="HTTP/1.1 %d OK\r\n"
     mStatusCode = val; // AppClamp(val, 0, 999);
-    usz tsz = snprintf(mCache.getPointer(), mCache.capacity(), "HTTP/1.1 %d OK\r\n", val);
+    usz tsz = snprintf(mCache.getPointer(), mCache.capacity(), "HTTP/1.1 %d %s\r\n", val, str);
     mCache.resize(tsz);
-}
-
-void HttpResponse::rewriteStatus(s32 val) {
-    DASSERT(mCache.capacity() > 18);//18="HTTP/1.1 %d OK\r\n"
-    mStatusCode = AppClamp(val, 0, 999);//TODO>>
-    usz tsz = snprintf(mCache.getPointer(), mCache.capacity(), "HTTP/1.1 %d OK\r", mStatusCode);
-    mCache[tsz] = '\n';
 }
 
 }//namespace net

@@ -744,7 +744,7 @@ SocketPair::SocketPair() {
 }
 
 SocketPair::~SocketPair() {
-    close();
+    //close();
 }
 
 bool SocketPair::close() {

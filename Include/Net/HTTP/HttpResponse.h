@@ -46,8 +46,7 @@ public:
     /**
     * @param val range[0-999]
     */
-    void writeStatus(s32 val);
-    void rewriteStatus(s32 val);
+    void writeStatus(s32 val, const s8* str = "OK");
 
 private:
     s32 mStatusCode; //-1 = default, have not launched.

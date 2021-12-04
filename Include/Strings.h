@@ -44,19 +44,19 @@ DFINLINE s32 App4Char2S32(const s8* it) {
 
 template <typename T>
 DFINLINE static T App2Lower(T x) {
-    return x >= 'A' && x <= 'Z' ? x + 0x20 : x;
+    return x >= 'A' && x <= 'Z' ? x | 32 : x;
 }
 
 template <typename T>
 DFINLINE static T App2Upper(T x) {
-    return x >= 'a' && x <= 'z' ? x + ('A' - 'a') : x;
+    return x >= 'a' && x <= 'z' ? x & (~32) : x;
 }
 
 template <typename T>
 static void AppStr2Upper(T* str, usz len) {
     for (; len > 0; --len) {
         if (*(str) >= 'a' && *(str) <= 'z') {
-            *(str) -= 32;
+            *(str) &= (~32);
         }
         ++str;
     }
@@ -66,7 +66,7 @@ template <typename T>
 static void AppStr2Lower(T* str, usz len) {
     for (; len > 0; --len) {
         if (*(str) >= 'A' && *(str) <= 'Z') {
-            *(str) += 32;
+            *(str) |= 32;
         }
         ++str;
     }
@@ -752,15 +752,21 @@ public:
     * @brief finds another TString in this TString
     * @param str: Another TString
     * @param start: Start position of the search
+    * @param len: len of str
     * @return Positions where the TString has been found, or -1 if not found. */
     template <class B>
-    ssz find(const B* const str, const usz start = 0) const {
+    ssz find(const B* const str, const usz start = 0, usz len = 0) const {
         if (str && *str) {
-            usz len = 0;
-            while (str[len]) {
-                ++len;
+            if (0 == len) {
+                while (str[len]) {
+                    ++len;
+                }
             }
-            return AppSundayFind(mBuffer, mLen, str, len);
+            if (mLen < start + len) {
+                return -1;
+            }
+            ssz ret = AppSundayFind(mBuffer + start, mLen - start, str, len);
+            return ret < 0 ? ret : ret + start;
 #if (0)
             //暴力查找，性能比AppSundayFind()慢一倍以上
             if (len > mLen) {
@@ -900,13 +906,13 @@ public:
     * @param toReplace The String to replace.
     * @param replaceWith The String replacing the old one. */
     TString<T, TAlloc>& replace(const TString<T, TAlloc>& toReplace, const TString<T, TAlloc>& replaceWith) {
-        if (toReplace.getLen() == 0) {
+        if (toReplace.mLen == 0) {
             return *this;
         }
-        const T* other = toReplace.c_str();
-        const T* replace = replaceWith.c_str();
-        const usz other_size = toReplace.getLen();
-        const usz replace_size = replaceWith.getLen();
+        const T* other = toReplace.mBuffer;
+        const T* replace = replaceWith.mBuffer;
+        const usz other_size = toReplace.mLen;
+        const usz replace_size = replaceWith.mLen;
 
         // Determine the delta.  The algorithm will change depending on the delta.
         ssz delta = replace_size - other_size;
@@ -914,7 +920,7 @@ public:
         //The String will not shrink or grow.
         if (delta == 0) {
             ssz pos = 0;
-            while ((pos = find(other, pos)) != -1) {
+            while ((pos = find(other, pos, toReplace.mLen)) != -1) {
                 for (usz i = 0; i < replace_size; ++i) {
                     mBuffer[pos + i] = replace[i];
                 }
@@ -959,9 +965,9 @@ public:
         // Count the number of times toReplace exists in the TString so we can allocate the new size.
         usz find_count = 0;
         ssz pos = 0;
-        while ((pos = find(other, pos)) != -1) {
+        while ((pos = find(other, pos, toReplace.mLen)) != -1) {
             ++find_count;
-            ++pos;
+            pos += toReplace.mLen;
         }
 
         // Re-allocate the TString now, if needed.
@@ -972,7 +978,7 @@ public:
 
         // Start replacing.
         pos = 0;
-        while ((pos = find(other, pos)) != -1) {
+        while ((pos = find(other, pos, toReplace.mLen)) != -1) {
             T* start = mBuffer + pos + other_size - 1;
             T* ptr = mBuffer + mLen - 1;
             T* end = mBuffer + delta + mLen - 1;

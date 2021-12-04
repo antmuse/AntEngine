@@ -32,8 +32,7 @@ static const s32 G_MAX_BODY = 1024 * 1024 * 10;
 
 HttpMsg::HttpMsg() :
     mFlag(0),
-    mCache(512),
-    mHeadSize(0) {
+    mCache(512) {
 }
 
 
@@ -60,10 +59,10 @@ StringView HttpMsg::getMethodStr(http_method it) {
 
 s32 HttpMsg::onHeadFinish(s32 flag, ssz bodySize) {
     mFlag = flag;
-    mHeadSize = (u32)mCache.size();
+    mCache.resize(0);
     if (bodySize > 0) {
         if (bodySize < G_MAX_BODY) {
-            mCache.reallocate(mCache.size() + bodySize);
+            mCache.reallocate(bodySize);
         } else {
             return 1;
         }
@@ -102,7 +101,6 @@ void HttpMsg::writeHead(const s8* name, const s8* value, s32 flag) {
         }
     }
     if (0x3 & flag) {
-        mHeadSize = (u32)mCache.size();
         mCache.writeU16(App2Char2S16("\r\n"));
     }
 }

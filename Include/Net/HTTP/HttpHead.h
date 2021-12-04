@@ -34,9 +34,17 @@ namespace net {
 
 class HttpHead {
 public:
-    struct HeadLine {
-        StringView mKey;
-        StringView mVal;
+    class HeadLine {
+    public:
+        String mKey;
+        String mVal;
+        HeadLine(){ }
+        HeadLine(const String& kk, const String& vv) :
+            mKey(kk), mVal(vv) {
+        }
+        HeadLine(const HeadLine& it) :
+            mKey(it.mKey), mVal(it.mVal) {
+        }
     };
 
     HttpHead();
@@ -46,7 +54,7 @@ public:
     //Transfer-Encoding : chunked
     bool isChunked()const;
 
-    void add(const StringView& key, const StringView& val);
+    void add(const String& key, const String& val);
 
     void remove(const StringView& key, s32 cnt = 1);
 

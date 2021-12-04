@@ -29,6 +29,7 @@
 #include "Strings.h"
 #include "BinaryHeap.h"
 #include "Handle.h"
+#include "Net/HandleTCP.h"
 #include "Packet.h"
 #include "Net/EventPoller.h"
 
@@ -53,7 +54,7 @@ public:
         return mStop > 0;
     }
 
-    bool start();
+    bool start(net::Socket& sock);
 
     void stop();
 
@@ -98,6 +99,8 @@ public:
         mTime = it;
     }
 
+    /**
+    * @return EE_OK if success, else ecode. */
     s32 openHandle(Handle* it);
 
     s32 closeHandle(Handle* it);
@@ -146,26 +149,49 @@ protected:
         }
     }
 
-    void onCommands();
-
 private:
     s64 mTime;
     mutable s32 mFlyRequest;
     mutable s32 mGrabCount; //=HandleCount
     s32 mStop;
-    BinaryHeap mTimeHub;    //最小堆用于管理超时事件
+    BinaryHeap mTimeHub;    //鏈�灏忓爢鐢ㄤ簬绠＄悊瓒呮椂浜嬩欢
     Node2 mHandleActive;
     Node2 mHandleClose;
     Request* mRequest;
     EventPoller mPoller;
+
+    net::HandleTCP mCMD;
     Packet mPackCMD;
-#if defined(DOS_WINDOWS)
     net::RequestTCP mReadCMD;
-#endif
+
     Loop(const Loop&) = delete;
     Loop(const Loop&&) = delete;
     const Loop& operator=(const Loop&) = delete;
     const Loop& operator=(const Loop&&) = delete;
+
+
+    //cmd callbacks for Loop
+    static s32 LoopOnTime(HandleTime* it) {
+        Loop& nd = *(Loop*)it->getUser();
+        return nd.onTimeout(*it);
+    }
+
+    static void LoopOnRead(net::RequestTCP* it) {
+        Loop& nd = *(Loop*)it->mUser;
+        nd.onRead(it);
+    }
+
+    static void LoopOnClose(Handle* it) {
+        Loop& nd = *(Loop*)it->getUser();
+        nd.onClose(it);
+    }
+
+    //cmd read
+    void onRead(net::RequestTCP* it);
+    //cmd close
+    void onClose(Handle* it);
+    //cmd timeout
+    s32 onTimeout(HandleTime& it);
 };
 
 } //namespace app

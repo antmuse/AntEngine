@@ -40,7 +40,7 @@ const s8* G_CFGFILE = "Config/config.json";
 Engine::Engine() :
     mPPID(0),
     mPID(0),
-    mChildCount(0),
+    mChild(32),
     mMain(true) {
 }
 
@@ -54,24 +54,26 @@ void Engine::clear() {
 
 
 void Engine::postCommand(s32 val) {
-    net::Socket& sock = mLoop.getEventPoller().getSocketPair().getSocketA();
     MsgHeader cmd;
-    //Logger::log(ELL_INFO, "Engine::postCommand>>post cmd = %d", val);
     switch (val) {
     case ECT_EXIT:
     {
         cmd.finish(ECT_EXIT, ++cmd.gSharedSN, ECT_VERSION);
-        sock.sendAll(&cmd, sizeof(cmd));
         break;
     }
     case ECT_ACTIVE:
     {
         cmd.finish(ECT_ACTIVE, ++cmd.gSharedSN, ECT_VERSION);
-        sock.sendAll(&cmd, sizeof(cmd));
         break;
     }
     default:
-        break;
+        Logger::log(ELL_INFO, "Engine::postCommand>>invalid cmd = %d", val);
+        return;
+    }
+
+    for (usz i = 0; i < mChild.size(); ++i) {
+        Logger::log(ELL_INFO, "Engine::postCommand>>post cmd = %d, pid=%d", val, mChild[i].mID);
+        mChild[i].mSocket.sendAll(&cmd, sizeof(cmd)); //block send
     }
 }
 
@@ -119,10 +121,6 @@ bool Engine::init(const s8* fname) {
 
     mTlsENG.init();
 
-    bool ret = 0 == System::loadNetLib();
-
-
-
     if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
         if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true)) {
             Logger::log(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
@@ -136,10 +134,82 @@ bool Engine::init(const s8* fname) {
     }
 
     //snprintf((s8*)mMapfile.getMem(), mMapfile.getMemSize(), "map=%s, size=%llu/%llu", mConfig.mMemName.c_str(), mConfig.mMemSize, mConfig.mMemSize / 1024 / 1024);
+    createProcess();
+    return mChild.size() > 0;
+}
+
+
+bool Engine::uninit() {
+    mThreadPool.stop();
+    clear();
+    mTlsENG.uninit();
+    return 0 == System::unloadNetLib();
+}
+
+bool Engine::run(bool step) {
+    bool ret;
+    if (mConfig.mMaxProcess < 1) {
+        //std::chrono::milliseconds waitms(10);
+        ret = mLoop.run();
+        if (!step) {
+            while (ret) {
+                //std::this_thread::sleep_for(waitms);
+                ret = mLoop.run();
+            }
+        }
+        return ret;
+    }
+
+    runChildProcess();
+    return true;
+}
+
+void Engine::runMainProcess() {
+
+}
+
+void Engine::runChildProcess() {
+    //std::chrono::milliseconds waitms(10);
+    while (mLoop.run()) {
+        //std::this_thread::sleep_for(waitms);
+    }
+}
+
+void Engine::createProcess() {
+    bool ret = 0 == System::loadNetLib();
+
+    String unpath = Engine::getInstance().getConfig().mLogPath;
+    unpath += System::getPID();
+    unpath += ".unpath";
+
+    Process nd;
+    mChild.reallocate(mConfig.mMaxProcess);
+    net::SocketPair pair;
+    if (mConfig.mMaxProcess < 1) {
+        if (pair.open(unpath.c_str())) {
+            nd.mID = System::getPID();
+            nd.mStatus = 0;
+            nd.mSocket = pair.getSocketA();
+            mChild.pushBack(nd);
+        } else {
+            Logger::log(ELL_ERROR, "Engine::init>>start main Process fail");
+        }
+    } else {
+        for (s16 i = 0; i < mConfig.mMaxProcess; ++i) {
+            if (pair.open(unpath.c_str())) {
+                nd.mID = System::getPID();
+                nd.mStatus = 0;
+                nd.mSocket = pair.getSocketA();
+                mChild.pushBack(nd);
+            } else {
+                Logger::log(ELL_ERROR, "Engine::init>>start Process[%d] fail", (s32)i);
+                break;
+            }
+        }
+    }
 
     mThreadPool.start(mConfig.mMaxThread);
-    mLoop.start();
-
+    mLoop.start(pair.getSocketB());
 
     for (usz i = 0; i < mConfig.mProxy.size(); ++i) {
         net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxy::funcOnLink, &mConfig.mProxy[i]);
@@ -179,16 +249,7 @@ bool Engine::init(const s8* fname) {
             break;
         }
     }
-    return ret;
+    //return ret;
 }
-
-
-bool Engine::uninit() {
-    mThreadPool.stop();
-    clear();
-    mTlsENG.uninit();
-    return 0 == System::unloadNetLib();
-}
-
 
 } //namespace app

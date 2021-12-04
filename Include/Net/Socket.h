@@ -35,12 +35,8 @@ class RequestTCP;
 
 
 #if defined(DOS_WINDOWS)
-#if defined(DOS_64BIT)
-typedef u64 netsocket;
-#else
-typedef u32 netsocket;
-#endif
-#define DINVALID_SOCKET (netsocket)(~0)
+using netsocket = usz;
+#define DINVALID_SOCKET (~((usz)0))
 
 #elif defined(DOS_LINUX) || defined(DOS_ANDROID)
 

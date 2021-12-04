@@ -193,7 +193,8 @@ void AppTestStr(s32 argc, s8** argv) {
     str1 = "UPStr";
     str1.toLower();
     printf("str1=%s\n", str1.c_str());
-    //str1.split()
+    str1.toUpper();
+
 
     str1 = "d:\\path\\fname.dat";
     bool ext = str1.isFileExtension("Dat");
