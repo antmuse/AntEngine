@@ -5,8 +5,11 @@ CXX = g++
 CXX_FLAGS = -std=c++11 -m64 
 
 ifeq ($(DEBUG),true)
-	CXX_FLAGS += -g -O0
+	CXX_FLAGS += -ggdb -O0
 	BUILD_TYPE = debug
+else ifeq ($(DEBUG),false)
+	CXX_FLAGS += -ggdb -O3
+	BUILD_TYPE = releaseSymbol
 else
 	CXX_FLAGS += -O3
 	BUILD_TYPE = release
