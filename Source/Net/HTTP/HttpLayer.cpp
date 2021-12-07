@@ -174,23 +174,19 @@ void HttpLayer::onChunkFinish() {
 }
 
 void HttpLayer::writeContentType(const String& pat) {
-    if ('/' == pat.lastChar() || pat.isFileExtension("html")) {
-        mResp.writeHead("Content-Type", "text/html;charset=utf-8", 0);
-    } else if (pat.isFileExtension("ico")) {
-        mResp.writeHead("Content-Type", "image/x-icon;charset=utf-8", 0);
-    } else {
-        mResp.writeHead("Content-Type", "application/octet-stream;charset=utf-8", 0);
-        StringView svv("If-Range", sizeof("If-Range") - 1);
-        svv = mRequest.getHead().get(svv);
-        if (svv.mLen > 0) {
+    const StringView str = mResp.getMimeType(pat.c_str(), pat.getLen());
+    mResp.writeHead("Content-Type", str.mData, 0);
 
-        }
+    StringView svv("If-Range", sizeof("If-Range") - 1);
+    svv = mRequest.getHead().get(svv);
+    if (svv.mLen > 0) {
 
-        svv.set("Range", sizeof("Range") - 1);
-        svv = mRequest.getHead().get(svv);
-        if (svv.mLen > 0) {
+    }
 
-        }
+    svv.set("Range", sizeof("Range") - 1);
+    svv = mRequest.getHead().get(svv);
+    if (svv.mLen > 0) {
+
     }
 }
 
@@ -236,7 +232,6 @@ bool HttpLayer::onHttpFinish() {
     } else {
         pat += svv;
     }
-    writeContentType(pat);
     mResp.writeHead("Host", mTCP.getLocal().getStr(), 0);
     mKeepAlive = mRequest.isKeepAlive();
     mResp.setKeepAlive(mKeepAlive);
@@ -244,6 +239,7 @@ bool HttpLayer::onHttpFinish() {
     s32 tp = System::isExist(pat);
     if (0 == tp) {
         if (mReadFile.openFile(pat)) {
+            writeContentType(pat);
             if (mReadFile.getFileSize() > G_CHUNK_SIZE) {
                 mResp.writeHead("Accept-Ranges", "bytes", 0);
                 mResp.writeContentRange(mReadFile.getFileSize(), mReaded, G_CHUNK_SIZE - 1, 0);
@@ -276,6 +272,7 @@ bool HttpLayer::onHttpFinish() {
             writeRespError(HTTP_STATUS_NOT_FOUND);
         }
     } else if (1 == tp) {
+        mResp.writeHead("Content-Type", "text/html;charset=utf-8", 0);
         System::getPathNodes(pat, mConfig->mRootPath.getLen(), mFiles);
         pat = mConfig->mRootPath;
         pat += "/files.html";

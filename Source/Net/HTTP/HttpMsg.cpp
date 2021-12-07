@@ -171,6 +171,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
         {{"htm", 3}, {"text/html; charset=utf-8", 24}},
         {{"html", 4}, {"text/html; charset=utf-8", 24}},
         {{"ice", 3}, {"x-conference/x-cooltalk", 23}},
+        {{"ico", 3}, {"image/x-icon", 12}},
         {{"ief", 3}, {"image/ief", 9}},
         {{"iges", 4}, {"model/iges", 10}},
         {{"igs", 3}, {"model/iges", 10}},
@@ -182,6 +183,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
         {{"jpe", 3}, {"image/jpeg", 10}},
         {{"jpg", 3}, {"image/jpeg", 10}},
         {{"js", 2}, {"application/x-javascript", 24}},
+        {{"json", 4}, {"application/json; charset=utf-8", 31}},
         {{"kar", 3}, {"audio/midi", 10}},
         {{"latex", 5}, {"application/x-latex", 19}},
         {{"lha", 3}, {"application/octet-stream", 24}},
@@ -315,7 +317,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
     s32 pos = sizeof(suffix) - 1;
     suffix[pos--] = 0;
     ssz i;
-    for (i = iLen - 1; pos >= 0 && i > 0 && filename[i] != '.'; --i) {
+    for (i = iLen - 1; pos >= 0 && i >= 0 && filename[i] != '.'; --i) {
         suffix[pos--] = App2Lower(filename[i]);
     }
     if (pos >= 0) {
