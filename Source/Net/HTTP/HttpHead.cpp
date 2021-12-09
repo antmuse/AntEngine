@@ -42,11 +42,15 @@ bool HttpHead::isChunked()const {
     return 7 == par.mLen && 0 == AppStrNocaseCMP("chunked", par.mData, sizeof("chunked") - 1);
 }
 
-void HttpHead::add(const String& key, const String& val) {
+void HttpHead::add(const StringView& key, const StringView& val) {
     HeadLine nd = {key, val};
-    mData.pushBack(nd);
+    mData.emplaceBack(nd);
 }
 
+void HttpHead::add(const String& key, const String& val) {
+    HeadLine nd = {key, val};
+    mData.emplaceBack(nd);
+}
 
 void HttpHead::remove(const StringView& key, s32 cnt) {
     usz mx = mData.size();

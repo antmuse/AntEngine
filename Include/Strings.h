@@ -266,6 +266,9 @@ public:
 
     ~TString() {
         mAllocator.deallocate(mBuffer);
+        mBuffer = nullptr;
+        mAllocated = 0;
+        mLen = 0;
     }
 
 

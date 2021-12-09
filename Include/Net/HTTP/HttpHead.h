@@ -38,12 +38,34 @@ public:
     public:
         String mKey;
         String mVal;
-        HeadLine(){ }
+        HeadLine() { }
+        ~HeadLine(){ }
+        HeadLine(const StringView& kk, const StringView& vv) :
+            mKey(kk), mVal(vv) {
+        }
         HeadLine(const String& kk, const String& vv) :
             mKey(kk), mVal(vv) {
         }
         HeadLine(const HeadLine& it) :
             mKey(it.mKey), mVal(it.mVal) {
+        }
+        HeadLine(HeadLine&& it)noexcept
+            : mKey(std::move(it.mKey))
+            , mVal(std::move(it.mVal)) {
+        }
+        HeadLine& operator=(HeadLine&& it) noexcept{
+            if (&it != this) {
+                mKey = std::move(it.mKey);
+                mVal = std::move(it.mVal);
+            }
+            return *this;
+        }
+        HeadLine& operator=(const HeadLine& it) {
+            if (&it != this) {
+                mKey = it.mKey;
+                mVal = it.mVal;
+            }
+            return *this;
         }
     };
 
@@ -54,6 +76,7 @@ public:
     //Transfer-Encoding : chunked
     bool isChunked()const;
 
+    void add(const StringView& key, const StringView& val);
     void add(const String& key, const String& val);
 
     void remove(const StringView& key, s32 cnt = 1);

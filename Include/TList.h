@@ -38,11 +38,16 @@ private:
 
     //! List element node with pointer to previous and next element in the TList.
     struct SKListNode {
-        SKListNode(const T& e) : Next(0), Prev(0), Element(e) { }
-
-        SKListNode* Next;
-        SKListNode* Prev;
-        T Element;
+        SKListNode(const T& e) : mNext(0), mPrev(0), mElement(e) {
+        }
+        SKListNode(T&& e)
+            : mNext(0)
+            , mPrev(0)
+            , mElement(std::move(e)) {
+        }
+        SKListNode* mNext;
+        SKListNode* mPrev;
+        T mElement;
     };
 
 public:
@@ -51,18 +56,18 @@ public:
     //! List iterator.
     class Iterator {
     public:
-        Iterator() : Current(0) { }
+        Iterator() : mCurrent(0) { }
 
-        Iterator& operator ++() { Current = Current->Next; return *this; }
-        Iterator& operator --() { Current = Current->Prev; return *this; }
-        Iterator  operator ++(s32) { Iterator tmp = *this; Current = Current->Next; return tmp; }
-        Iterator  operator --(s32) { Iterator tmp = *this; Current = Current->Prev; return tmp; }
+        Iterator& operator ++() { mCurrent = mCurrent->mNext; return *this; }
+        Iterator& operator --() { mCurrent = mCurrent->mPrev; return *this; }
+        Iterator  operator ++(s32) { Iterator tmp = *this; mCurrent = mCurrent->mNext; return tmp; }
+        Iterator  operator --(s32) { Iterator tmp = *this; mCurrent = mCurrent->mPrev; return tmp; }
 
         Iterator& operator +=(s32 num) {
-            if(num > 0) {
-                while(num-- && this->Current != 0) ++(*this);
+            if (num > 0) {
+                while (num-- && this->mCurrent != 0) ++(*this);
             } else {
-                while(num++ && this->Current != 0) --(*this);
+                while (num++ && this->mCurrent != 0) --(*this);
             }
             return *this;
         }
@@ -71,18 +76,18 @@ public:
         Iterator& operator -=(s32 num) { return (*this) += (-num); }
         Iterator  operator - (s32 num) const { return (*this) + (-num); }
 
-        bool operator ==(const Iterator& other) const { return Current == other.Current; }
-        bool operator !=(const Iterator& other) const { return Current != other.Current; }
-        bool operator ==(const ConstIterator& other) const { return Current == other.Current; }
-        bool operator !=(const ConstIterator& other) const { return Current != other.Current; }
+        bool operator ==(const Iterator& other) const { return mCurrent == other.mCurrent; }
+        bool operator !=(const Iterator& other) const { return mCurrent != other.mCurrent; }
+        bool operator ==(const ConstIterator& other) const { return mCurrent == other.mCurrent; }
+        bool operator !=(const ConstIterator& other) const { return mCurrent != other.mCurrent; }
 
-        T& operator*() { return Current->Element; }
-        T* operator->() { return &Current->Element; }
+        T& operator*() { return mCurrent->mElement; }
+        T* operator->() { return &mCurrent->mElement; }
 
     private:
-        explicit Iterator(SKListNode* begin) : Current(begin) { }
+        explicit Iterator(SKListNode* begin) : mCurrent(begin) { }
 
-        SKListNode* Current;
+        SKListNode* mCurrent;
 
         friend class TList<T>;
         friend class ConstIterator;
@@ -91,20 +96,19 @@ public:
     //! List iterator for const access.
     class ConstIterator {
     public:
+        ConstIterator() : mCurrent(0) { }
+        ConstIterator(const Iterator& iter) : mCurrent(iter.mCurrent) { }
 
-        ConstIterator() : Current(0) { }
-        ConstIterator(const Iterator& iter) : Current(iter.Current) { }
-
-        ConstIterator& operator ++() { Current = Current->Next; return *this; }
-        ConstIterator& operator --() { Current = Current->Prev; return *this; }
-        ConstIterator  operator ++(s32) { ConstIterator tmp = *this; Current = Current->Next; return tmp; }
-        ConstIterator  operator --(s32) { ConstIterator tmp = *this; Current = Current->Prev; return tmp; }
+        ConstIterator& operator ++() { mCurrent = mCurrent->mNext; return *this; }
+        ConstIterator& operator --() { mCurrent = mCurrent->mPrev; return *this; }
+        ConstIterator  operator ++(s32) { ConstIterator tmp = *this; mCurrent = mCurrent->mNext; return tmp; }
+        ConstIterator  operator --(s32) { ConstIterator tmp = *this; mCurrent = mCurrent->mPrev; return tmp; }
 
         ConstIterator& operator +=(s32 num) {
-            if(num > 0) {
-                while(num-- && this->Current != 0) ++(*this);
+            if (num > 0) {
+                while (num-- && this->mCurrent != 0) ++(*this);
             } else {
-                while(num++ && this->Current != 0) --(*this);
+                while (num++ && this->mCurrent != 0) --(*this);
             }
             return *this;
         }
@@ -113,36 +117,40 @@ public:
         ConstIterator& operator -=(s32 num) { return (*this) += (-num); }
         ConstIterator  operator - (s32 num) const { return (*this) + (-num); }
 
-        bool operator ==(const ConstIterator& other) const { return Current == other.Current; }
-        bool operator !=(const ConstIterator& other) const { return Current != other.Current; }
-        bool operator ==(const Iterator& other) const { return Current == other.Current; }
-        bool operator !=(const Iterator& other) const { return Current != other.Current; }
+        bool operator ==(const ConstIterator& other) const { return mCurrent == other.mCurrent; }
+        bool operator !=(const ConstIterator& other) const { return mCurrent != other.mCurrent; }
+        bool operator ==(const Iterator& other) const { return mCurrent == other.mCurrent; }
+        bool operator !=(const Iterator& other) const { return mCurrent != other.mCurrent; }
 
-        const T& operator * () { return Current->Element; }
-        const T* operator ->() { return &Current->Element; }
+        const T& operator * () { return mCurrent->mElement; }
+        const T* operator ->() { return &mCurrent->mElement; }
 
-        ConstIterator& operator =(const Iterator& iterator) { Current = iterator.Current; return *this; }
+        ConstIterator& operator =(const Iterator& iterator) { mCurrent = iterator.mCurrent; return *this; }
 
     private:
-        explicit ConstIterator(SKListNode* begin) : Current(begin) { }
+        explicit ConstIterator(SKListNode* begin) : mCurrent(begin) { }
 
-        SKListNode* Current;
+        SKListNode* mCurrent;
 
         friend class Iterator;
         friend class TList<T>;
     };
 
     //! Default constructor for empty TList.
-    TList()
-        : First(0), Last(0), Size(0) {
+    TList() : mFirst(0), mLast(0), mSize(0) {
     }
 
 
     //! Copy constructor.
-    TList(const TList<T>& other) : First(0), Last(0), Size(0) {
+    TList(const TList<T>& other) : mFirst(0), mLast(0), mSize(0) {
         *this = other;
     }
 
+    TList(TList<T>&& it) : mFirst(it.mFirst), mLast(it.mLast), mSize(it.mSize) {
+        it.mFirst = nullptr;
+        it.mLast = nullptr;
+        it.mSize = 0;
+    }
 
     //! Destructor
     ~TList() {
@@ -151,104 +159,133 @@ public:
 
 
     //! Assignment operator
-    void operator=(const TList<T>& other) {
-        if(&other == this) {
-            return;
+    TList<T>& operator=(const TList<T>& other) {
+        if (&other == this) {
+            return *this;
         }
 
         clear();
 
-        SKListNode* node = other.First;
-        while(node) {
-            pushBack(node->Element);
-            node = node->Next;
+        SKListNode* node = other.mFirst;
+        while (node) {
+            pushBack(node->mElement);
+            node = node->mNext;
         }
+        return *this;
     }
 
+    TList<T>& operator=(TList<T>&& it) {
+        if (&it == this) {
+            return *this;
+        }
+        swap(it);
+        return *this;
+    }
 
     //! Returns amount of elements in TList.
     /** \return Amount of elements in the TList. */
-    u32 size() const {
-        return Size;
+    usz size() const {
+        return mSize;
     }
-    u32 getSize() const {
-        return Size;
-    }
-
 
     //! Clears the TList, deletes all elements in the TList.
     /** All existing iterators of this TList will be invalid. */
     void clear() {
-        while(First) {
-            SKListNode* next = First->Next;
-            allocator.destruct(First);
-            allocator.deallocate(First);
-            First = next;
+        while (mFirst) {
+            SKListNode* next = mFirst->mNext;
+            mAllocator.destruct(mFirst);
+            mAllocator.deallocate(mFirst);
+            mFirst = next;
         }
 
-        //First = 0; handled by loop
-        Last = 0;
-        Size = 0;
+        //mFirst = 0; handled by loop
+        mLast = 0;
+        mSize = 0;
     }
 
 
     //! Checks for empty TList.
     /** \return True if the TList is empty and false if not. */
     bool empty() const {
-        return (First == 0);
+        return (mFirst == 0);
     }
 
 
     //! Adds an element at the end of the TList.
-    /** \param element Element to add to the TList. */
+    /** \param element mElement to add to the TList. */
     void pushBack(const T& element) {
-        SKListNode* node = allocator.allocate(1);
-        allocator.construct(node, element);
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, element);
 
-        ++Size;
-
-        if(First == 0)
-            First = node;
-
-        node->Prev = Last;
-
-        if(Last != 0)
-            Last->Next = node;
-
-        Last = node;
+        ++mSize;
+        if (mFirst == 0) {
+            mFirst = node;
+        }
+        node->mPrev = mLast;
+        if (mLast != 0) {
+            mLast->mNext = node;
+        }
+        mLast = node;
     }
 
+    void emplaceBack(T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, std::move(element));
+
+        ++mSize;
+        if (mFirst == 0) {
+            mFirst = node;
+        }
+        node->mPrev = mLast;
+        if (mLast != 0) {
+            mLast->mNext = node;
+        }
+        mLast = node;
+    }
 
     //! Adds an element at the begin of the TList.
-    /** \param element: Element to add to the TList. */
-    void push_front(const T& element) {
-        SKListNode* node = allocator.allocate(1);
-        allocator.construct(node, element);
+    /** \param element: mElement to add to the TList. */
+    void pushFront(const T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, element);
 
-        ++Size;
-
-        if(First == 0) {
-            Last = node;
-            First = node;
+        ++mSize;
+        if (mFirst == 0) {
+            mLast = node;
+            mFirst = node;
         } else {
-            node->Next = First;
-            First->Prev = node;
-            First = node;
+            node->mNext = mFirst;
+            mFirst->mPrev = node;
+            mFirst = node;
         }
     }
 
+    void emplaceFront(T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, std::move(element));
+
+        ++mSize;
+        if (mFirst == 0) {
+            mLast = node;
+            mFirst = node;
+        } else {
+            node->mNext = mFirst;
+            mFirst->mPrev = node;
+            mFirst = node;
+        }
+    }
 
     //! Gets first node.
     /** \return A TList iterator pointing to the beginning of the TList. */
     Iterator begin() {
-        return Iterator(First);
+        return Iterator(mFirst);
     }
 
 
     //! Gets first node.
     /** \return A const TList iterator pointing to the beginning of the TList. */
     ConstIterator begin() const {
-        return ConstIterator(First);
+        return ConstIterator(mFirst);
     }
 
 
@@ -269,14 +306,14 @@ public:
     //! Gets last element.
     /** \return List iterator pointing to the last element of the TList. */
     Iterator getLast() {
-        return Iterator(Last);
+        return Iterator(mLast);
     }
 
 
     //! Gets last element.
     /** \return Const TList iterator pointing to the last element of the TList. */
     ConstIterator getLast() const {
-        return ConstIterator(Last);
+        return ConstIterator(mLast);
     }
 
 
@@ -285,73 +322,101 @@ public:
     should be inserted.
     \param element The new element to be inserted into the TList.
     */
-    void insert_after(const Iterator& it, const T& element) {
-        SKListNode* node = allocator.allocate(1);
-        allocator.construct(node, element);
+    void insertAfter(const Iterator& it, const T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, element);
 
-        node->Next = it.Current->Next;
+        node->mNext = it.mCurrent->mNext;
 
-        if(it.Current->Next)
-            it.Current->Next->Prev = node;
-
-        node->Prev = it.Current;
-        it.Current->Next = node;
-        ++Size;
-
-        if(it.Current == Last)
-            Last = node;
+        if (it.mCurrent->mNext) {
+            it.mCurrent->mNext->mPrev = node;
+        }
+        node->mPrev = it.mCurrent;
+        it.mCurrent->mNext = node;
+        ++mSize;
+        if (it.mCurrent == mLast) {
+            mLast = node;
+        }
     }
+    void emplaceAfter(const Iterator& it, T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, std::move(element));
 
+        node->mNext = it.mCurrent->mNext;
+
+        if (it.mCurrent->mNext) {
+            it.mCurrent->mNext->mPrev = node;
+        }
+        node->mPrev = it.mCurrent;
+        it.mCurrent->mNext = node;
+        ++mSize;
+        if (it.mCurrent == mLast) {
+            mLast = node;
+        }
+    }
 
     //! Inserts an element before an element.
     /** \param it Iterator pointing to element before which the new element
     should be inserted.
     \param element The new element to be inserted into the TList.
     */
-    void insert_before(const Iterator& it, const T& element) {
-        SKListNode* node = allocator.allocate(1);
-        allocator.construct(node, element);
+    void insertBefore(const Iterator& it, const T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, element);
 
-        node->Prev = it.Current->Prev;
-
-        if(it.Current->Prev)
-            it.Current->Prev->Next = node;
-
-        node->Next = it.Current;
-        it.Current->Prev = node;
-        ++Size;
-
-        if(it.Current == First)
-            First = node;
+        node->mPrev = it.mCurrent->mPrev;
+        if (it.mCurrent->mPrev) {
+            it.mCurrent->mPrev->mNext = node;
+        }
+        node->mNext = it.mCurrent;
+        it.mCurrent->mPrev = node;
+        ++mSize;
+        if (it.mCurrent == mFirst) {
+            mFirst = node;
+        }
     }
+    void emplaceBefore(const Iterator& it, T& element) {
+        SKListNode* node = mAllocator.allocate(1);
+        mAllocator.construct(node, std::move(element));
 
+        node->mPrev = it.mCurrent->mPrev;
+        if (it.mCurrent->mPrev) {
+            it.mCurrent->mPrev->mNext = node;
+        }
+        node->mNext = it.mCurrent;
+        it.mCurrent->mPrev = node;
+        ++mSize;
+        if (it.mCurrent == mFirst) {
+            mFirst = node;
+        }
+    }
 
     //! Erases an element.
     /** \param it Iterator pointing to the element which shall be erased.
     \return Iterator pointing to next element. */
     Iterator erase(Iterator& it) {
         // suggest changing this to a const Iterator& and
-        // working around line: it.Current = 0 (possibly with a mutable, or just let it be garbage?)
+        // working around line: it.mCurrent = 0 (possibly with a mutable, or just let it be garbage?)
 
         Iterator returnIterator(it);
         ++returnIterator;
 
-        if(it.Current == First) {
-            First = it.Current->Next;
+        if (it.mCurrent == mFirst) {
+            mFirst = it.mCurrent->mNext;
         } else {
-            it.Current->Prev->Next = it.Current->Next;
+            it.mCurrent->mPrev->mNext = it.mCurrent->mNext;
         }
 
-        if(it.Current == Last) {
-            Last = it.Current->Prev;
+        if (it.mCurrent == mLast) {
+            mLast = it.mCurrent->mPrev;
         } else {
-            it.Current->Next->Prev = it.Current->Prev;
+            it.mCurrent->mNext->mPrev = it.mCurrent->mPrev;
         }
 
-        allocator.destruct(it.Current);
-        allocator.deallocate(it.Current);
-        it.Current = 0;
-        --Size;
+        mAllocator.destruct(it.mCurrent);
+        mAllocator.deallocate(it.mCurrent);
+        it.mCurrent = 0;
+        --mSize;
 
         return returnIterator;
     }
@@ -362,19 +427,19 @@ public:
     the swapped object.
     \param other Swap content with this object	*/
     void swap(TList<T>& other) {
-        AppSwap(First, other.First);
-        AppSwap(Last, other.Last);
-        AppSwap(Size, other.Size);
-        AppSwap(allocator, other.allocator);	// memory is still released by the same allocator used for allocation
+        AppSwap(mFirst, other.mFirst);
+        AppSwap(mLast, other.mLast);
+        AppSwap(mSize, other.mSize);
+        AppSwap(mAllocator, other.mAllocator);
     }
 
 
 private:
 
-    SKListNode* First;
-    SKListNode* Last;
-    u32 Size;
-    TAllocator<SKListNode> allocator;
+    SKListNode* mFirst;
+    SKListNode* mLast;
+    usz mSize;
+    TAllocator<SKListNode> mAllocator;
 };
 
 

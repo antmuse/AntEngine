@@ -42,35 +42,42 @@ template <class T, typename TAlloc = TAllocator<T> >
 class TVector {
 public:
 
-    TVector() : mData(nullptr), mAllocated(0), mUsed(0),
-        mStrategy(E_STRATEGY_DOUBLE), mNeedDelete(true), mSorted(true) {
+    TVector()
+        : mData(nullptr)
+        , mAllocated(0)
+        , mUsed(0)
+        , mStrategy(E_STRATEGY_DOUBLE)
+        , mSorted(true) {
     }
 
 
     /**
      * @param start_count 预留容量 */
-    TVector(usz start_count) : mData(nullptr), mAllocated(0), mUsed(0),
-        mStrategy(E_STRATEGY_DOUBLE), mNeedDelete(true), mSorted(true) {
+    TVector(usz start_count)
+        : mData(nullptr)
+        , mAllocated(0)
+        , mUsed(0)
+        , mStrategy(E_STRATEGY_DOUBLE)
+        , mSorted(true) {
         reallocate(start_count);
     }
 
 
-    TVector(const TVector<T, TAlloc>& other) : mData(nullptr), mAllocated(0), mUsed(0) {
+    TVector(const TVector<T, TAlloc>& other)
+        : mData(nullptr), mAllocated(0), mUsed(0) {
         *this = other;
     }
 
-    TVector(TVector<T, TAlloc>&& it)noexcept : mData(it.mData), mAllocated(it.mAllocated),
-        mUsed(it.mUsed), mStrategy(it.mStrategy),
-        mNeedDelete(it.mNeedDelete), mSorted(it.mSorted) {
-        it.mNeedDelete = false;
+    TVector(TVector<T, TAlloc>&& it)noexcept : mData(it.mData)
+        , mAllocated(it.mAllocated)
+        , mUsed(it.mUsed)
+        , mStrategy(it.mStrategy)
+        , mSorted(it.mSorted) {
         it.mUsed = 0;
         it.mAllocated = 0;
         it.mData = nullptr;
     }
 
-    /**
-     * @brief Free allocated memory if setFreeWhenDestroyed was not set to
-              false by the user before. */
     ~TVector() {
         clear();
     }
@@ -88,24 +95,21 @@ public:
         mData = mAllocator.allocate(new_size); //new T[new_size];
         mAllocated = new_size;
 
-        // copy old mData
+        // copy old data
         ssz end = mUsed < new_size ? mUsed : new_size;
         for (ssz i = 0; i < end; ++i) {
-            // mData[i] = old_data[i];
-            mAllocator.construct(&mData[i], old_data[i]);
+            mAllocator.construct(&mData[i], std::move(old_data[i]));
         }
 
         // destruct old mData
-        if (mNeedDelete) {
-            for (usz j = 0; j < mUsed; ++j) {
-                mAllocator.destruct(&old_data[j]);
-            }
-            mAllocator.deallocate(old_data);
+        for (usz j = 0; j < mUsed; ++j) {
+            mAllocator.destruct(&old_data[j]);
         }
+        mAllocator.deallocate(old_data);
+
         if (mAllocated < mUsed) {
             mUsed = mAllocated;
         }
-        mNeedDelete = true;
     }
 
 
@@ -116,167 +120,181 @@ public:
         mStrategy = newStrategy;
     }
 
-
-    void pushBack(const T& element) {
-        insert(element, mUsed);
+    void emplaceBack(T& it) {
+        emplace(it, mUsed);
     }
 
-
-    void pushFront(const T& element) {
-        insert(element);
+    void emplaceFront(T& it) {
+        emplace(it, 0);
     }
 
+    void pushBack(const T& it) {
+        insert(it, mUsed);
+    }
 
+    void pushFront(const T& it) {
+        insert(it, 0);
+    }
+
+    /**
+    * @note \p element maybe one node of this vector.
+    */
     void insert(const T& element, usz index = 0) {
-        DASSERT(index <= mUsed);
+        index = index > mUsed ? mUsed : index;
 
         if (mUsed + 1 > mAllocated) {
-            // this doesn't work if the element is in the same
-            // TVector. So we'll copy the element first to be sure
-            // we'll get no mData corruption
-            const T e(element);
-
-            // increase mData block
-            usz newAlloc;
             switch (mStrategy) {
             case E_STRATEGY_DOUBLE:
-                newAlloc = mUsed + 1 + (mAllocated < 500 ?
+                mAllocated = mUsed + 1 + (mAllocated < 500 ?
                     (mAllocated < 5 ? 5 : mUsed) : mUsed >> 2);
                 break;
             default:
             case E_STRATEGY_SAFE:
-                newAlloc = mUsed + 1;
+                mAllocated = mUsed + 1;
                 break;
             }
-            reallocate(newAlloc);
 
-            // move TVector content and construct new element
-            // first move end one up
-            for (usz i = mUsed; i > index; --i) {
-                if (i < mUsed) {
-                    mAllocator.destruct(&mData[i]);
-                }
-                mAllocator.construct(&mData[i], mData[i - 1]); // mData[i] = mData[i-1];
+            T* old_data = mData;
+            mData = mAllocator.allocate(mAllocated);
+
+            //element可能是当前vector的一员，先拷贝构造之
+            mAllocator.construct(&mData[index], element);
+
+            // copy old data
+            usz i = 0;
+            for (; i < index; ++i) {
+                mAllocator.construct(&mData[i], std::move(old_data[i]));
+                mAllocator.destruct(&old_data[i]);
             }
-            // then add new element
-            if (mUsed > index) {
+            for (i = index + 1; i <= mUsed; ++i) {
+                mAllocator.construct(&mData[i], std::move(old_data[i - 1]));
+                mAllocator.destruct(&old_data[i - 1]);
+            }
+            mAllocator.deallocate(old_data);
+        } else {
+            if (index < mUsed) {
+                mAllocator.construct(&mData[mUsed], std::move(mData[mUsed - 1]));
+                // move the leftover
+                for (usz i = mUsed - 1; i > index; --i) {
+                    mAllocator.destruct(&mData[i]);
+                    mAllocator.construct(&mData[i], std::move(mData[i - 1]));
+                }
                 mAllocator.destruct(&mData[index]);
             }
-            mAllocator.construct(&mData[index], e); // mData[index] = e;
-        } else {
-            // element inserted not at end
-            if (mUsed > index) {
-                // create one new element at the end
-                mAllocator.construct(&mData[mUsed], mData[mUsed - 1]);
-
-                // move the rest of the TVector content
-                for (usz i = mUsed - 1; i > index; --i) {
-                    mData[i] = mData[i - 1];
-                }
-                // insert the new element
-                mData[index] = element;
-            } else {
-                // insert the new element to the end
-                mAllocator.construct(&mData[index], element);
-            }
+            // insert the new element to the postion
+            mAllocator.construct(&mData[index], element);
         }
-        // set to false as we don't know if we have the comparison operators
         mSorted = false;
         ++mUsed;
     }
 
 
     /**
-    * @brief 如果mNeedDelete，则析构所有元素并清理所有空间
+    * @note \p element must not be one node of this vector.
+    */
+    void emplace(T& element, usz index = 0) {
+        index = index > mUsed ? mUsed : index;
+
+        if (mUsed + 1 > mAllocated) {
+            switch (mStrategy) {
+            case E_STRATEGY_DOUBLE:
+                mAllocated = mUsed + 1 + (mAllocated < 500 ?
+                    (mAllocated < 5 ? 5 : mUsed) : mUsed >> 2);
+                break;
+            default:
+            case E_STRATEGY_SAFE:
+                mAllocated = mUsed + 1;
+                break;
+            }
+
+            T* old_data = mData;
+            mData = mAllocator.allocate(mAllocated);
+
+            //element不能是当前vector的一员，移动构造之
+            mAllocator.construct(&mData[index], std::move(element));
+
+            // copy old data
+            usz i = 0;
+            for (; i < index; ++i) {
+                mAllocator.construct(&mData[i], std::move(old_data[i]));
+                mAllocator.destruct(&old_data[i]);
+            }
+            for (i = index + 1; i <= mUsed; ++i) {
+                mAllocator.construct(&mData[i], std::move(old_data[i - 1]));
+                mAllocator.destruct(&old_data[i - 1]);
+            }
+            mAllocator.deallocate(old_data);
+        } else {
+            if (index < mUsed) {
+                mAllocator.construct(&mData[mUsed], std::move(mData[mUsed - 1]));
+                // move the leftover
+                for (usz i = mUsed - 1; i > index; --i) {
+                    mAllocator.destruct(&mData[i]);
+                    mAllocator.construct(&mData[i], std::move(mData[i - 1]));
+                }
+                mAllocator.destruct(&mData[index]);
+            }
+            // insert the new element to the postion
+            mAllocator.construct(&mData[index], std::move(element));
+        }
+        mSorted = false;
+        ++mUsed;
+    }
+
+
+    /**
+    * @brief 析构所有元素并删除空间
     */
     void clear() {
-        if (mNeedDelete) {
+        if (mData) {
             for (usz i = 0; i < mUsed; ++i) {
                 mAllocator.destruct(&mData[i]);
             }
-            mAllocator.deallocate(mData); // delete[] mData;
+            mAllocator.deallocate(mData);
+            mData = nullptr;
+            mUsed = 0;
+            mAllocated = 0;
+            mSorted = true;
         }
-        mData = nullptr;
-        mUsed = 0;
-        mAllocated = 0;
-        mSorted = true;
     }
-
-    /**
-    * @param newPointer 新空间，注：不会被析构并删除
-    * @param maxsz 新空间大小
-    * @param size 新空间中元素数量
-    */
-    void setPointer(T* newPointer, usz maxsz, usz size, bool sorted = false) {
-        clear();
-        mData = newPointer;
-        mAllocated = maxsz;
-        mUsed = size;
-        mSorted = sorted;
-        mNeedDelete = false;
-    }
-
-
-    /**
-    * @param it 是否需要析构并删除空间*/
-    void setFreeWhenDestroyed(bool it) {
-        mNeedDelete = it;
-    }
-
 
     /**
     * @brief 设置已用元素数量
-    * @param build 是否对变动元素调用构造函数或析构函数
     * @param usedNow 已用元素数量*/
-    void resize(usz usedNow, bool build = true) {
+    void resize(usz usedNow) {
         mSorted = mSorted != 0 && usedNow <= mUsed;
         if (mAllocated < usedNow) {
             reallocate(usedNow);
         }
-        if (build) {
-            if (usedNow < mUsed) {
-                for (usz i = usedNow; i < mUsed; ++i) {
-                    mAllocator.destruct(&mData[i]);
-                }
-            } else {
-                for (usz i = mUsed; i < usedNow; ++i) {
-                    mAllocator.construct(&mData[i]);
-                }
+        //build
+        if (usedNow < mUsed) {
+            for (usz i = usedNow; i < mUsed; ++i) {
+                mAllocator.destruct(&mData[i]);
+            }
+        } else {
+            for (usz i = mUsed; i < usedNow; ++i) {
+                mAllocator.construct(&mData[i]);
             }
         }
         mUsed = usedNow;
-    }
-
-    /**
-    * @brief 设置已用元素数量,因不对变动元素调用构造函数或析构函数,
-    *        所以复杂元素不可使用此函数,以避免可能的内存泄露。
-    * @param usedNow 已用元素数量
-    */
-    void setUsed(usz usedNow) {
-        resize(usedNow, false);
     }
 
     TVector<T, TAlloc>& operator=(const TVector<T, TAlloc>& other) {
         if (this == &other) {
             return *this;
         }
+        resize(0);
+        if (mAllocated < other.mUsed) {
+            mAllocator.deallocate(mData);
+            mAllocated = other.mUsed;
+            mData = mAllocator.allocate(mAllocated);
+        }
         mStrategy = other.mStrategy;
-        if (mData) {
-            clear();
-        }
-        //if (mAllocated < other.mAllocated)
-        if (other.mAllocated == 0) {
-            mData = 0;
-        } else {
-            mData = mAllocator.allocate(other.mAllocated); // new T[other.mAllocated];
-        }
         mUsed = other.mUsed;
-        mNeedDelete = true;
         mSorted = other.mSorted;
-        mAllocated = other.mAllocated;
 
         for (usz i = 0; i < other.mUsed; ++i) {
-            mAllocator.construct(&mData[i], other.mData[i]); // mData[i] = other.mData[i];
+            mAllocator.construct(&mData[i], other.mData[i]);
         }
         return *this;
     }
@@ -289,17 +307,14 @@ public:
             AppSwap(mUsed, other.mUsed);
             AppSwap(mAllocator, other.mAllocator);
 
-            EAllocStrategy helper_strategy(mStrategy);	// can't use AppSwap with bitfields
+            // can't use AppSwap with bitfields
+            EAllocStrategy estra = mStrategy;
             mStrategy = other.mStrategy;
-            other.mStrategy = helper_strategy;
+            other.mStrategy = estra;
 
-            bool helper_free_when_destroyed(mNeedDelete);
-            mNeedDelete = other.mNeedDelete;
-            other.mNeedDelete = helper_free_when_destroyed;
-
-            bool helper_is_sorted(mSorted);
+            bool tmp = mSorted;
             mSorted = other.mSorted;
-            other.mSorted = helper_is_sorted;
+            other.mSorted = tmp;
         }
         return *this;
     }
@@ -477,13 +492,14 @@ public:
      * @param index 删除位置
      */
     void erase(usz index) {
-        DASSERT(index < mUsed); // access violation
-        for (usz i = index + 1; i < mUsed; ++i) {
-            mAllocator.destruct(&mData[i - 1]);
-            mAllocator.construct(&mData[i - 1], mData[i]); // mData[i-1] = mData[i];
+        if (index < mUsed) {
+            for (++index; index < mUsed; ++index) {
+                mAllocator.destruct(&mData[index - 1]);
+                mAllocator.construct(&mData[index - 1], std::move(mData[index]));
+            }
+            mAllocator.destruct(&mData[mUsed - 1]);
+            --mUsed;
         }
-        mAllocator.destruct(&mData[mUsed - 1]);
-        --mUsed;
     }
 
     /**
@@ -491,13 +507,14 @@ public:
     * @param index 移除位置
     */
     void quickErase(usz index) {
-        DASSERT(index < mUsed);
-        if (index + 1 < mUsed) {
+        if (index < mUsed) {
             mAllocator.destruct(&mData[index]);
-            mAllocator.construct(&mData[index], mData[mUsed - 1]);//mData[index] = mData[mUsed-1];
+            if (index + 1 < mUsed) {
+                mAllocator.construct(&mData[index], std::move(mData[mUsed - 1]));
+                mAllocator.destruct(&mData[mUsed - 1]);
+            }
+            --mUsed;
         }
-        mAllocator.destruct(&mData[mUsed - 1]);
-        --mUsed;
     }
 
     /**
@@ -505,25 +522,20 @@ public:
      * @param index 删除开始位置
      * @param count 删除元素数量
      */
-    void erase(usz index, ssz count) {
+    void erase(usz index, usz count) {
         if (index >= mUsed || count < 1) {
             return;
         }
-        if (index + count > mUsed) {
-            count = mUsed - index;
+        usz last = index + count;
+        if (last > mUsed) {
+            last = mUsed;
         }
-        usz i;
-        for (i = index; i < index + count; ++i) {
+        for (usz i = index; i < last; ++i) {
             mAllocator.destruct(&mData[i]);
         }
-        for (i = index + count; i < mUsed; ++i) {
-            if (i - count >= index + count) {	// not already destructed before loop
-                mAllocator.destruct(&mData[i - count]);
-            }
-            mAllocator.construct(&mData[i - count], mData[i]); // mData[i-count] = mData[i];
-            if (i >= mUsed - count) {	// those which are not overwritten
-                mAllocator.destruct(&mData[i]);
-            }
+        for (; last < mUsed; ++last) {
+            mAllocator.construct(&mData[index++], std::move(mData[last]));
+            mAllocator.destruct(&mData[last]);
         }
         mUsed -= count;
     }
@@ -540,17 +552,14 @@ public:
         AppSwap(mUsed, other.mUsed);
         AppSwap(mAllocator, other.mAllocator);
 
-        EAllocStrategy helper_strategy(mStrategy);	// can't use AppSwap with bitfields
+        // can't use AppSwap with bitfields
+        EAllocStrategy estra = mStrategy;
         mStrategy = other.mStrategy;
-        other.mStrategy = helper_strategy;
+        other.mStrategy = estra;
 
-        bool helper_free_when_destroyed(mNeedDelete);
-        mNeedDelete = other.mNeedDelete;
-        other.mNeedDelete = helper_free_when_destroyed;
-
-        bool helper_is_sorted(mSorted);
+        bool tmp = mSorted;
         mSorted = other.mSorted;
-        other.mSorted = helper_is_sorted;
+        other.mSorted = tmp;
     }
 
 
@@ -560,7 +569,6 @@ private:
     usz mUsed;
     TAlloc mAllocator;
     EAllocStrategy mStrategy : 4;
-    bool mNeedDelete : 1;
     bool mSorted : 1;
 };
 

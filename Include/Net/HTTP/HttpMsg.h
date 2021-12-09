@@ -92,13 +92,12 @@ public:
     }
 
     void onHeadName(const void* buf, usz sz) {
-        mTemp.setLen(0);
-        mTemp.append((s8*)buf, sz);
+        mTemp.set((s8*)buf, sz);
     }
 
     //Range: bytes=200-1000, 2000-6576, 19000-
     void onHeadValue(const void* buf, usz sz) {
-        String vvv((s8*)buf, sz);
+        StringView vvv((s8*)buf, sz);
         mHead.add(mTemp, vvv);
     }
 
@@ -155,7 +154,7 @@ public:
 
 protected:
     s32 mFlag;
-    String mTemp;
+    StringView mTemp;
     Packet mCache;
     HttpHead mHead;
 };

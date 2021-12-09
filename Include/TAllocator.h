@@ -61,6 +61,11 @@ public:
         new ((void*)ptr) T(e);
     }
 
+    //construct an element
+    void construct(T* ptr, T&& e) {
+        new ((void*)ptr) T(std::move(e));
+    }
+
     //destruct an element
     void destruct(T* ptr) {
         ptr->~T();
@@ -100,6 +105,10 @@ public:
     // Construct an element
     void construct(T* ptr, const T& e) {
         new ((void*)ptr) T(e);
+    }
+
+    void construct(T* ptr, T&& e) {
+        new ((void*)ptr) T(std::move(e));
     }
 
     // Destruct an element

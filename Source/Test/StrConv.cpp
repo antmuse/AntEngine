@@ -6,6 +6,7 @@
 #include <vector>
 #include "Timer.h"
 #include "TVector.h"
+#include "TList.h"
 #include "Converter.h"
 #include "Strings.h"
 #include "Spinlock.h"
@@ -234,7 +235,7 @@ void AppTestVector() {
     usz cap = svec.capacity();
     TVector<s32> arr(16);
     srand((u32)Timer::getTimestamp());
-    arr.setUsed(80);
+    arr.resize(80);
 
     printf("src arr\n\t");
     for (s32 i = 0; i < arr.size(); ++i) {
@@ -288,28 +289,97 @@ void AppTestVector() {
             ++G_BUILD_CNT;
             mStr = new s8[16];
             snprintf(mStr, 16, "%d", G_BUILD_CNT);
-            mStr[0] = 0;
         }
         ~VNode() {
-            --G_BUILD_CNT;
-            delete[] mStr;
-            mStr = nullptr;
+            if (mStr) {
+                --G_BUILD_CNT;
+                delete[] mStr;
+                mStr = nullptr;
+            }
+        }
+        VNode(const VNode& it) {
+            ++G_BUILD_CNT;
+            mStr = new s8[16];
+            snprintf(mStr, 16, "%s", it.mStr);
+        }
+        VNode(VNode&& it)noexcept {
+            mStr = it.mStr;
+            it.mStr = nullptr;
+        }
+        VNode& operator=(const VNode& it) {
+            if (mStr != it.mStr) {
+                snprintf(mStr, 16, "%s", it.mStr);
+            }
+            return *this;
+        }
+        VNode& operator=(VNode&& it)noexcept {
+            if (mStr != it.mStr) {
+                mStr = it.mStr;
+                it.mStr = nullptr;
+            }
+            return *this;
+        }
+        const s8* getDat()const {
+            return mStr;
         }
     private:
         s8* mStr;
     };
-
     TVector<VNode>& vnds = *(new TVector<VNode>());
     vnds.resize(8);
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
-    vnds.resize(3);
+    vnds.resize(20);
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
-    vnds.resize(5);
+    vnds.quickErase(2);
+    vnds.erase(8,4);
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
-    vnds.setUsed(2); //mem leak
+    {
+        VNode my[20];
+        vnds.pushBack(my[0]);
+        vnds.insert(my[4], 3);
+        vnds.pushFront(my[7]);
+        for (usz i = 0; i < sizeof(my) / sizeof(my[0]); ++i) {
+            if (vnds.size() > 0) {
+                for (usz i = 0; i < vnds.size(); ++i) {
+                    printf("size=%llu,%s\n", i, vnds[i].getDat());
+                }
+            }
+            if ((3 & i) == 3) {
+                vnds.emplaceBack(my[i]);
+            } else if ((2 & i) == 2) {
+                vnds.emplaceFront(my[i]);
+            } else {
+                vnds.emplace(my[i], i);
+            }
+        }
+    }
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
+    for (usz i = 0; i < vnds.size(); ++i) {
+        printf("size=%llu,%s\n", i, vnds[i].getDat());
+    }
+    {
+        TVector<VNode>& vvv2 = *(new TVector<VNode>());
+        vvv2.resize(3);
+        vvv2 = vnds;
+        delete& vvv2;
+    }
     delete& vnds;
-    printf("mem leak=5-2, G_BUILD_CNT=%d\n", G_BUILD_CNT);
+    printf("mem check, G_BUILD_CNT=%d\n", G_BUILD_CNT);
+
+
+    TList<VNode> llst;
+    VNode ndd[10];
+    llst.pushBack(ndd[0]);
+    llst.pushBack(ndd[1]);
+    printf("mem check, G_BUILD_CNT=%d\n", G_BUILD_CNT);
+    for (usz i = 0; i < sizeof(ndd) / sizeof(ndd[0]); ++i) {
+        if ((1 & i) == 1) {
+            llst.emplaceFront(ndd[i]);
+        } else {
+            llst.emplaceBack(ndd[i]);
+        }
+    }
+    printf("mem check, G_BUILD_CNT=%d\n", G_BUILD_CNT);
 }
 
 #if defined(DUSE_ZLIB)

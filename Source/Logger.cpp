@@ -262,7 +262,7 @@ void Logger::clear() {
     for (usz it = 0; it < mAllReceiver.size(); ++it) {
         delete mAllReceiver[it];
     }
-    mAllReceiver.setUsed(0);
+    mAllReceiver.resize(0);
     mMutex.unlock();
 }
 
