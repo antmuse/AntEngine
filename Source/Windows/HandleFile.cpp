@@ -127,7 +127,7 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
 
     req->clearOverlap();
     req->mOverlapped.Pointer = (void*)offset;
-    
+
     if (FALSE == WriteFile(mFile, req->mData, req->mUsed, nullptr, &req->mOverlapped)) {
         const s32 ecode = System::getError();
         if (ERROR_IO_PENDING != ecode) {

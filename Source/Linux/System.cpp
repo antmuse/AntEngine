@@ -79,7 +79,6 @@ static u32 AppGetPageSize() {
 
 
 s32 System::gSignal = 0;
-s32 System::mFatherPID = 0;
 
 System::System() {
 }
@@ -105,7 +104,9 @@ static void System_getStatus() {
             if (err == EINTR) {
                 continue;
             }
-            Logger::log(ELL_INFO, "waitpid() failed, ecode=%d", err);
+            if(ECHILD!=err){
+                Logger::log(ELL_INFO, "waitpid() failed, ecode=%d", err);
+            }
             return;
         }
 
@@ -124,21 +125,17 @@ static void System_getStatus() {
 
         if (WTERMSIG(status)) {
 #ifdef WCOREDUMP
-            Logger::log(ELL_INFO, "%s %P exited on signal %d%s",
-                process, pid, WTERMSIG(status),
-                WCOREDUMP(status) ? " (core dumped)" : "");
+            Logger::log(ELL_INFO, "%s %d exited on signal %d%s",
+                process, pid, WTERMSIG(status), WCOREDUMP(status) ? " (core dumped)" : "");
 #else
-            ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
-                "%s %P exited on signal %d",
-                process, pid, WTERMSIG(status));
+            Logger::log(ELL_INFO, "%s %d exited on signal %d", process, pid, WTERMSIG(status));
 #endif
-
         } else {
-            Logger::log(ELL_INFO, "%s %P exited with code %d", process, pid, WEXITSTATUS(status));
+            Logger::log(ELL_INFO, "%s %d exited with code %d", process, pid, WEXITSTATUS(status));
         }
 
         if (WEXITSTATUS(status) == 2) {
-            Logger::log(ELL_INFO, "%s %P exited with fatal code %d and cannot be respawned",
+            Logger::log(ELL_INFO, "%s %d exited with fatal code %d and cannot be respawned",
                 process, pid, WEXITSTATUS(status));
         } else {
             //respawn
@@ -154,7 +151,6 @@ static void AppOnSignal(s32 val, siginfo_t* info, void* pit) {
     } else {
         Logger::log(ELL_INFO, "System::onSignal>>recv signal = %d", val);
     }
-    //System::gSignal = val;
 
     /*EngSignal* sig;
     for (sig = gSignals; sig->mName; sig++) {
@@ -206,9 +202,6 @@ s32 System::daemon() {
         //return EE_ERROR;
     }
 
-    //child
-    mFatherPID = getPID();
-
     if (setsid() == -1) {
         Logger::logError("System::daemon>>setsid() failed,ecode=%d", getError());
         return EE_ERROR;
@@ -251,8 +244,6 @@ s32 System::daemon() {
 
 
 s32 System::loadNetLib() {
-    mFatherPID = getPID();
-
     EngSignal* sig;
     struct sigaction sa;
     for (sig = gSignals; sig->mName; sig++) {
@@ -429,6 +420,32 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
         }
     }
     closedir(dir);
+}
+
+void System::waitProcess(void* handle) {
+    
+}
+
+s32 System::createProcess(usz socket, void*& handle) {
+    handle = nullptr;
+
+    s32 pid = fork();
+    if (pid < 0) {
+        Logger::logError("System::createProcess>>fork() failed,ecode=%d", getError());
+        return pid;
+    }
+    if (pid > 0) {
+        Logger::logInfo("System::createProcess>>fork() pid=%d", pid);
+        Logger::flush();
+        handle = (void*)pid;
+        //exit(0);
+        return pid;
+    }
+
+    if (setsid() == -1) {
+        Logger::logError("System::createProcess>>setsid() failed,ecode=%d", getError());
+    }
+    return pid;
 }
 
 

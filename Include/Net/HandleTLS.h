@@ -42,6 +42,7 @@ public:
 
     //connect
     s32 open(const String& addr, RequestTCP* it);
+    s32 open(const NetAddress& addr, RequestTCP* it);
 
     //link
     s32 open(const RequestAccept& accp, RequestTCP* it);

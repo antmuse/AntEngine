@@ -51,17 +51,19 @@ public:
     }
 
 
-    void setMethod(http_method it) {
+    void setMethod(EHttpMethod it) {
         mMethod = it;
     }
 
-    http_method getMethod()const {
+    EHttpMethod getMethod()const {
         return mMethod;
     }
 
+    s32 writeGet(const String& req);
+
 private:
     HttpURL mURL;
-    http_method mMethod;
+    EHttpMethod mMethod;
 };
 
 

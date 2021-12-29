@@ -57,6 +57,9 @@
 #define DFINLINE __forceinline
 #define DALIGN(N) __declspec(align(N))
 
+#define LIKELY(X) (X)
+#define UNLIKELY(X) (X)
+
 #if defined(_UNICODE) || defined(UNICODE)
 #define DWCHAR_SYS
 #endif
@@ -71,6 +74,13 @@
 #define DINLINE inline
 #define DFINLINE __attribute__((always_inline)) inline
 #define DALIGN(N) __attribute__((__aligned__((N))))
+#ifdef __GNUC__
+#define LIKELY(X) __builtin_expect(!!(X), 1)
+#define UNLIKELY(X) __builtin_expect(!!(X), 0)
+#else
+#define LIKELY(X) (X)
+#define UNLIKELY(X) (X)
+#endif
 #include <stdlib.h>
 #endif
 #endif
@@ -82,6 +92,8 @@
 #define DINLINE inline
 #define DFINLINE __attribute__((always_inline)) inline
 #define DALIGN(N) __attribute__((__aligned__((N))))
+#define LIKELY(X) (X)
+#define UNLIKELY(X) (X)
 #endif
 #endif
 
@@ -166,7 +178,9 @@
 #endif
 
 
-
+#ifndef DSIZEOF
+# define DSIZEOF(a) (sizeof(a) / sizeof((a)[0]))
+#endif
 
 
 
@@ -258,6 +272,10 @@ DFINLINE void AppSwap(T& a, T& b) {
     b = c;
 }
 
+
+#define DMIN(a,b) ((a) < (b) ? (a) : (b))
+#define DMAX(a,b) ((a) > (b) ? (a) : (b))
+#define DCLAMP(V,L,H) (DMIN(DMAX(V, L), H))
 
 template<class T>
 DFINLINE const T& AppMin(const T& a, const T& b) {

@@ -93,6 +93,7 @@ public:
     * @return 0 if success, else failed.
     */
     s32 open(const String& addr, RequestTCP* it);
+    s32 open(const NetAddress& addr, RequestTCP* it);
 
     /**
     * @brief launch linked sock

@@ -339,13 +339,15 @@ void NetAddress::setDomain(const s8* iDNS, bool ipv6) {
         if(AF_INET6 == curr->ai_family) {
             mSize = sizeof(sockaddr_in6);
             memcpy(mAddress, curr->ai_addr, curr->ai_addrlen);
-            inet_ntop(getAddress6()->sin6_family, &getAddress6()->sin6_addr, mName, sizeof(mName));
+            getAddress6()->sin6_port = htons(mPort);
+            reverse();
             break;
         }
         if(AF_INET == curr->ai_family) {
             mSize = sizeof(sockaddr_in);
             memcpy(mAddress, curr->ai_addr, curr->ai_addrlen);
-            inet_ntop(getAddress4()->sin_family, &getAddress4()->sin_addr, mName, sizeof(mName));
+            getAddress4()->sin_port = htons(mPort);
+            reverse();
             break;
         }
     } //for

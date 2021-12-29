@@ -31,8 +31,8 @@ namespace net {
 static const s32 G_MAX_BODY = 1024 * 1024 * 10;
 
 HttpMsg::HttpMsg() :
-    mFlag(0),
-    mCache(512) {
+    mFlag(0) {
+    mCache.init();
 }
 
 
@@ -40,7 +40,7 @@ HttpMsg::~HttpMsg() {
 }
 
 
-StringView HttpMsg::getMethodStr(http_method it) {
+StringView HttpMsg::getMethodStr(EHttpMethod it) {
 #define DCASE(num, name, str) case HTTP_##name: ret.set(#str,sizeof(#str)-1);break;
 
     StringView ret;
@@ -59,49 +59,25 @@ StringView HttpMsg::getMethodStr(http_method it) {
 
 s32 HttpMsg::onHeadFinish(s32 flag, ssz bodySize) {
     mFlag = flag;
-    mCache.resize(0);
-    if (bodySize > 0) {
-        if (bodySize < G_MAX_BODY) {
-            mCache.reallocate(bodySize);
-        } else {
-            return 1;
-        }
-    }//else no body
+    mCache.reset();
     return 0;
 }
 
 
-void HttpMsg::writeBody(const void* buf, usz bsz, s32 flag) {
-    if (0 == flag) {
-        mCache.reallocate(mCache.size() + 128);
-        usz len = snprintf(mCache.getWritePointer(), mCache.getWriteSize(), "Content-Length:%llu\r\n\r\n", bsz);
-        mCache.resize(mCache.size() + len);
-    }
+void HttpMsg::writeBody(const void* buf, usz bsz) {
     mCache.write(buf, bsz);
 }
 
-void HttpMsg::writeHead(const s8* name, const s8* value, s32 flag) {
+void HttpMsg::writeHead(const s8* name, const s8* value) {
     if (name && value) {
         usz klen = strlen(name);
         usz vlen = strlen(value);
-        if (klen > 0 && vlen > 0) {
+        if (klen > 0) {
             mCache.write(name, klen);
-            mCache.writeU8(':');
-            if (0x1 & flag) {
-                StringView kk, vv;
-                usz used = mCache.size();
-                kk.mData = (s8*)(used - 1 - klen);
-                kk.mLen = klen;
-                vv.mData = (s8*)used;
-                vv.mLen = vlen;
-                mHead.add(kk, vv);
-            }
+            mCache.write(":", 1);
             mCache.write(value, vlen);
-            mCache.writeU16(App2Char2S16("\r\n"));
+            mCache.write("\r\n", 2);
         }
-    }
-    if (0x3 & flag) {
-        mCache.writeU16(App2Char2S16("\r\n"));
     }
 }
 

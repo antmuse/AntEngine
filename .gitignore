@@ -3,11 +3,22 @@ Build/ipch/
 Build/.vs/
 Lib/
 Bin/Temp/
+Bin/Log/
+Bin/GMAP/
 CMakeFiles
 
 
 # files
+Bin/*.o
+Bin/*.bin
+Bin/*.dll
+Bin/*.pdb
+Bin/*.exe
+Bin/*.iobj
+Bin/*.ipdb
+Bin/*.ilk
 Build/*.db
+Build/*/*.user
 Build/*.opendb
 CMakeCache.txt
 *.cmake

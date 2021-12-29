@@ -42,10 +42,7 @@ ELogLevel Logger::mMinLevel = ELL_DEBUG;
 ELogLevel Logger::mMinLevel = ELL_INFO;
 #endif  //release version
 
-
-
-
-
+static const s8* G_LOG_FMT = "%Y-%m-%d %H:%M:%S";
 
 class LogPrinter : public ILogReceiver {
 public:
@@ -66,22 +63,30 @@ public:
 
 class LogFile : public ILogReceiver {
 public:
-    LogFile(const s8* fmt = "Log/%Y-%m-%d_%H-%M-%S") {
-        if (fmt) {
-            mFormat = fmt;
-            open();
-        }
+    LogFile() :
+        mFileSize(0)
+        , mTodayID(0)
+        , mFormat("Log/%Y-%m-%d.") {
+        open();
+    }
+
+    LogFile(const s8* fmt)
+        :mFileSize(0)
+        , mTodayID(0)
+        , mFormat(fmt ? fmt : "Log/%Y-%m-%d.") {
+        open();
     }
 
     virtual ~LogFile() {
     }
 
     virtual void log(usz len, const s8* msg) {
-        mFileSize += mFile.write(msg, len);
-        if (mFileSize > 1024 * 1024 * 10) { //按大小分割日志
-            mFile.close();
+        const s16 day = getDay(msg);
+        if (day != mTodayID) { //按天分割日志
+            //mFile.close();
             open();
         }
+        mFileSize += mFile.write(msg, len);
     }
 
     virtual void flush() {
@@ -90,6 +95,7 @@ public:
 
 private:
     String mFormat;
+    s16 mTodayID;
     FileWriter mFile;
     usz mFileSize;
 
@@ -98,7 +104,9 @@ private:
         String flog = eng.getAppPath();
         usz addsz = 260 + mFormat.getLen();
         flog.reserve(flog.getLen() + eng.getAppName().getLen() + addsz);
-        flog.setLen(flog.getLen() + Timer::getTimeStr((s8*)flog.c_str() + flog.getLen(), addsz, mFormat.c_str()));
+        usz len = flog.getLen();
+        flog.setLen(len + Timer::getTimeStr((s8*)flog.c_str() + len, addsz, mFormat.c_str()));
+        mTodayID = App2Char2S16(flog.c_str() + len + 12);
         flog += eng.getAppName();
         flog.deleteFilenameExtension();
         flog += ".log";
@@ -206,7 +214,7 @@ void Logger::postLog(const s8* msg, va_list args) {
         mMutex.lock();
 
         mText[0] = '[';
-        usz used = 1 + Timer::getTimeStr(mText + 1, sizeof(mText) - 1);
+        usz used = 1 + Timer::getTimeStr(mText + 1, sizeof(mText) - 1, G_LOG_FMT);
         mText[used++] = ']';
         mText[used++] = ' ';
         used += vsnprintf(mText + used, sizeof(mText) - used, msg, args);
@@ -229,8 +237,8 @@ void Logger::addPrintReceiver() {
     add(new LogPrinter());
 }
 
-void Logger::addFileReceiver(const s8* fname) {
-    add(new LogFile(fname));
+void Logger::addFileReceiver() {
+    add(new LogFile());
 }
 
 void Logger::add(ILogReceiver* iLog) {

@@ -1,40 +1,15 @@
-/* Copyright Joyent, Inc. and other Node contributors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
 #ifndef APP_HTTP_PARSER_H
 #define APP_HTTP_PARSER_H
 
-#include "Config.h"
+#include "Strings.h"
 
 namespace app {
 namespace net {
 
-/* Also update SONAME in the Makefile whenever you change these. */
-#define HTTP_PARSER_VERSION_MAJOR 2
-#define HTTP_PARSER_VERSION_MINOR 9
-#define HTTP_PARSER_VERSION_PATCH 4
-
 /* Compile with -DHTTP_PARSER_STRICT=0 to make less checks, but run faster
  */
-#ifndef HTTP_PARSER_STRICT
-# define HTTP_PARSER_STRICT 1
+#ifndef DHTTP_PARSE_STRICT
+# define DHTTP_PARSE_STRICT 1
 #endif
 
  /* Maximium header size allowed. If the macro is not defined
@@ -48,30 +23,29 @@ namespace net {
 # define HTTP_MAX_HEADER_SIZE (80*1024)
 #endif
 
-typedef struct http_parser http_parser;
-typedef struct http_parser_settings http_parser_settings;
 
-
-/* Callbacks should return non-zero to indicate an error. The parser will
- * then halt execution.
- *
- * The one exception is on_headers_complete. In a HTTP_RESPONSE parser
- * returning '1' from on_headers_complete will tell the parser that it
- * should not expect a body. This is used when receiving a response to a
- * HEAD request which may contain 'Content-Length' or 'Transfer-Encoding:
- * chunked' headers that indicate the presence of a body.
- *
- * Returning `2` from on_headers_complete will tell parser that it should not
- * expect neither a body nor any futher responses on this connection. This is
- * useful for handling responses to a CONNECT request which may not contain
- * `Upgrade` or `Connection: upgrade` headers.
- *
- * http_data_cb does not return data chunks. It will be called arbitrarily
- * many times for each string. E.G. you might get 10 callbacks for "on_url"
- * each providing just a few characters more data.
- */
-typedef s32(*http_data_cb) (http_parser*, const s8* at, usz length);
-typedef s32(*http_cb) (http_parser*);
+  /* Callbacks should return non-zero to indicate an error. The parser will
+   * then halt execution.
+   *
+   * The one exception is mCallHeadComplete. In a EHTTP_RESPONSE parser
+   * returning '1' from mCallHeadComplete will tell the parser that it
+   * should not expect a body. This is used when receiving a response to a
+   * HEAD request which may contain 'Content-Length' or 'Transfer-Encoding:
+   * chunked' headers that indicate the presence of a body.
+   *
+   * Returning `2` from mCallHeadComplete will tell parser that it should not
+   * expect neither a body nor any futher responses on this connection. This is
+   * useful for handling responses to a CONNECT request which may not contain
+   * `Upgrade` or `Connection: upgrade` headers.
+   *
+   * FuncHttpData does not return data chunks. It will be called arbitrarily
+   * many times for each string. E.G. you might get 10 callbacks for "mCallURL"
+   * each providing just a few characters more data.
+   */
+class HttpParser;
+typedef s32(*FuncHttpData) (HttpParser&, const s8* at, usz length);
+typedef s32(*FuncHttpHeader) (HttpParser&, const StringView& key, const StringView& val);
+typedef s32(*FuncHttpParser) (HttpParser&);
 
 
 /* Status Codes */
@@ -136,7 +110,7 @@ typedef s32(*http_cb) (http_parser*);
   XX(510, NOT_EXTENDED,                    Not Extended)                    \
   XX(511, NETWORK_AUTHENTICATION_REQUIRED, Network Authentication Required) \
 
-enum http_status {
+enum EHttpStatus {
 #define XX(num, name, string) HTTP_STATUS_##name = num,
     HTTP_STATUS_MAP(XX)
 #undef XX
@@ -188,26 +162,17 @@ enum http_status {
   /* icecast */                     \
   XX(33, SOURCE,      SOURCE)       \
 
-enum http_method {
+enum EHttpMethod {
 #define XX(num, name, string) HTTP_##name = num,
     HTTP_METHOD_MAP(XX)
 #undef XX
 };
 
 
-enum http_parser_type { HTTP_REQUEST, HTTP_RESPONSE, HTTP_BOTH };
-
-
-/* Flag values for http_parser.flags field */
-enum flags {
-    F_CHUNKED = 1 << 0
-    , F_CONNECTION_KEEP_ALIVE = 1 << 1
-    , F_CONNECTION_CLOSE = 1 << 2
-    , F_CONNECTION_UPGRADE = 1 << 3
-    , F_TRAILING = 1 << 4
-    , F_UPGRADE = 1 << 5
-    , F_SKIPBODY = 1 << 6
-    , F_CONTENTLENGTH = 1 << 7
+enum EHttpParserType {
+    EHTTP_BOTH = 0,
+    EHTTP_REQUEST,
+    EHTTP_RESPONSE
 };
 
 
@@ -220,16 +185,16 @@ enum flags {
   XX(OK, "success")                                                  \
                                                                      \
   /* Callback-related errors */                                      \
-  XX(CB_message_begin, "the on_message_begin callback failed")       \
-  XX(CB_url, "the on_url callback failed")                           \
-  XX(CB_header_field, "the on_header_field callback failed")         \
-  XX(CB_header_value, "the on_header_value callback failed")         \
-  XX(CB_headers_complete, "the on_headers_complete callback failed") \
-  XX(CB_body, "the on_body callback failed")                         \
-  XX(CB_message_complete, "the on_message_complete callback failed") \
-  XX(CB_status, "the on_status callback failed")                     \
-  XX(CB_chunk_header, "the on_chunk_header callback failed")         \
-  XX(CB_chunk_complete, "the on_chunk_complete callback failed")     \
+  XX(CB_MsgBegin, "the mCallMsgBegin callback failed")               \
+  XX(CB_URL, "the mCallURL callback failed")                         \
+  XX(CB_HeaderField, "the mCallHeaderField callback failed")         \
+  XX(CB_HeaderValue, "the mCallHeaderValue callback failed")         \
+  XX(CB_HeadersComplete, "the mCallHeadComplete callback failed")    \
+  XX(CB_Body, "the mCallBody callback failed")                       \
+  XX(CB_MsgComplete, "the mCallMsgComplete callback failed")         \
+  XX(CB_Status, "the mCallURL callback failed")                      \
+  XX(CB_ChunkHeader, "the mCallChunkHeader callback failed")         \
+  XX(CB_ChunkComplete, "the mCallChunkComplete callback failed")     \
                                                                      \
   /* Parsing-related errors */                                       \
   XX(INVALID_EOF_STATE, "stream ended at an unexpected time")        \
@@ -265,71 +230,28 @@ enum flags {
 
  /* Define HPE_* values for each errno value above */
 #define HTTP_ERRNO_GEN(n, s) HPE_##n,
-enum http_errno {
+enum EHttpError {
     HTTP_ERRNO_MAP(HTTP_ERRNO_GEN)
 };
 #undef HTTP_ERRNO_GEN
 
 
-/* Get an http_errno value from an http_parser */
-#define HTTP_PARSER_ERRNO(p)            ((enum http_errno) (p)->http_errno)
-
-
-struct http_parser {
-    /** PRIVATE **/
-    u32 type : 2;         /* enum http_parser_type */
-    u32 flags : 8;       /* F_* values from 'flags' enum; semi-public */
-    u32 state : 7;        /* enum state from http_parser.c */
-    u32 header_state : 7; /* enum header_state from http_parser.c */
-    u32 index : 5;        /* index into current matcher */
-    u32 uses_transfer_encoding : 1; /* Transfer-Encoding header is present */
-    u32 allow_chunked_length : 1; /* Allow headers with both
-                                            * `Content-Length` and
-                                            * `Transfer-Encoding: chunked` set */
-    u32 lenient_http_headers : 1;
-
-    u32 nread;          /* # bytes read in various scenarios */
-    u64 content_length; /* # bytes in body. `(u64) -1` (all bits one)
-                              * if no Content-Length header.
-                              */
-
-                              /** READ-ONLY **/
-    u16 http_major;
-    u16 http_minor;
-    u32 status_code : 16; /* responses only */
-    u32 method : 8;       /* requests only */
-    u32 http_errno : 7;
-
-    /* 1 = Upgrade header was present and the parser has exited because of that.
-     * 0 = No upgrade header present.
-     * Should be checked when http_parser_execute() returns in addition to
-     * error checking.
-     */
-    u32 upgrade : 1;
-
-    /** PUBLIC **/
-    void* data; /* A pointer to get hook to the "connection" or "socket" object */
+//Flag values for HttpParser.mFlags
+enum EHttpFlags {
+    F_HEAD_DONE = 1 << 0              //header done
+    , F_CONNECTION_KEEP_ALIVE = 1 << 1
+    , F_CONNECTION_CLOSE = 1 << 2
+    , F_CONNECTION_UPGRADE = 1 << 3
+    , F_TAILING = 1 << 4                 //last chunk
+    , F_UPGRADE = 1 << 5
+    , F_SKIPBODY = 1 << 6
+    , F_CONTENTLENGTH = 1 << 7          //header content_length repeated
+    , F_CHUNKED = 1 << 9                //
+    , F_BOUNDARY = 1 << 8               //Boundary
+    , F_BOUNDARY_CMP = 1 << 10          //Boundary must been compared
 };
 
-
-struct http_parser_settings {
-    http_cb      on_message_begin;
-    http_data_cb on_url;
-    http_data_cb on_status;
-    http_data_cb on_header_field;
-    http_data_cb on_header_value;
-    http_cb      on_headers_complete;
-    http_data_cb on_body;
-    http_cb      on_message_complete;
-    /* When on_chunk_header is called, the current chunk length is stored
-     * in parser->content_length.
-     */
-    http_cb      on_chunk_header;
-    http_cb      on_chunk_complete;
-};
-
-
-enum http_parser_url_fields {
+enum EHttpUrlFields {
     UF_SCHEMA = 0
     , UF_HOST = 1
     , UF_PORT = 2
@@ -341,84 +263,188 @@ enum http_parser_url_fields {
 };
 
 
-/* Result structure for http_parser_parse_url().
+/**
+ * @brief Result structure for http parse url.
  *
  * Callers should index into field_data[] with UF_* values iff field_set
  * has the relevant (1 << UF_*) bit set. As a courtesy to clients (and
  * because we probably have padding left over), we convert any port to
  * a u16.
  */
-struct http_parser_url {
-    u16 field_set;           /* Bitmask of (1 << UF_*) values */
-    u16 port;                /* Converted UF_PORT string */
+class HttpParserURL {
+public:
+    u16 mFieldSet;           /* Bitmask of (1 << UF_*) values */
+    u16 mPort;                /* Converted UF_PORT string */
 
     struct {
-        u16 off;               /* Offset into buffer in which field starts */
-        u16 len;               /* Length of run in buffer */
-    } field_data[UF_MAX];
+        u16 mOffset;          /* Offset into buffer in which field starts */
+        u16 mLen;             /* Length of run in buffer */
+    } mFieldData[UF_MAX];
+
+    HttpParserURL() {
+        init();
+    }
+
+    void init() {
+        memset(this, 0, sizeof(*this));
+    }
+
+    /* Parse a URL; return nonzero on failure */
+    s32 parseURL(const s8* buf, usz buflen, s32 is_connect);
+
+    s32 parseHost(const s8* buf, s32 found_at);
 };
 
 
-/* Returns the library version. Bits 16-23 contain the major version number,
- * bits 8-15 the minor version number and bits 0-7 the patch level.
- * Usage example:
- *
- *   usz version = http_parser_version();
- *   unsigned major = (version >> 16) & 255;
- *   unsigned minor = (version >> 8) & 255;
- *   unsigned patch = version & 255;
- *   printf("http_parser v%u.%u.%u\n", major, minor, patch);
+/**
+ * @breif 除body回调，其它皆在消息完整时回调(消息最大长受到TcpHandle中接收缓存区限制)
+ *  body回调不受缓存区限制，其它消息如在缓存区满时仍然不完整，将认为受到攻击并需切断连接。
  */
-usz http_parser_version(void);
+class HttpParser {
+public:
+    HttpParser() {
+        memset(this, 0, sizeof(*this));
+    }
 
-void http_parser_init(http_parser* parser, enum http_parser_type type);
+    void init(EHttpParserType type, void* user);
+
+    /* Executes the parser. Returns number of parsed bytes. Sets
+     * `parser->EHttpError` on error. */
+    usz parseBuf(const s8* data, usz len);
+
+    /* Checks if this is the final chunk of the body. */
+    bool isBodyFinal()const;
+
+    bool isBodyHeader()const {
+        return 0 != (mFlags & F_HEAD_DONE);
+    }
+
+    /* If http_should_keep_alive() in the mCallHeadComplete or
+     * mCallMsgComplete callback returns 0, then this should be
+     * the last message on the connection.
+     * If you are the server, respond with the "Connection: close" header.
+     * If you are the client, close the connection.
+     */
+    bool shouldKeepAlive()const;
+
+    /* Pause or un-pause the parser; a nonzero value pauses
+     * Users should only be pausing/unpausing a parser that is not in an error
+     * state. In non-debug builds, there's not much that we can do about this
+     * other than ignore it.
+     */
+    void pauseParse(bool paused);
 
 
-/* Initialize http_parser_settings members to 0
- */
-void http_parser_settings_init(http_parser_settings* settings);
+    /* Get an EHttpError value from an HttpParser */
+    EHttpError getError()const {
+        return (EHttpError)mHttpError;
+    }
+
+    //Does the parser need to see an EOF to find the end of the message?
+    bool needEOF()const;
+
+    static void setMaxHeaderSize(u32 size) {
+        GMAX_HEAD_SIZE = size;
+    }
+
+    static const s8* getMethodStr(EHttpMethod m);
+
+    static const s8* getStatusStr(EHttpStatus s);
+
+    static const s8* getErrorStr(EHttpError err);
+
+    /** eg:
+        Content-Type: multipart/form-data; boundary="---soun"
+        out = {"multipart"="form-data","boundary"="---soun"};
+
+        Content-Disposition: form-data; name="field"; filename="filename.jpg"
+        out = {"form-data"="","name"="field","filename"="filename.jpg"};
+    */
+    static const s8* parseValue(const s8* curr, const s8* end,
+        StringView* out, s32& omax, s32& vflag);
+
+    const s8* getErrorBrief(EHttpError err);
+
+protected:
+    friend class HttpLayer;
+
+    u16 mFlags;            // F_* values from 'flags' enum; semi-public
+    u8 mIndex;             // index into current matcher
+    u8 mState;
+    u8 mHeaderState;
+    u8 mValueState;
+
+    u32 mType : 2;         // enum EHttpParserType
+
+    //Transfer-Encoding header is present
+    u32 mUseTransferEncode : 1;
+
+    //Allow headers with both `Content-Length` and `Transfer-Encoding: chunked`
+    u32 mAllowChunkedLen : 1;
+
+    u32 mLenientHeaders : 1;
+
+    /* 1 = Upgrade header was present and the parser has exited because of that.
+     * 0 = No upgrade header present.
+     * Should be checked when http_parser_execute() returns in addition to
+     * error checking.
+     */
+    u32 mUpgrade : 1;
+
+    //bytes read in various scenarios
+    u32 mReadSize;
+
+    /* bytes in body.
+     * `(u64) -1` (all bits one) if no Content-Length header.
+     */
+    u64 mContentLen;
+
+    //READ-ONLY
+    u16 mVersionMajor;
+    u16 mVersionMinor;
+    u16 mStatusCode; // responses only
+    u8 mMethod;      // requests only
+    u8 mHttpError;
+
+    u8 mBoundaryLen;
+    s8 mBoundary[256];
+
+    u8 mFormNameLen;
+    s8 mFormName[256];
+
+    u8 mFileNameLen;
+    s8 mFileName[256];
+
+    /* A pointer to get hook to the "connection" or "socket" object */
+    void* mUserData;
+
+    //callbacks
+    FuncHttpParser mCallMsgBegin;
+    FuncHttpData mCallURL;
+    FuncHttpData mCallStatus;
+    FuncHttpHeader mCallHeader;
+    FuncHttpParser mCallHeadComplete;
+    FuncHttpData mCallBody;
+    FuncHttpParser mCallMsgComplete;
+    /*
+     * When mCallChunkHeader is called, the current chunk length is stored
+     * in parser->content_length.
+     */
+    FuncHttpParser mCallChunkHeader;
+    FuncHttpParser mCallChunkComplete;
+
+    void setError(EHttpError it) {
+        mHttpError = it;
+    }
+
+private:
+    static u32 GMAX_HEAD_SIZE;
+
+    void reset();
+    const s8* parseBoundBody(const s8* curr, const s8* end, StringView& tbody);
+};
 
 
-/* Executes the parser. Returns number of parsed bytes. Sets
- * `parser->http_errno` on error. */
-usz http_parser_execute(http_parser* parser, const http_parser_settings* settings,
-    const s8* data, usz len);
-
-
-/* If http_should_keep_alive() in the on_headers_complete or
- * on_message_complete callback returns 0, then this should be
- * the last message on the connection.
- * If you are the server, respond with the "Connection: close" header.
- * If you are the client, close the connection.
- */
-s32 http_should_keep_alive(const http_parser* parser);
-
-/* Returns a string version of the HTTP method. */
-const s8* http_method_str(enum http_method m);
-
-/* Returns a string version of the HTTP status code. */
-const s8* http_status_str(enum http_status s);
-
-/* Return a string name of the given error */
-const s8* http_errno_name(enum http_errno err);
-
-/* Return a string description of the given error */
-const s8* http_errno_description(enum http_errno err);
-
-/* Initialize all http_parser_url members to 0 */
-void http_parser_url_init(struct http_parser_url* u);
-
-/* Parse a URL; return nonzero on failure */
-s32 http_parser_parse_url(const s8* buf, usz buflen, s32 is_connect, struct http_parser_url* u);
-
-/* Pause or un-pause the parser; a nonzero value pauses */
-void http_parser_pause(http_parser* parser, s32 paused);
-
-/* Checks if this is the final chunk of the body. */
-s32 http_body_is_final(const http_parser* parser);
-
-/* Change the maximum header size provided at compile time. */
-void http_parser_set_max_header_size(u32 size);
 
 }//namespace app
 }//namespace net

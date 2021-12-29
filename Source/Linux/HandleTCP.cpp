@@ -59,6 +59,17 @@ s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
     return ret;
 }
 
+s32 HandleTCP::open(const NetAddress& addr, RequestTCP* it) {
+    DASSERT(it);
+    mType = EHT_TCP_CONNECT;
+    mLoop = &Engine::getInstance().getLoop();
+    mRemote = addr;
+    if (EE_OK != mLoop->openHandle(this)) {
+        return EE_ERROR;
+    }
+    return connect(it);
+}
+
 s32 HandleTCP::open(const String& addr, RequestTCP* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;

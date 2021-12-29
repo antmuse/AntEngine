@@ -30,6 +30,11 @@
 
 
 namespace app {
+s32 Handle::launchClose() {
+    DASSERT(mLoop);
+    return mLoop->closeHandle(this);
+}
+
 namespace net {
 
 HandleTLS::HandleTLS() :
@@ -205,6 +210,27 @@ s32 HandleTLS::setHost(const s8* host, usz length) {
     return 0;
 }
 
+s32 HandleTLS::open(const NetAddress& addr, RequestTCP* oit) {
+    init();
+
+    mType = EHT_TCP_CONNECT;
+    mTCP.setClose(EHT_TCP_CONNECT, HandleTLS::funcOnClose, this);
+
+    DASSERT(oit && oit->mCall);
+    oit->mType = ERT_CONNECT;
+    oit->mError = 0;
+    oit->mHandle = this;
+
+    mWrite.mUser = this;
+    mWrite.mCall = HandleTLS::funcOnConnect;
+    s32 ret = mTCP.open(addr, &mWrite);
+    mFlag = mTCP.getFlag();
+    if (EE_OK == ret) {
+        grab();
+        AppPushRingQueueTail_1(mFlyWrites, oit);
+    }
+    return ret;
+}
 
 s32 HandleTLS::open(const String& addr, RequestTCP* oit) {
     init();

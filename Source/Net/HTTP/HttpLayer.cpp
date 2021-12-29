@@ -34,96 +34,90 @@ namespace net {
 const static s32 G_CHUNK_SIZE = 2 * 1024;       //0x800
 const static s8* G_CHUNK_REFMT = "%.3llx";      //3=strlen(800),   0x800
 
-s32 HttpLayer::funcHttpBegin(http_parser* iContext) {
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-    HttpRequest& req = nd.getRequest();
-    req.setMethod((http_method)iContext->method);
-    return 0;
-}
+s32 HttpLayer::funcHttpHeader(HttpParser& pars, const StringView& key, const StringView& val) {
+    //printf("%.*s : %.*s", (s32)key.mLen, key.mData,(s32)val.mLen, val.mData);
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
 
-s32 HttpLayer::funcHttpStatus(http_parser* iContext, const s8* at, usz length) {
-    //printf("funcHttpStatus>>status=%u, str=%.*s\n", iContext->status_code, (s32)length, at);
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-    HttpResponse& resp = nd.getResp();
-    resp.writeStatus(iContext->status_code);
-    return 0;
-}
-
-s32 HttpLayer::funcHttpHeadFinish(http_parser* iContext) {
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-
-    if (HTTP_RESPONSE == iContext->type) {
-        nd.getResp().writeHead(nullptr, nullptr, true);
-        return nd.getResp().onHeadFinish(iContext->flags, iContext->content_length);
-    } else {
-        return nd.getRequest().onHeadFinish(iContext->flags, iContext->content_length);
+    if (EHTTP_RESPONSE == pars.mType) {
+        nd.getResp().onHeader(key, val);
+    } else if (EHTTP_REQUEST == pars.mType) {
+        nd.getRequest().onHeader(key, val);
     }
     return 0;
 }
 
-s32 HttpLayer::funcHttpFinish(http_parser* iContext) {
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
+s32 HttpLayer::funcHttpBegin(HttpParser& pars) {
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
+    if (EHTTP_REQUEST == pars.mType) {
+        nd.getRequest().setMethod((EHttpMethod)pars.mMethod);
+    }
+    nd.onHttpStart();
+    return 0;
+}
+
+s32 HttpLayer::funcHttpStatus(HttpParser& pars, const s8* at, usz length) {
+    //printf("funcHttpStatus>>status=%u, str=%.*s\n", pars.status_code, (s32)length, at);
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
+    if (EHTTP_RESPONSE == pars.mType) {
+        nd.getResp().writeStatus(pars.mStatusCode);
+        nd.getResp().writeBrief(at, length);
+    } else if (EHTTP_REQUEST == pars.mType) {
+        nd.getRequest().setMethod((EHttpMethod)pars.mMethod);
+    }
+    return 0;
+}
+
+s32 HttpLayer::funcHttpHeadFinish(HttpParser& pars) {
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
+    if (EHTTP_RESPONSE == pars.mType) {
+        return nd.getResp().onHeadFinish(pars.mFlags, pars.mContentLen);
+    } else {
+        return nd.getRequest().onHeadFinish(pars.mFlags, pars.mContentLen);
+    }
+    return 0;
+}
+
+s32 HttpLayer::funcHttpFinish(HttpParser& pars) {
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
     nd.onHttpFinish();
     return 0;
 }
 
-s32 HttpLayer::funcHttpPath(http_parser* iContext, const s8* at, usz length) {
+s32 HttpLayer::funcHttpPath(HttpParser& pars, const s8* at, usz length) {
     //printf("URL=%.*s\n", (s32)length, at);
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
     HttpRequest& req = nd.getRequest();
     req.getURL().decode(at, length);
-    req.setMethod((http_method)iContext->method);
+    req.setMethod((EHttpMethod)pars.mMethod);
     return 0;
 }
 
-s32 HttpLayer::funcHttpHeadName(http_parser* iContext, const s8* at, usz length) {
-    //printf("%.*s : ", (s32)length, at);
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-
-    if (HTTP_RESPONSE == iContext->type) {
-        nd.getResp().onHeadName(at, length);
-    } else if (HTTP_REQUEST == iContext->type) {
-        nd.getRequest().onHeadName(at, length);
-    }
-    return 0;
-}
-
-s32 HttpLayer::funcHttpHeadValue(http_parser* iContext, const s8* at, usz length) {
+s32 HttpLayer::funcHttpBody(HttpParser& pars, const s8* at, usz length) {
     //printf("%.*s\n", (s32)length, at);
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-    if (HTTP_RESPONSE == iContext->type) {
-        nd.getResp().onHeadValue(at, length);
-    } else {
-        nd.getRequest().onHeadValue(at, length);
-    }
-    return 0;
-}
-
-s32 HttpLayer::funcHttpBody(http_parser* iContext, const s8* at, usz length) {
-    //printf("%.*s\n", (s32)length, at);
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-    if (HTTP_RESPONSE == iContext->type) {
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
+    if (EHTTP_RESPONSE == pars.mType) {
         nd.getResp().writeBody(at, length);
-    } else if (HTTP_REQUEST == iContext->type) {
+    } else if (EHTTP_REQUEST == pars.mType) {
         nd.getRequest().writeBody(at, length);
     }
+    nd.onHttpBody();
     return 0;
 }
 
 //Transfer-Encoding : chunked
-s32 HttpLayer::funcHttpChunkHead(http_parser* iContext) {
-    //printf("funcHttpChunkHead>>chunk size = %llu = 0X%llx\n", iContext->content_length, iContext->content_length);
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
-    if (HTTP_RESPONSE == iContext->type) {
-        nd.getResp().onChunkHead(iContext->content_length);
-    } else if (HTTP_REQUEST == iContext->type) {
-        nd.getRequest().onChunkHead(iContext->content_length);
+s32 HttpLayer::funcHttpChunkHead(HttpParser& pars) {
+    //printf("funcHttpChunkHead>>chunk size = %llu = 0X%llx\n", pars.mContentLen, pars.mContentLen);
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
+    if (EHTTP_RESPONSE == pars.mType) {
+        //nd.getResp().onChunkHead(pars.mContentLen);
+    } else if (EHTTP_REQUEST == pars.mType) {
+        //nd.getRequest().onChunkHead(pars.mContentLen);
     }
     return 0;
 }
 
-s32 HttpLayer::funcHttpChunkFinish(http_parser* iContext) {
-    HttpLayer& nd = *(HttpLayer*)iContext->data;
+s32 HttpLayer::funcHttpChunkFinish(HttpParser& pars) {
+    HttpLayer& nd = *(HttpLayer*)pars.mUserData;
     nd.onChunkFinish();
     return 0;
 }
@@ -132,7 +126,9 @@ s32 HttpLayer::funcHttpChunkFinish(http_parser* iContext) {
 
 
 
-HttpLayer::HttpLayer(http_parser_type tp) :
+HttpLayer::HttpLayer(EHttpParserType tp) :
+    mPType(tp),
+    mEvent(nullptr),
     mHTTPS(true),
     mKeepAlive(false) {
     initParser(tp);
@@ -146,36 +142,65 @@ HttpLayer::~HttpLayer() {
 }
 
 
-void HttpLayer::initParser(http_parser_type tp) {
-    http_parser_settings_init(&mSets);
-    mSets.on_message_begin = HttpLayer::funcHttpBegin;
-    mSets.on_url = HttpLayer::funcHttpPath;
-    mSets.on_status = HttpLayer::funcHttpStatus;
-    mSets.on_header_field = HttpLayer::funcHttpHeadName;
-    mSets.on_header_value = HttpLayer::funcHttpHeadValue;
-    mSets.on_headers_complete = HttpLayer::funcHttpHeadFinish;
-    mSets.on_body = HttpLayer::funcHttpBody;
-    mSets.on_message_complete = HttpLayer::funcHttpFinish;
-    mSets.on_chunk_header = HttpLayer::funcHttpChunkHead;
-    mSets.on_chunk_complete = HttpLayer::funcHttpChunkFinish;
+void HttpLayer::initParser(EHttpParserType tp) {
+    mParser.init(tp, this);
 
-    http_parser_init(&mParser, tp);
-    mParser.data = this;
+    mParser.mCallMsgBegin = HttpLayer::funcHttpBegin;
+    mParser.mCallURL = HttpLayer::funcHttpPath;
+    mParser.mCallStatus = HttpLayer::funcHttpStatus;
+    mParser.mCallHeader = HttpLayer::funcHttpHeader;
+    mParser.mCallHeadComplete = HttpLayer::funcHttpHeadFinish;
+    mParser.mCallBody = HttpLayer::funcHttpBody;
+    mParser.mCallMsgComplete = HttpLayer::funcHttpFinish;
+    mParser.mCallChunkHeader = HttpLayer::funcHttpChunkHead;
+    mParser.mCallChunkComplete = HttpLayer::funcHttpChunkFinish;
 }
 
 
-//s8 shost[256];//255, Maximum host name defined in RFC 1035
-//snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
 
+s32 HttpLayer::get(const String& gurl) {
+    mResp.clear();
+    if (EE_OK != mRequest.writeGet(gurl)) {
+        return EE_ERROR;
+    }
+
+    mHTTPS = mRequest.getURL().isHttps();
+    if (!mHTTPS) {
+        mTCP.getHandleTCP().setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
+        mTCP.getHandleTCP().setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
+    } else {
+        mTCP.setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
+        mTCP.setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
+    }
+
+    StringView host = mRequest.getURL().getHost();
+    NetAddress addr(mRequest.getURL().getPort());
+    s8 shost[256];  //255, Maximum host name defined in RFC 1035
+    snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
+    addr.setDomain(shost);
+
+    net::RequestTCP* nd = net::RequestTCP::newRequest(4 * 1024);
+    nd->mUser = this;
+    nd->mCall = HttpLayer::funcOnConnect;
+    s32 ret = mHTTPS ? mTCP.open(addr, nd) : mTCP.getHandleTCP().open(addr, nd);
+    if (EE_OK != ret) {
+        net::RequestTCP::delRequest(nd);
+        return ret;
+    }
+    return EE_OK;
+}
+
+s32 HttpLayer::post(const String& gurl) {
+    return EE_ERROR;
+}
 
 void HttpLayer::onChunkFinish() {
-    mResp.clearBody();
-    //printf("HttpLayer::onChunkFinish>>chunk size = %llu = 0X%llx\n", bsz, bsz);
+    onHttpBody();
 }
 
 void HttpLayer::writeContentType(const String& pat) {
     const StringView str = mResp.getMimeType(pat.c_str(), pat.getLen());
-    mResp.writeHead("Content-Type", str.mData, 0);
+    mResp.writeHead("Content-Type", str.mData);
 
     StringView svv("If-Range", sizeof("If-Range") - 1);
     svv = mRequest.getHead().get(svv);
@@ -190,36 +215,75 @@ void HttpLayer::writeContentType(const String& pat) {
     }
 }
 
+
+bool HttpLayer::onHttpBody() {
+    s32 ret = EE_OK;
+    if (mEvent) {
+        if (EHTTP_REQUEST == mParser.mType) {
+            ret = mEvent->onBodyPart(mRequest);
+        } else {
+            ret = mEvent->onBodyPart(mResp);
+        }
+    }
+    return 0 == ret;
+}
+
+bool HttpLayer::onHttpStart() {
+    s32 ret = EE_OK;
+    if (mEvent) {
+        if (EHTTP_REQUEST == mParser.mType) {
+            ret = mEvent->onOpen(mRequest);
+        } else {
+            ret = mEvent->onOpen(mResp);
+        }
+    }
+    return EE_OK == ret;
+}
+
 bool HttpLayer::onHttpFinish() {
-    http_parser_init(&mParser, (http_parser_type)mParser.type);
-    mParser.data = this;
+    if (mEvent) {
+        s32 ret;
+        if (EHTTP_REQUEST == mParser.mType) {
+            if (HTTP_OPTIONS == mRequest.getMethod()) { //跨域
+                mResp.writeStatus(HTTP_STATUS_NO_CONTENT, "No Content");
+                mResp.writeHead("Server", "AntEngine");
+
+                mKeepAlive = mRequest.isKeepAlive();
+                mResp.setKeepAlive(mKeepAlive);
+                //mResp.writeHead("Connection", "keep-alive", 0);
+
+                s8 gmtime[32];
+                Timer::getTimeStr(gmtime, sizeof(gmtime), "%a, %d %b %Y %H:%M:%S GMT");
+                mResp.writeHead("Date", gmtime);
+
+                mResp.writeHead("Access-Control-Allow-Origin", "*");
+                mResp.writeHead("Access-Control-Allow-Credentials", "true");
+                mResp.writeHead("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                mResp.writeHead("Access-Control-Allow-Headers", "Content-Type,Content-Length,Content-Range");
+                mResp.writeHead("Access-Control-Expose-Headers", "Content-Type,Content-Length,Content-Range");
+                mResp.writeHead("Access-Control-Max-Age", "1728000");
+                mResp.writeHead("Content-Type", "text/plain; charset=utf-8");
+                mResp.writeHead("Content-Length", "0");
+                mResp.writeHeadFinish();
+
+                mRequest.clear();
+                sendResp();
+                return true;
+            }
+            ret = mEvent->onFinish(mRequest);
+        } else {
+            ret = mEvent->onFinish(mResp);
+        }
+        if (EE_OK != ret) {
+            mHTTPS ? mTCP.launchClose() : mTCP.getHandleTCP().launchClose();
+        }
+        return EE_OK;
+    }
+    mHTTPS ? mTCP.launchClose() : mTCP.getHandleTCP().launchClose();
+    return EE_OK;
+
     mReaded = 0;
     mResp.clear();
-
-    if (HTTP_OPTIONS == mRequest.getMethod()) { //跨域
-        mResp.writeStatus(HTTP_STATUS_NO_CONTENT, "No Content");
-        mResp.writeHead("Server", "AntEngine", 0);
-
-        mKeepAlive = mRequest.isKeepAlive();
-        mResp.setKeepAlive(mKeepAlive);
-        //mResp.writeHead("Connection", "keep-alive", 0);
-
-        s8 gmtime[32];
-        Timer::getTimeStr(gmtime, sizeof(gmtime), "%a, %d %b %Y %H:%M:%S GMT");
-        mResp.writeHead("Date", gmtime, 0);
-
-        mResp.writeHead("Access-Control-Allow-Origin", "*", 0);
-        mResp.writeHead("Access-Control-Allow-Credentials", "true", 0);
-        mResp.writeHead("Access-Control-Allow-Methods", "GET, POST, OPTIONS", 0);
-        mResp.writeHead("Access-Control-Allow-Headers", "Content-Type,Content-Length,Content-Range", 0);
-        mResp.writeHead("Access-Control-Expose-Headers", "Content-Type,Content-Length,Content-Range", 0);
-        mResp.writeHead("Access-Control-Max-Age", "1728000", 0);
-        mResp.writeHead("Content-Type", "text/plain; charset=utf-8", 0);
-        mResp.writeHead("Content-Length", "0", 2);
-        sendResp();
-        return true;
-    }
-
 
     mResp.writeStatus(HTTP_STATUS_OK);
     StringView svv = mRequest.getURL().getPath();
@@ -232,87 +296,60 @@ bool HttpLayer::onHttpFinish() {
     } else {
         pat += svv;
     }
-    mResp.writeHead("Host", mTCP.getLocal().getStr(), 0);
+    mResp.writeHead("Host", mTCP.getLocal().getStr());
     mKeepAlive = mRequest.isKeepAlive();
     mResp.setKeepAlive(mKeepAlive);
 
     s32 tp = System::isExist(pat);
     if (0 == tp) {
         if (mReadFile.openFile(pat)) {
+            mResp.writeHead("Access-Control-Allow-Origin", "*");
             writeContentType(pat);
-            if (mReadFile.getFileSize() > G_CHUNK_SIZE) {
-                mResp.writeHead("Accept-Ranges", "bytes", 0);
-                mResp.writeContentRange(mReadFile.getFileSize(), mReaded, G_CHUNK_SIZE - 1, 0);
-                mResp.setChunked(2);
-                usz usd = mResp.getCache().size();
-                mResp.getCache().reallocate(usd + G_CHUNK_SIZE + 32);
-                s8* buf = mResp.getCache().getPointer() + usd;
-                usz cksz = snprintf(buf, 32, "%x\r\n", G_CHUNK_SIZE);
-                usz rds = mReadFile.read(buf + cksz, G_CHUNK_SIZE);
-                if (G_CHUNK_SIZE == rds) {
-                    mReaded = rds;
-                    mResp.getCache().resize(usd + cksz + rds);
-                    mResp.getCache().writeU16(App2Char2S16("\r\n"));
-                } else {
-                    writeRespError(HTTP_STATUS_INTERNAL_SERVER_ERROR);
-                    mReadFile.close();
-                }
-            } else {
-                mResp.writeContentRange(mReadFile.getFileSize(), mReaded, mReadFile.getFileSize() - 1, 0);
-                mResp.writeLength(mReadFile.getFileSize(), 2);
-                usz usd = mResp.getCache().size();
-                mResp.getCache().resize(usd + mReadFile.getFileSize());
-                s8* buf = mResp.getCache().getPointer() + usd;
-                if (mReadFile.read(buf, mReadFile.getFileSize()) != mReadFile.getFileSize()) {
-                    writeRespError(HTTP_STATUS_NOT_FOUND);
-                }
-                mReadFile.close();
-            }
         } else {
             writeRespError(HTTP_STATUS_NOT_FOUND);
         }
     } else if (1 == tp) {
-        mResp.writeHead("Content-Type", "text/html;charset=utf-8", 0);
-        System::getPathNodes(pat, mConfig->mRootPath.getLen(), mFiles);
-        pat = mConfig->mRootPath;
-        pat += "/files.html";
-        if (mReadFile.openFile(pat)) {
-            mResp.setChunked(2);
-            usz usd = mResp.getCache().size();
-            mResp.getCache().reallocate(usd + 32 + AppMax((s64)G_CHUNK_SIZE, mReadFile.getFileSize()));
-            s8* buf = mResp.getCache().getPointer() + usd;
-            usz cksz = snprintf(buf, 32, "%llx\r\n", mReadFile.getFileSize());
-            usz rds = mReadFile.read(buf + cksz, mReadFile.getFileSize());
-            if (mReadFile.getFileSize() == rds) {
-                mResp.getCache().resize(usd + cksz + rds);
-                mResp.getCache().writeU16(App2Char2S16("\r\n"));
-            } else {
-                writeRespError(HTTP_STATUS_INTERNAL_SERVER_ERROR);
-            }
-            mReadFile.close();
-        } else {
-            writeRespError(HTTP_STATUS_INTERNAL_SERVER_ERROR);
-        }
-    } else {
-        writeRespError(HTTP_STATUS_NOT_FOUND);
+        mResp.writeHead("Content-Type", "text/html;charset=utf-8");
     }
-
+    writeRespError(HTTP_STATUS_NOT_FOUND);
     sendResp();
-    //show(mRequest, mResp);
     return true;
 }
 
-void HttpLayer::sendResp() {
+bool HttpLayer::sendReq() {
+    RingBuffer& bufs = mRequest.getCache();
+    if (bufs.getSize() > 0) {
+        net::RequestTCP* nd = net::RequestTCP::newRequest(0);
+        nd->mUser = this;
+        nd->mCall = HttpLayer::funcOnWrite;
+        StringView msg = bufs.peekHead();
+        nd->mData = msg.mData;
+        nd->mAllocated = (u32)msg.mLen;
+        nd->mUsed = (u32)msg.mLen;
+        s32 ret = writeIF(nd);
+        if (0 != ret) {
+            net::RequestTCP::delRequest(nd);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool HttpLayer::sendResp() {
+    RingBuffer& bufs = mResp.getCache();
     net::RequestTCP* nd = net::RequestTCP::newRequest(0);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnWrite;
-    nd->mData = mResp.getCache().getPointer();
-    nd->mUsed = (u32)mResp.getCache().size();
-
+    StringView msg = bufs.peekHead();
+    nd->mData = msg.mData;
+    nd->mAllocated = (u32)msg.mLen;
+    nd->mUsed = (u32)msg.mLen;
     s32 ret = writeIF(nd);
     if (0 != ret) {
         net::RequestTCP::delRequest(nd);
+        return false;
     }
+    return true;
 }
 
 
@@ -323,13 +360,18 @@ void HttpLayer::writeRespError(s32 ecode) {
     pat += "/err/";
     pat += ecode;
     pat += ".html";
-    mResp.writeHead("Content-Type", "text/html;charset=utf-8", 0);
+    mResp.writeHead("Content-Type", "text/html;charset=utf-8");
     if (mReadFile.openFile(pat)) {
-        mResp.writeLength(mReadFile.getFileSize(), 2);
-        usz usd = mResp.getCache().size();
-        mResp.getCache().resize(usd + mReadFile.getFileSize());
-        s8* buf = mResp.getCache().getPointer() + usd;
-        mReadFile.read(buf, mReadFile.getFileSize());
+        mResp.writeLength(mReadFile.getFileSize());
+        mResp.writeHeadFinish();
+        usz fsz = mReadFile.getFileSize();
+        while (fsz > 0) {
+            s8* buf;
+            s32 bsz = mResp.getCache().peekTailNode(&buf, fsz);
+            bsz = mReadFile.read(buf, bsz);
+            mResp.getCache().commitTailPos(bsz);
+            fsz -= bsz;
+        }
         mReadFile.close();
     } else {
         mResp.writeStatus(500);
@@ -339,39 +381,66 @@ void HttpLayer::writeRespError(s32 ecode) {
 }
 
 
-bool HttpLayer::onReceive(s8* buf, usz sz) {
-    usz parsed = 0;
-    while (sz > 0 && 0 == mParser.http_errno) {
-        parsed += http_parser_execute(&mParser, &mSets, buf + parsed, sz);
-        sz -= parsed;
+#ifdef DDEBUG
+s32 TestHttpReceive(HttpParser& mParser) {
+    usz tlen;
+    usz used;
+
+    /*const s8* str0 =
+        "POST /fs/upload HTTP/1.1\r\n"
+        "Con";
+
+    tlen = strlen(str0);
+    used = mParser.parseBuf(str0, tlen);
+
+    const s8* str1 = "Content-Length: 8";
+    tlen = strlen(str1);
+    used = mParser.parseBuf(str1, tlen);
+    const s8* str2 = "Content-Length: 8\r\n";
+
+    tlen = strlen(str2);
+    used = mParser.parseBuf(str2, tlen);
+    const s8* str3 =
+        "Connection: Keep-Alive\r\n"
+        "\r\n"
+        "abcd";
+
+    tlen = strlen(str3);
+    used = mParser.parseBuf(str3, tlen);
+    const s8* str4 = "len5";
+
+    tlen = strlen(str4);
+    used = mParser.parseBuf(str4, tlen);*/
+
+    const s8* test =
+        "POST /fs/upload HTTP/1.1\r\n"
+        "Content-Length: 18\r\n"
+        "Content-Type: multipart/form-data; boundary=vksoun\r\n"
+        "Connection: Keep-Alive\r\n"
+        "Cookie: Mailbox=yyyy@qq.com\r\n"
+        "\r\n"
+        "--vksoun\r\n" //boundary
+        "Content-Disposition: form-data; name=\"fieldName\"; filename=\"filename.txt\"\r\n"
+        "\r\n"
+        "msgPart1"
+        "\r\n"
+        "--vksoun\r\n" //boundary
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "--vksoun-"
+        "\r\n\r\n"
+        "--vksoun--"  //boundary tail
+        ;
+    tlen = strlen(test);
+    used = mParser.parseBuf(test, tlen);
+    const s8* laststr = test + used;
+    if (0 == mParser.getError()) {
+        used++;
     }
-    return 0 == mParser.http_errno;
+    return 0;
 }
+#endif
 
-
-void HttpLayer::show(HttpRequest& req, HttpResponse& resp) {
-    usz max = req.getCache().size();
-    const s8* start = req.getCache().getPointer();
-    for (usz i = 0; i < max; i += 1024) {
-        if (max - i > 1024) {
-            printf("%.*s", 1024, start + i);
-        } else {
-            printf("%.*s\n\n", (s32)(max - i), start + i);
-            break;
-        }
-    }
-
-    max = resp.getCache().size();
-    start = resp.getCache().getPointer();
-    for (usz i = 0; i < max; i += 1024) {
-        if (max - i > 1024) {
-            printf("%.*s", 1024, start + i);
-        } else {
-            printf("%.*s\n\n", (s32)(max - i), start + i);
-            break;
-        }
-    }
-}
 
 
 s32 HttpLayer::onTimeout(HandleTime& it) {
@@ -380,6 +449,10 @@ s32 HttpLayer::onTimeout(HandleTime& it) {
 
 
 void HttpLayer::onClose(Handle* it) {
+    if (mEvent) {
+        mEvent->onClose();
+        mEvent = nullptr;
+    }
     if (mHTTPS) {
         DASSERT((&mTCP == it) && "HttpLayer::onClose https handle?");
     } else {
@@ -420,99 +493,50 @@ void HttpLayer::clear() {
 }
 
 
+void HttpLayer::onConnect(net::RequestTCP* it) {
+    if (0 == it->mError && sendReq()) {
+        it->mCall = HttpLayer::funcOnRead;
+        if (EE_OK == readIF(it)) {
+            return;
+        }
+    }
+    net::RequestTCP::delRequest(it);
+}
+
 void HttpLayer::onWrite(net::RequestTCP* it) {
     if (0 != it->mError) {
         Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
         clear();
         return;
     }
-
-    if (mReadFile.isOpen()) {
-        DASSERT(mResp.isChunked());
-        mResp.getCache().resize(0);
-        s8* buf = mResp.getCache().getPointer();
-        usz cksz = snprintf(buf, 32, "%x\r\n", G_CHUNK_SIZE);
-        DASSERT(mReadFile.getPos() == mReaded);
-        usz rds = mReadFile.read(buf + cksz, G_CHUNK_SIZE);
-        mReaded += rds;
-        if (rds > 0) {
-            if (rds < G_CHUNK_SIZE) {
-                usz rsz = snprintf(buf, 32, G_CHUNK_REFMT, rds);
-                buf[rsz] = '\r';
-            }
-            mResp.getCache().resize(cksz + rds);
-            mResp.getCache().writeU16(App2Char2S16("\r\n"));
-        }
-        if (mReaded == mReadFile.getFileSize()) {
-            mResp.getCache().write("0\r\n\r\n", 5);
-            mReadFile.close();
-        }
-
-        it->mData = mResp.getCache().getPointer();
-        it->mUsed = (u32)mResp.getCache().size();
-        it->setStepSize(0);
-        s32 ret = writeIF(it);
-        if (0 == ret) {
-            return;
-        }
-    } else if (mFiles.size() > 0) {
-        if (mReaded < mFiles.size()) {
-            s8* buf = mResp.getCache().getPointer();
-            usz cksz = snprintf(buf, 32, "%x\r\n", G_CHUNK_SIZE);
-            mResp.getCache().resize(cksz);
-            for (; mReaded < mFiles.size(); ++mReaded) {
-                usz leftover = G_CHUNK_SIZE - mResp.getCache().size();
-                usz uss = snprintf(mResp.getCache().getWritePointer(),
-                    leftover,
-                    "<tr><td>%s</td><td><a href=\"%s\">%s</a></td></tr>\r\n",
-                    1 & mFiles[mReaded].mFlag ? u8"文件夹" : u8"文件",
-                    mFiles[mReaded].mFileName,
-                    mFiles[mReaded].mFileName
-                    );
-                if (uss <= leftover) {
-                    mResp.getCache().resize(mResp.getCache().size() + uss);
-                } else {
-                    break;
-                }
-            }
-            cksz = snprintf(buf, cksz, G_CHUNK_REFMT, mResp.getCache().size() - cksz);
-            buf[cksz] = '\r';
-            mResp.getCache().writeU16(App2Char2S16("\r\n"));
-            it->mData = mResp.getCache().getPointer();
-            it->mUsed = (u32)mResp.getCache().size();
-            it->setStepSize(0);
-            s32 ret = writeIF(it);
-            if (0 == ret) {
-                return;
-            }
-        } else if (mReaded == mFiles.size()) {
-            ++mReaded;
-            mFiles.clear();
-            s8* buf = mResp.getCache().getPointer();
-            usz cksz = snprintf(buf, 32, "%llx\r\n", sizeof("</TABLE></DIV></UL><hr></BODY></HTML>") - 1);
-            cksz += snprintf(buf + cksz, G_CHUNK_SIZE, "%s\r\n0\r\n\r\n",
-                "</TABLE></DIV></UL><hr></BODY></HTML>");
-            mResp.getCache().resize(cksz);
-            it->mData = mResp.getCache().getPointer();
-            it->mUsed = (u32)mResp.getCache().size();
-            it->setStepSize(0);
-            s32 ret = writeIF(it);
-            if (0 == ret) {
-                return;
-            }
-        }
-    }
-
     clear();
     net::RequestTCP::delRequest(it);
 }
 
 
 void HttpLayer::onRead(net::RequestTCP* it) {
-    if (it->mUsed > 0) {
-        StringView dat = it->getReadBuf();
-        if (onReceive(dat.mData, dat.mLen)) {
-            it->mUsed = 0;
+    const s8* dat = it->getBuf();
+    ssz datsz = it->mUsed;
+    if (0 == datsz) {
+        mParser.parseBuf(dat, 0); //make the http-msg-finish callback
+    } else {
+        ssz parsed = 0;
+        ssz stepsz;
+        while (datsz > 0 && 0 == mParser.getError()) {
+            stepsz = mParser.parseBuf(dat + parsed, datsz);
+            parsed += stepsz;
+            if (stepsz < datsz) {
+                break; //leftover
+            }
+            datsz -= stepsz;
+        }
+        it->clearData((u32)parsed);
+
+        if (0 == it->getWriteSize()) {
+            //可能受到超长header攻击或其它错误
+            Logger::logError("HttpLayer::onRead>>remote=%p, msg overflow", mTCP.getRemote().getStr());
+            mTCP.launchClose();
+        } else if (0 == mParser.getError()) {
             if (EE_OK == readIF(it)) {
                 return;
             }

@@ -28,8 +28,9 @@
 #include <winsock2.h>
 #include <io.h>
 #include <tchar.h>
-#include "Windows/WinAPI.h"
 #include "Logger.h"
+#include "Windows/WinAPI.h"
+#include "Net/Socket.h"
 
 namespace app {
 
@@ -72,12 +73,12 @@ private:
 };
 
 
-//@param disk NULL±íÊ¾³ÌĞòµ±Ç°´ÅÅÌ
+//@param disk NULLè¡¨ç¤ºç¨‹åºå½“å‰ç£ç›˜
 static u32 AppGetDiskSectorSize(const tchar* disk = nullptr/*DSTR("C:\\")*/) {
-    DWORD sectorsPerCluster;     //´ÅÅÌÒ»¸ö´ØÄÚµÄÉÈÇøÊı
-    DWORD bytesPerSector;        //´ÅÅÌÒ»¸öÉÈÇøÄÚµÄ×Ö½ÚÊı
-    DWORD numberOfFreeClusters;  //´ÅÅÌ×Ü´ØÊı
-    DWORD totalNumberOfClusters; //´ÅÅÌµÄÊ£Óà´ØÊı
+    DWORD sectorsPerCluster;     //ç£ç›˜ä¸€ä¸ªç°‡å†…çš„æ‰‡åŒºæ•°
+    DWORD bytesPerSector;        //ç£ç›˜ä¸€ä¸ªæ‰‡åŒºå†…çš„å­—èŠ‚æ•°
+    DWORD numberOfFreeClusters;  //ç£ç›˜æ€»ç°‡æ•°
+    DWORD totalNumberOfClusters; //ç£ç›˜çš„å‰©ä½™ç°‡æ•°
     if ((TRUE == GetDiskFreeSpace(nullptr, &sectorsPerCluster, &bytesPerSector,
         &numberOfFreeClusters, &totalNumberOfClusters))) {
         return bytesPerSector;
@@ -97,19 +98,13 @@ static u32 AppGetPageSize() {
     return info.dwPageSize;
 }
 
-s32 System::mFatherPID = 0;
 s32 System::gSignal = 0;
 
 System::System() {
-    mFatherPID = getPID();
 }
 
 System::~System() {
 }
-
-//void System::onSignal(s32 val) {
-//    gSignal = val;
-//}
 
 s32 System::getPID() {
     return ::GetCurrentProcessId();
@@ -394,7 +389,7 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
 #if defined(DWCHAR_SYS)
         len = pos + AppWcharToUTF8(nd->name, itm.mFileName + pos, addlen);
 #else
-        len = pos + AppGBKToUTF8(nd->name, itm.mFileName+pos, addlen);
+        len = pos + AppGBKToUTF8(nd->name, itm.mFileName + pos, addlen);
 #endif
         if ((FILE_ATTRIBUTE_DIRECTORY & nd->attrib) > 0) {
             itm.mFlag = 1;
@@ -409,11 +404,116 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
     }
 }
 
+
+void System::waitProcess(void* handle) {
+    WaitForSingleObject(handle, INFINITE);
+    CloseHandle(handle);
+}
+
+s32 System::createProcess(usz socket, void*& handle) {
+    handle = nullptr;
+    tchar fpath[MAX_PATH + 32];
+    u32 flen = GetModuleFileName(NULL, fpath, MAX_PATH);
+    if (0 == flen) {
+        return 0;
+    }
+    fpath[flen] = '\0';
+    tchar workpath[MAX_PATH];
+    tchar title[MAX_PATH];
+    memcpy(workpath, fpath, sizeof(workpath));
+    for (ssz i = flen; i >= 0; --i) {
+        if (workpath[i] == DSTR('\\')) {
+            memcpy(title, workpath + i + 1, sizeof(workpath) - sizeof(workpath[0]) * (i + 1));
+            workpath[i + 1] = 0;
+            break;
+        }
+    }
+    memcpy(fpath + flen, DSTR(" -fork"), sizeof(DSTR(" -fork")));
+
+    STARTUPINFO startinfo;
+    ::GetStartupInfo(&startinfo); // take defaults from current process
+    startinfo.cb = sizeof(startinfo);
+    startinfo.lpReserved = NULL;
+    startinfo.lpDesktop = NULL;
+    startinfo.lpTitle = title;
+    startinfo.wShowWindow = SW_HIDE;
+    startinfo.dwFlags = STARTF_FORCEOFFFEEDBACK;
+    startinfo.cbReserved2 = 0;
+    startinfo.lpReserved2 = NULL;
+    startinfo.hStdOutput = 0;
+    startinfo.hStdInput = 0;
+    startinfo.hStdError = 0;
+
+    HANDLE hProc = ::GetCurrentProcess();
+    bool mustInheritHandles = false;
+    if (DINVALID_SOCKET != socket) {
+        ::DuplicateHandle(hProc, (HANDLE)socket, hProc, &startinfo.hStdInput, 0, TRUE, DUPLICATE_SAME_ACCESS);
+        mustInheritHandles = true;
+        closesocket(socket);
+    } else if (GetStdHandle(STD_INPUT_HANDLE)) {
+        ::DuplicateHandle(hProc, GetStdHandle(STD_INPUT_HANDLE), hProc, &startinfo.hStdInput, 0, TRUE, DUPLICATE_SAME_ACCESS);
+        mustInheritHandles = true;
+    }
+
+    /*if (GetStdHandle(STD_OUTPUT_HANDLE)) {
+        ::DuplicateHandle(hProc, GetStdHandle(STD_OUTPUT_HANDLE), hProc, &startinfo.hStdOutput, 0, TRUE, DUPLICATE_SAME_ACCESS);
+        mustInheritHandles = true;
+    }
+    if (GetStdHandle(STD_ERROR_HANDLE)) {
+        ::DuplicateHandle(hProc, GetStdHandle(STD_ERROR_HANDLE), hProc, &startinfo.hStdError, 0, TRUE, DUPLICATE_SAME_ACCESS);
+        mustInheritHandles = true;
+    }*/
+
+    if (mustInheritHandles) {
+        startinfo.dwFlags |= STARTF_USESTDHANDLES;
+    }
+
+    const tchar* pEnv = nullptr;
+    PROCESS_INFORMATION pinfo;
+    //DWORD creationFlags = ::GetConsoleWindow() ? 0 : CREATE_NO_WINDOW;
+    DWORD creationFlags = CREATE_NO_WINDOW;
+    BOOL rc = ::CreateProcess(
+        0,
+        fpath,
+        0, // process Attributes
+        0, // thread Attributes
+        mustInheritHandles,
+        creationFlags,
+        (LPVOID)pEnv,
+        workpath,
+        &startinfo,
+        &pinfo
+        );
+
+    if (rc) {
+        ::CloseHandle(pinfo.hThread);
+        Logger::log(ELL_INFO, "System::createProcess>>pid = %d, cmdsock = %llu",
+            pinfo.dwProcessId, (usz)startinfo.hStdInput);
+
+        handle = pinfo.hProcess;
+        //WaitForSingleObject(pinfo.hProcess, INFINITE);
+        //::CloseHandle(pinfo.hProcess);
+    } else {//fail
+        pinfo.dwProcessId = 0;
+        s32 du = System::getAppError();
+        Logger::log(ELL_INFO, "System::createProcess>>fail = %d, cmdsock = %llu",
+            du, (usz)startinfo.hStdInput);
+    }
+    if (startinfo.hStdInput) {
+        ::CloseHandle(startinfo.hStdInput);
+    }
+    if (startinfo.hStdOutput) {
+        ::CloseHandle(startinfo.hStdOutput);
+    }
+    if (startinfo.hStdError) {
+        ::CloseHandle(startinfo.hStdError);
+    }
+    return pinfo.dwProcessId;
+}
+
 } //namespace app
 
 #else
 #error unsupported OS
 #endif //DOS_WINDOWS
-
-
 

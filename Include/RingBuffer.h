@@ -46,7 +46,9 @@ struct SRingBufNode {
 struct SRingBufPos {
     s32 mPosition;
     SRingBufNode* mNode;
-    SRingBufPos(s32 pos = 0, SRingBufNode* bk = nullptr)
+    SRingBufPos() :mPosition(0), mNode(nullptr) {
+    }
+    SRingBufPos(s32 pos, SRingBufNode* bk)
         :mPosition(pos), mNode(bk) {
     }
     void init(s32 pos, SRingBufNode* bk) {
@@ -60,6 +62,27 @@ public:
     RingBuffer();
 
     ~RingBuffer();
+
+    void swap(RingBuffer& it) {
+        SRingBufPos tail = mTailPos;
+        SRingBufPos hd = mHeadPos;
+        SRingBufNode* emp = mEmptyList;
+        s32 sz = mSize;
+        long rt = mRet;
+
+        mTailPos = it.mTailPos;
+        mHeadPos = it.mHeadPos;
+        mEmptyList = it.mEmptyList;
+        mSize = it.mSize;
+        mRet = it.mRet;
+
+        it.mTailPos = tail;
+        it.mHeadPos = hd;
+        it.mEmptyList = emp;
+        it.mSize = sz;
+        it.mRet = rt;
+    }
+
 
     void init();
 
@@ -107,7 +130,11 @@ public:
     /**
     * @param pos readed position of peeked head cache before.
     */
-    void commitHeadPos(SRingBufPos& pos);
+    void commitHeadPos(const SRingBufPos& pos);
+
+
+    StringView peekHead();
+    void commitHead(s32 used);
 
 private:
     SRingBufPos mTailPos;

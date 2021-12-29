@@ -64,7 +64,7 @@ s32 TcpProxy::onTimeout2(HandleTime& it) {
 
 
 void TcpProxy::onClose(Handle* it) {
-    if ((2 & mType) > 0 ? mTLS2.isClose(): mTLS2.getHandleTCP().isClose()) {
+    if ((2 & mType) > 0 ? mTLS2.isClose() : mTLS2.getHandleTCP().isClose()) {
         Logger::log(ELL_INFO, "TcpProxy::onClose>>front=%s", mTLS.getRemote().getStr());
         delete this;
     } else {
@@ -229,9 +229,9 @@ void TcpProxy::onLink(net::RequestTCP* it) {
     if ((2 & mType) > 0) {
         mTLS2.setClose(EHT_TCP_CONNECT, TcpProxy::funcOnClose2, this);
         mTLS2.setTime(TcpProxy::funcOnTime2, tmout, tgap, -1);
-        ecode = mTLS2.open("", conn);
+        ecode = mTLS2.open(mTLS2.getRemote(), conn);
     } else {
-        ecode = mTLS2.getHandleTCP().open("", conn);
+        ecode = mTLS2.getHandleTCP().open(mTLS2.getHandleTCP().getRemote(), conn);
     }
 
     if (EE_OK != ecode) {

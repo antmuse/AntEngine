@@ -33,22 +33,27 @@ namespace app {
 Packet::Packet() :
     mUsed(0),
     mAllocated(1024) {
-    mData = (s8*) ::malloc(mAllocated);
+    mData = (s8*)malloc(mAllocated);
 }
 
 
 Packet::Packet(usz iSize) :
     mUsed(0),
     mAllocated(iSize) {
-    if (mAllocated < 8) {
+    if (mAllocated > 0 && mAllocated < 8) {
         mAllocated = 8;
     }
-    mData = (s8*) ::malloc(mAllocated);
+    mData = mAllocated > 0 ? (s8*)malloc(mAllocated) : nullptr;
 }
 
 
 Packet::~Packet() {
-    ::free(mData);
+    if (mData) {
+        free(mData);
+        mData = nullptr;
+        mUsed = 0;
+        mAllocated = 0;
+    }
 }
 
 

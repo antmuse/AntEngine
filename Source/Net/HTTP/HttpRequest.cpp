@@ -24,6 +24,8 @@
 
 
 #include "Net/HTTP/HttpRequest.h"
+#include "Logger.h"
+#include "Net/NetAddress.h"
 
 namespace app {
 namespace net {
@@ -35,6 +37,35 @@ HttpRequest::HttpRequest() :
 }
 
 HttpRequest::~HttpRequest() {
+}
+
+
+s32 HttpRequest::writeGet(const String& req) {
+    mCache.reset();
+    mURL.append(req.c_str(), req.getLen());
+    if (!mURL.parser()) {
+        return EE_ERROR;
+    }
+    StringView buf = mURL.getPath();
+    mCache.write("GET ", sizeof("GET ") - 1);
+    mCache.write(buf.mData, mURL.get().getLen() - (buf.mData - mURL.get().c_str()));
+    mCache.write(" HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);
+
+    buf = mURL.getHost();
+    mCache.write("Host:", sizeof("Host:") - 1);
+    mCache.write(buf.mData,buf.mLen);
+    mCache.write("\r\n", sizeof("\r\n") - 1);
+
+    usz mx = mHead.size();
+    for (usz i = 0; i < mx; ++i) {
+        const HeadLine& line = mHead[i];
+        mCache.write(line.mKey.c_str(), line.mKey.getLen());
+        mCache.write(":", 1);
+        mCache.write(line.mVal.c_str(), line.mVal.getLen());
+        mCache.write("\r\n", sizeof("\r\n") - 1);
+    }
+    mCache.write("\r\n", sizeof("\r\n") - 1);
+    return EE_OK;
 }
 
 }//namespace net

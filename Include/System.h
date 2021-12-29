@@ -53,7 +53,7 @@ public:
     }
 
     /**
-     * @return 程序所在磁盘扇区大小，字节*/
+     * @return 绋嬪簭鎵�鍦ㄧ鐩樻墖鍖哄ぇ灏忥紝瀛楄妭*/
     static u32 getDiskSectorSize();
 
     static u32 getCoreCount();
@@ -81,18 +81,20 @@ public:
     static s32 getAppError();
     static s32 getAppError(s32 err);
 
-    static s32 mFatherPID;
-
     static s32 getPID();
 
     static s32 createPath(const String& it);
 
     static s32 removeFile(const String& it);
 
-    //@return -1=不存在，0=file, 1=path
+    //@return -1=涓嶅瓨鍦紝0=file, 1=path
     static s32 isExist(const String& it);
 
     static void getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out);
+
+
+    static s32 createProcess(usz socket, void*& handle);
+    static void waitProcess(void* handle);
 
 private:
     System();

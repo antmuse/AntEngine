@@ -48,8 +48,21 @@ public:
     */
     void writeStatus(s32 val, const s8* str = "OK");
 
+    const s8* getBrief()const {
+        return mBrief;
+    }
+
+    void writeBrief(const s8* buf, usz len) {
+        len = len >= sizeof(mBrief) ? sizeof(mBrief) - 1 : len;
+        if (buf) {
+            memcpy(mBrief, buf, len);
+        }
+        mBrief[len] = 0;
+    }
+
 private:
     s32 mStatusCode; //-1 = default, have not launched.
+    s8 mBrief[32];
 };
 
 } //namespace net

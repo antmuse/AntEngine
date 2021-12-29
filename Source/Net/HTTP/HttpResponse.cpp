@@ -30,8 +30,7 @@ namespace net {
 
 HttpResponse::HttpResponse() :
     mStatusCode(HTTP_STATUS_OK){
-    //memcpy(mCache.getPointer(), "HTTP/1.1 200 OK\r\n", sizeof("HTTP/1.1 200 OK\r\n") - 1);
-    //mCache.resize(sizeof("HTTP/1.1 200 OK\r\n") - 1);
+    mBrief[0] = 0;
 }
 
 HttpResponse::~HttpResponse() {
@@ -39,10 +38,10 @@ HttpResponse::~HttpResponse() {
 
 
 void HttpResponse::writeStatus(s32 val, const s8* str) {
-    DASSERT(mCache.capacity() > 18 && str);//18="HTTP/1.1 %d OK\r\n"
-    mStatusCode = val; // AppClamp(val, 0, 999);
-    usz tsz = snprintf(mCache.getPointer(), mCache.capacity(), "HTTP/1.1 %d %s\r\n", val, str);
-    mCache.resize(tsz);
+    s8 tmp[32]; //len=18="HTTP/1.1 %d OK\r\n"
+    mStatusCode = val;
+    usz tsz = snprintf(tmp, sizeof(tmp), "HTTP/1.1 %d %s\r\n", val, str);
+    mCache.write(tmp, tsz < sizeof(tmp) ? tsz : sizeof(tmp) - 1);
 }
 
 }//namespace net

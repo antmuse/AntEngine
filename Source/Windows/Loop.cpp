@@ -310,7 +310,7 @@ void Loop::stop() {
 
 void Loop::relinkTime(HandleTime* handle) {
     DASSERT(handle);
-    if (0 == (EHF_CLOSING & handle->mFlag)) {
+    if (0 == (EHF_CLOSING & handle->mFlag) && handle->mCallTime) {
         mTimeHub.remove(&handle->mLink);
         handle->mTimeout = mTime + handle->mTimeGap;
         mTimeHub.insert(&handle->mLink);

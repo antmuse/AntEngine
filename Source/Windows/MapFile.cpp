@@ -31,6 +31,8 @@
 
 namespace app {
 
+//"Gobal\\%s" 需要跨用户权限(admin)，我们只需要同用户多进程共享
+static const s8* G_MEM_FMT = "Local\\%s";
 
 MapFile::MapFile() :
     mFile(INVALID_HANDLE_VALUE),
@@ -169,7 +171,11 @@ void* MapFile::createMem(usz iSize, const s8* iMapName, bool iReadOnly, bool sha
     if (share) {
         mFlag |= EMF_SHARE;
     }
-    snprintf(mMemName, sizeof(mMemName), iMapName);
+
+    String mmm = iMapName;
+    mmm.deletePathFromFilename();
+
+    snprintf(mMemName, sizeof(mMemName), G_MEM_FMT, mmm.c_str());
     if (createMap(mMemName, iSize)) {
         createView();
         mFlag |= EMF_CREATOR;
@@ -190,7 +196,9 @@ void* MapFile::openMem(const s8* iMapName, bool iReadOnly) {
     if (!iReadOnly) {
         mFlag |= EMF_WRITE;
     }
-    snprintf(mMemName, sizeof(mMemName), iMapName);
+    String mmm = iMapName;
+    mmm.deletePathFromFilename();
+    snprintf(mMemName, sizeof(mMemName), G_MEM_FMT, mmm.c_str());
     if (openMap(mMemName)) {
         createView();
     }
@@ -219,7 +227,8 @@ void* MapFile::createMapfile(usz iSize, const s8* iFileName, bool iReadOnly, boo
     snprintf(mFileName, sizeof(mFileName), iFileName);
     String mmm = mFileName;
     mmm.deletePathFromFilename();
-    snprintf(mMemName, sizeof(mMemName), mmm.c_str());
+
+    snprintf(mMemName, sizeof(mMemName), G_MEM_FMT, mmm.c_str());
     if (createFile(iSize)) {
         if (createMap(mMemName, mFileSize)) {
             createView();
@@ -265,7 +274,7 @@ bool MapFile::createMap(const s8* iMapName, usz iSize) {
             realname);
     }
     if (mMapHandle == nullptr) {
-        Logger::log(ELL_ERROR, "MapFile::createMap>>fail = %s", mMemName);
+        Logger::log(ELL_ERROR, "MapFile::createMap>>fail = %s, err=%d, pls run as Administrator", mMemName, System::getAppError());
         return false;
     }
     return true;
@@ -296,6 +305,10 @@ bool MapFile::openMap(const s8* iMapName) {
 
     u32 DesiredAccess = (EMF_WRITE & mFlag) ? FILE_MAP_WRITE : FILE_MAP_READ;
     mMapHandle = OpenFileMapping(DesiredAccess, FALSE, realname);
+    if (mMapHandle == nullptr) {
+        Logger::log(ELL_ERROR, "MapFile::openMap>>fail = %s, err=%d, pls run as Administrator", mMemName, System::getAppError());
+        return false;
+    }
     return mMapHandle != nullptr;
 }
 

@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <mutex>
 #include "TVector.h"
+#include "Strings.h"
 
 
 #if defined(DDEBUG) && defined(DOS_WINDOWS)
@@ -88,6 +89,21 @@ public:
     virtual void log(usz len, const s8* msg) = 0;
 
     virtual void flush() = 0;
+
+protected:
+    //against to the format in Logger::postLog()
+    DFINLINE static s16 getDay(const s8* msg) {
+        DASSERT(msg);
+        //9 = [2021-12-08 12:23:43]...
+        return App2Char2S16(msg + 9);
+    }
+
+    //@see getDay()
+    DFINLINE static s16 getHour(const s8* msg) {
+        DASSERT(msg);
+        //12 = [2021-12-08 12:23:43]...
+        return App2Char2S16(msg + 12);
+    }
 };
 
 
@@ -129,7 +145,7 @@ public:
 
     static void addPrintReceiver();
 
-    static void addFileReceiver(const s8* format = "Log/%Y-%m-%d_%H-%M-%S.");
+    static void addFileReceiver();
 
     /**
     * @brief Unregister a Log Receiver.

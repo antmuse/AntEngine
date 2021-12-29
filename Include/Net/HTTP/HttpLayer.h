@@ -38,10 +38,20 @@
 namespace app {
 namespace net {
 
+class HttpEventer {
+public:
+    HttpEventer() { }
+    virtual ~HttpEventer() { }
+    virtual s32 onClose() = 0;
+    virtual s32 onOpen(HttpMsg& msg) = 0;
+    virtual s32 onSent(HttpMsg& req) = 0;
+    virtual s32 onFinish(HttpMsg& resp) = 0;
+    virtual s32 onBodyPart(HttpMsg& resp) = 0;
+};
 
 class HttpLayer {
 public:
-    HttpLayer(http_parser_type tp = HTTP_BOTH);
+    HttpLayer(EHttpParserType tp = EHTTP_BOTH);
 
     ~HttpLayer();
 
@@ -50,8 +60,12 @@ public:
         con->onLink(it); //HttpLayer×Ô»Ù¶ÔÏó
     }
 
-    http_parser_type getType()const {
-        return (http_parser_type)(mParser.type);
+    s32 get(const String& gurl);
+
+    s32 post(const String& gurl);
+
+    EHttpParserType getType()const {
+        return (EHttpParserType)(mParser.mType);
     }
 
     HttpResponse& getResp() {
@@ -62,8 +76,24 @@ public:
         return mRequest;
     }
 
+    const HandleTLS& getHandle()const {
+        return mTCP;
+    }
+
+    void setEvent(HttpEventer* it) {
+        mEvent = it;
+    }
+    HttpEventer* getEvent()const {
+        return mEvent;
+    }
+
 private:
-    void sendResp();
+    bool sendReq();
+    bool sendResp();
+
+    bool onHttpBody();
+
+    bool onHttpStart();
 
     bool onHttpFinish();
 
@@ -72,6 +102,8 @@ private:
     s32 onTimeout(HandleTime& it);
 
     void onClose(Handle* it);
+
+    void onConnect(net::RequestTCP* it);
 
     void onWrite(net::RequestTCP* it);
 
@@ -102,6 +134,11 @@ private:
         nd.onRead(it);
     }
 
+    static void funcOnConnect(net::RequestTCP* it) {
+        HttpLayer& nd = *(HttpLayer*)it->mUser;
+        nd.onConnect(it);
+    }
+
     static void funcOnClose(Handle* it) {
         HttpLayer& nd = *(HttpLayer*)it->getUser();
         nd.onClose(it);
@@ -111,37 +148,35 @@ private:
     /**
      * @return 0=OK, 1=F_SKIPBODY, 2=upgrade
     */
-    static s32 funcHttpHeadFinish(http_parser* iContext);
-    static s32 funcHttpBegin(http_parser* iContext);
-    static s32 funcHttpStatus(http_parser* iContext, const s8* at, usz length);
-    static s32 funcHttpFinish(http_parser* iContext);
-    static s32 funcHttpChunkHead(http_parser* iContext);
-    static s32 funcHttpChunkFinish(http_parser* iContext);
-    static s32 funcHttpPath(http_parser* iContext, const s8* at, usz length);
-    static s32 funcHttpHeadName(http_parser* iContext, const s8* at, usz length);
-    static s32 funcHttpHeadValue(http_parser* iContext, const s8* at, usz length);
-    static s32 funcHttpBody(http_parser* iContext, const s8* at, usz length);
+    static s32 funcHttpHeadFinish(HttpParser& iContext);
+    static s32 funcHttpBegin(HttpParser& iContext);
+    static s32 funcHttpStatus(HttpParser& iContext, const s8* at, usz length);
+    static s32 funcHttpFinish(HttpParser& iContext);
+    static s32 funcHttpChunkHead(HttpParser& iContext);
+    static s32 funcHttpChunkFinish(HttpParser& iContext);
+    static s32 funcHttpPath(HttpParser& iContext, const s8* at, usz length);
+    static s32 funcHttpBody(HttpParser& iContext, const s8* at, usz length);
+    static s32 funcHttpHeader(HttpParser& iContext, const StringView& key, const StringView& val);
 
 
     void clear();
 
-    bool onReceive(s8* buf, usz sz);
-    void show(HttpRequest& req, HttpResponse& resp);
-    void initParser(http_parser_type tp);
+    void initParser(EHttpParserType tp);
     void writeRespError(s32 err);
     void writeContentType(const String& path);
 
     bool mKeepAlive;
     bool mHTTPS;
+    EHttpParserType mPType;
     FileReader mReadFile;
     usz mReaded;
     EngineConfig::WebsiteCfg* mConfig;
-    http_parser_settings mSets;
-    http_parser mParser;
+    HttpParser mParser;
     HandleTLS mTCP;
     HttpRequest mRequest;
     HttpResponse mResp;
     TVector<FileInfo> mFiles;
+    HttpEventer* mEvent;
 };
 
 }//namespace net

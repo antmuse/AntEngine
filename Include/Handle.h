@@ -145,7 +145,7 @@ public:
         return mLoop;
     }
 
-
+    s32 launchClose();
 
 protected:
 

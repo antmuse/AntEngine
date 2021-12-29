@@ -63,7 +63,7 @@ void Loop::onClose(Handle* it) {
 
 void Loop::onRead(net::RequestTCP* it) {
     if (it->mError) {
-        Logger::logCritical("Loop::onRead>>CMD read err=%d", it->mError);
+        Logger::logCritical("Loop::onRead>>pid=%d, CMD read err=%d", Engine::getInstance().getPID(), it->mError);
         stop();
         return;
     }
@@ -75,11 +75,11 @@ void Loop::onRead(net::RequestTCP* it) {
         cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
         switch (cmd->mType) {
         case ECT_EXIT:
-            Logger::logInfo("Loop::onCommands>> exit");
+            Logger::logInfo("Loop::onCommands>>pid=%d, exit",Engine::getInstance().getPID());
             stop();
             break;
         case ECT_ACTIVE:
-            Logger::logInfo("Loop::onCommands>> active");
+            Logger::logInfo("Loop::onCommands>>pid=%d, active",Engine::getInstance().getPID());
             break;
         default:break;
         }//switch
@@ -94,7 +94,7 @@ void Loop::onRead(net::RequestTCP* it) {
     mReadCMD.mAllocated = (u32)mPackCMD.getWriteSize();
     mReadCMD.mUsed = 0;
     if (EE_OK != mCMD.read(&mReadCMD)) {
-        Logger::logCritical("Loop::onRead>>CMD read err=%d", mReadCMD.mError);
+        Logger::logCritical("Loop::onRead>>pid=%d, CMD read err=%d", Engine::getInstance().getPID(), mReadCMD.mError);
         stop();
     }
 }
@@ -316,7 +316,9 @@ void Loop::updatePending() {
                         }
                     }
                 } else {
-                    Logger::log(ELL_ERROR, "Loop::updatePending>>accept fail, sock=%d", nd->mSocket.getValue());
+                    if(nd->mSocket.isOpen()){
+                        Logger::log(ELL_ERROR, "Loop::updatePending>>accept fail, sock=%d", nd->mSocket.getValue());
+                    }
                     nd->mError = EE_NO_READABLE;
                 }
                 nd->mCall(nd);

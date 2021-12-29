@@ -51,13 +51,22 @@ public:
     Packet& operator=(const Packet& other);
 
     Packet& operator=(Packet&& it)noexcept {
+        swap(it);
+        return *this;
+    }
+
+    void swap(Packet& it)noexcept {
+        s8* dat = mData;
+        usz used = mUsed;
+        usz allc = mAllocated;
+
         mUsed = it.mUsed;
         mAllocated = it.mAllocated;
         mData = it.mData;
-        it.mData = nullptr;
-        it.mAllocated = 0;
-        it.mUsed = 0;
-        return *this;
+
+        it.mData = dat;
+        it.mAllocated = allc;
+        it.mUsed = used;
     }
 
     void reallocate(usz size);

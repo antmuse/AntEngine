@@ -33,6 +33,7 @@
 #include "Logger.h"
 #include "MsgHeader.h"
 #include "MapFile.h"
+#include "MemSlabPool.h"
 #include "ThreadPool.h"
 #include "Net/TlsContext.h"
 
@@ -73,6 +74,7 @@ struct CommandActive : public MsgHeader {
 struct Process {
     s32 mID;
     s32 mStatus;
+    void* mHandle;
     bool mAlive;
     net::Socket mSocket; //write socket of pair
 };
@@ -84,8 +86,9 @@ public:
         return it;
     }
 
-    bool init(const s8* fname);
-    bool run(bool step = false);
+    bool init(const s8* fname, bool child = false);
+    void run();
+    bool step();
     bool uninit();
 
     const String& getAppPath()const {
@@ -124,6 +127,14 @@ public:
         return mConfig;
     }
 
+    MemSlabPool& getMemSlabPool() {
+        return *reinterpret_cast<MemSlabPool*>(mMapfile.getMem());
+    }
+
+    s32 getPID()const{
+        return mPID;
+    }
+
 protected:
     Engine();
     ~Engine();
@@ -140,14 +151,16 @@ private:
     ThreadPool mThreadPool;
     s32 mPPID;
     s32 mPID;
-    bool mMain; //������
+    bool mMain;
     EngineConfig mConfig;
     net::TlsContext mTlsENG;
     TVector<Process> mChild;
+    Process mMainProcess;
+    bool createProcess();
+    bool runMainProcess();
+    bool runChildProcess(net::Socket& it);
 
-    void createProcess();
-    void runMainProcess();
-    void runChildProcess();
+    void initTask();
 };
 
 

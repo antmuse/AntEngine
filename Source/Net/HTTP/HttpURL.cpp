@@ -132,19 +132,19 @@ bool HttpURL::isHttps()const {
 StringView HttpURL::getNode(u32 idx)const {
     StringView ret;
     if (idx < UF_MAX) {
-        ret.set((s8*)mData.c_str() + mNodes.field_data[idx].off, mNodes.field_data[idx].len);
+        ret.set((s8*)mData.c_str() + mNodes.mFieldData[idx].mOffset, mNodes.mFieldData[idx].mLen);
     }
     return ret;
 }
 
 bool HttpURL::parser() {
-    s32 ret = http_parser_parse_url(mData.c_str(), mData.getLen(), 0, &mNodes);
+    s32 ret = mNodes.parseURL(mData.c_str(), mData.getLen(), 0);
     if (0 == ret) {
         StringView ret = getNode(UF_SCHEMA);
         ret.toLower();
-        if (0 == mNodes.port) {
+        if (0 == mNodes.mPort) {
             ret = getNode(UF_PORT);
-            mNodes.port = ret.mLen > 0 ? App10StrToU32(ret.mData) : (isHttps() ? 443 : 80);
+            mNodes.mPort = ret.mLen > 0 ? App10StrToU32(ret.mData) : (isHttps() ? 443 : 80);
         }
     } else {
         clear();
@@ -153,7 +153,7 @@ bool HttpURL::parser() {
 }
 
 u16 HttpURL::getPort()const {
-    return mNodes.port;
+    return mNodes.mPort;
 }
 
 }//namespace net

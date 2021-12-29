@@ -95,6 +95,20 @@ public:
         return ret;
     }
 
+    //@return 返回剩余可写空间大小
+    u32 getWriteSize()const {
+        return mAllocated - mUsed;
+    }
+
+    void clearData(u32 used) {
+        if (used >= mUsed) {
+            mUsed = 0;
+        } else if (used > 0) {
+            memmove(mData, mData + used, mUsed - used);
+            mUsed -= used;
+        }
+    }
+
     FunReqTcpCallback mCall;
     s8* mData;
     u32 mAllocated;

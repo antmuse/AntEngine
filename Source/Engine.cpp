@@ -72,13 +72,28 @@ void Engine::postCommand(s32 val) {
     }
 
     for (usz i = 0; i < mChild.size(); ++i) {
-        Logger::log(ELL_INFO, "Engine::postCommand>>post cmd = %d, pid=%d", val, mChild[i].mID);
-        mChild[i].mSocket.sendAll(&cmd, sizeof(cmd)); //block send
+        if (sizeof(cmd) != mChild[i].mSocket.sendAll(&cmd, sizeof(cmd))) { //block send
+            Logger::log(ELL_INFO, "Engine::postCommand>>fail post cmd = %d, pid=%d", val, mChild[i].mID);
+        }
+    }
+
+    if (ECT_EXIT == val) {
+        for (usz i = 0; i < mChild.size(); ++i) {
+            if (mChild[i].mHandle) {
+                System::waitProcess(mChild[i].mHandle);
+                mChild[i].mHandle = nullptr;
+                Logger::log(ELL_INFO, "Engine::postCommand>>process[%d] exit, pid=%d",
+                    i, mChild[i].mID);
+            }
+        }
+        //if (mMainProcess.mHandle) {
+        mMainProcess.mSocket.sendAll(&cmd, sizeof(cmd));
     }
 }
 
 
-bool Engine::init(const s8* fname) {
+bool Engine::init(const s8* fname, bool child) {
+    mMain = !child;
     AppStrConverterInit();
 #if defined(DOS_WINDOWS)
     s8 tmp[260];
@@ -105,79 +120,136 @@ bool Engine::init(const s8* fname) {
     System::createPath(mConfig.mLogPath);
 
     Logger::getInstance();
-    Logger::addPrintReceiver();
-    Logger::addFileReceiver();
-    //AppInitTlsLib();
-    mPID = System::getPID();
-    Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
 
-    FileWriter file;
-    if (file.openFile(mConfig.mPidFile, false)) {
-        file.writeParams("%d", mPID);
-        file.close();
-    } else {
+    mPID = System::getPID();
+    Logger::addFileReceiver();
+
+    bool ret = 0 == System::loadNetLib();
+    if (!ret) {
+        Logger::log(ELL_ERROR, "Engine::init>>loadNetLib fail");
         return false;
     }
 
     mTlsENG.init();
 
-    if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
-        if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true)) {
-            Logger::log(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
-            return false;
+    if (mConfig.mMaxProcess > 0) {
+        if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
+            if (mMain) {
+                if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true)) {
+                    Logger::log(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
+                    return false;
+                }
+            } else {
+                if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
+                    Logger::log(ELL_INFO, "Engine::init>>child openMem GMEM fail = %s", mConfig.mMemName.c_str());
+                    return false;
+                }
+            }
+        } else {
+            if (mMain) {
+                if (!mMapfile.createMapfile(mConfig.mMemSize, mConfig.mMemName.c_str(), false, false, true)) {
+                    Logger::log(ELL_INFO, "Engine::init>>createMapfile fail = %s", mConfig.mMemName.c_str());
+                    return false;
+                }
+            } else {
+                if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
+                    Logger::log(ELL_INFO, "Engine::init>>child openMem GMAP fail = %s", mConfig.mMemName.c_str());
+                    return false;
+                }
+            }
         }
-    } else {
-        if (!mMapfile.createMapfile(mConfig.mMemSize, mConfig.mMemName.c_str(), false, false, true)) {
-            Logger::log(ELL_INFO, "Engine::init>>createMapfile fail = %s", mConfig.mMemName.c_str());
-            return false;
+
+        MemSlabPool& mpool = getMemSlabPool();
+        if (mMain) {
+            new (&mpool)MemSlabPool(mConfig.mMemSize);
+        } else {
+            mpool.initSlabSize();
         }
     }
 
-    //snprintf((s8*)mMapfile.getMem(), mMapfile.getMemSize(), "map=%s, size=%llu/%llu", mConfig.mMemName.c_str(), mConfig.mMemSize, mConfig.mMemSize / 1024 / 1024);
-    createProcess();
-    return mChild.size() > 0;
+    if (mMain) {
+        FileWriter file;
+        if (file.openFile(mConfig.mPidFile, false)) {
+            file.writeParams("%d", mPID);
+            file.close();
+        } else {
+            return false;
+        }
+        Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+        ret = createProcess();
+    }
+
+    if(mMain){
+        Logger::addPrintReceiver();
+        ret = runMainProcess();
+    }else{
+#if defined(DOS_WINDOWS)
+        net::Socket cmdsock = (net::netsocket)GetStdHandle(STD_INPUT_HANDLE);
+        Logger::log(ELL_INFO, "Engine::init>>pid = %d, cmdsock = %llu", mPID, cmdsock.getValue());
+        if (!cmdsock.isOpen()) {
+            Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+            return false;
+        }
+
+        Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+        ret = runChildProcess(cmdsock);
+#endif
+    }
+
+    mPID = System::getPID();
+    return ret;
 }
 
 
 bool Engine::uninit() {
+    Logger::flush();
     mThreadPool.stop();
     clear();
     mTlsENG.uninit();
     return 0 == System::unloadNetLib();
 }
 
-bool Engine::run(bool step) {
-    bool ret;
-    if (mConfig.mMaxProcess < 1) {
-        //std::chrono::milliseconds waitms(10);
-        ret = mLoop.run();
-        if (!step) {
-            while (ret) {
-                //std::this_thread::sleep_for(waitms);
-                ret = mLoop.run();
-            }
-        }
-        return ret;
-    }
-
-    runChildProcess();
-    return true;
-}
-
-void Engine::runMainProcess() {
-
-}
-
-void Engine::runChildProcess() {
-    //std::chrono::milliseconds waitms(10);
+void Engine::run() {
     while (mLoop.run()) {
-        //std::this_thread::sleep_for(waitms);
     }
 }
 
-void Engine::createProcess() {
-    bool ret = 0 == System::loadNetLib();
+bool Engine::step() {
+    return mLoop.run();
+}
 
+bool Engine::runMainProcess() {
+    String unpath = Engine::getInstance().getConfig().mLogPath;
+    unpath += System::getPID();
+    unpath += ".unpath";
+
+    mMainProcess.mHandle = nullptr;
+    net::SocketPair pair;
+    if (pair.open(unpath.c_str())) {
+        mMainProcess.mID = System::getPID();
+        mMainProcess.mStatus = 0;
+        mMainProcess.mSocket = pair.getSocketA();
+    } else {
+        Logger::log(ELL_ERROR, "Engine::runMainProcess>> fail");
+        return false;
+    }
+    mThreadPool.start(mConfig.mMaxThread);
+    bool ret = mLoop.start(pair.getSocketB());
+    if (ret) { initTask(); }
+    return ret;
+}
+
+bool Engine::runChildProcess(net::Socket& cmdsock) {
+    mThreadPool.start(mConfig.mMaxThread);
+    bool ret = mLoop.start(cmdsock);
+    if (ret) {
+        initTask();
+    }
+    return ret;
+}
+
+bool Engine::createProcess() {
+    bool ret = true;
     String unpath = Engine::getInstance().getConfig().mLogPath;
     unpath += System::getPID();
     unpath += ".unpath";
@@ -185,32 +257,38 @@ void Engine::createProcess() {
     Process nd;
     mChild.reallocate(mConfig.mMaxProcess);
     net::SocketPair pair;
-    if (mConfig.mMaxProcess < 1) {
+    for (s16 i = 0; i < mConfig.mMaxProcess; ++i) {
         if (pair.open(unpath.c_str())) {
-            nd.mID = System::getPID();
-            nd.mStatus = 0;
             nd.mSocket = pair.getSocketA();
-            mChild.pushBack(nd);
-        } else {
-            Logger::log(ELL_ERROR, "Engine::init>>start main Process fail");
-        }
-    } else {
-        for (s16 i = 0; i < mConfig.mMaxProcess; ++i) {
-            if (pair.open(unpath.c_str())) {
-                nd.mID = System::getPID();
-                nd.mStatus = 0;
-                nd.mSocket = pair.getSocketA();
-                mChild.pushBack(nd);
+            nd.mID = System::createProcess(pair.getSocketB().getValue(), nd.mHandle);
+            nd.mStatus = 1;
+#if defined(DOS_LINUX)
+            if (0 == nd.mID) {//child
+                pair.getSocketA().close();
+                runChildProcess(pair.getSocketB());
+                mMain=false;
+                return true;
             } else {
-                Logger::log(ELL_ERROR, "Engine::init>>start Process[%d] fail", (s32)i);
-                break;
+                pair.getSocketB().close();
+                if(nd.mID<0){ //error
+                    pair.close();
+                    continue;
+                }
             }
+#endif
+            mChild.pushBack(nd);
+            Logger::log(ELL_INFO, "Engine::createProcess>>pid = %d, cmdsock = %llu", nd.mID, nd.mSocket.getValue());
+        } else {
+            Logger::log(ELL_ERROR, "Engine::init>>start Process[%d] fail", (s32)i);
+            ret = false;
+            break;
         }
     }
+    return ret;
+}
 
-    mThreadPool.start(mConfig.mMaxThread);
-    mLoop.start(pair.getSocketB());
 
+void Engine::initTask() {
     for (usz i = 0; i < mConfig.mProxy.size(); ++i) {
         net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxy::funcOnLink, &mConfig.mProxy[i]);
         nd->setTimeout(mConfig.mProxy[i].mTimeout);
@@ -249,7 +327,6 @@ void Engine::createProcess() {
             break;
         }
     }
-    //return ret;
 }
 
 } //namespace app

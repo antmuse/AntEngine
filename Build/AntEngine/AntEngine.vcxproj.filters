@@ -31,9 +31,6 @@
     <Filter Include="Source\Depend\jsoncpp">
       <UniqueIdentifier>{753de7cd-980c-4e8e-b3da-8545df2e4685}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\Depend\http_parser">
-      <UniqueIdentifier>{8bc83d3a-04f7-4ca0-848f-7313640b4ae0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source\Depend\jsoncpp\json">
       <UniqueIdentifier>{239493b2-782a-4a3e-8477-cbff66e7b57b}</UniqueIdentifier>
     </Filter>
@@ -243,9 +240,6 @@
     <ClCompile Include="..\..\Source\Net\TlsContext.cpp">
       <Filter>Source\Net</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Depend\http_parser\http_parser.cpp">
-      <Filter>Source\Depend\http_parser</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Windows\HandleFile.cpp">
       <Filter>Source\Windows</Filter>
     </ClCompile>
@@ -275,6 +269,18 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\db\ConnectConfig.cpp">
       <Filter>Source\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Handle.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\MemSlabPool.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpParser.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp">
+      <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -397,9 +403,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\EngineConfig.h">
       <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Depend\http_parser\http_parser.h">
-      <Filter>Source\Depend\http_parser</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
       <Filter>Source\Depend\jsoncpp\json</Filter>
@@ -542,6 +545,15 @@
     <ClInclude Include="..\..\Include\db\ConnectConfig.h">
       <Filter>Include\db</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\MemSlabPool.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpParser.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpFileSave.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Depend\jsoncpp\LICENSE">
@@ -553,8 +565,5 @@
     <None Include="..\..\.gitignore" />
     <None Include="..\..\LICENSE" />
     <None Include="..\..\README.md" />
-    <None Include="..\..\Depend\http_parser\LICENSE-MIT">
-      <Filter>Source\Depend\http_parser</Filter>
-    </None>
   </ItemGroup>
 </Project>

@@ -26,7 +26,7 @@
 #ifndef APP_HTTPMSG_H
 #define	APP_HTTPMSG_H
 
-#include "Packet.h"
+#include "RingBuffer.h"
 #include "Net/HTTP/HttpURL.h"
 #include "Net/HTTP/HttpHead.h"
 
@@ -39,7 +39,7 @@ public:
 
     ~HttpMsg();
 
-    static StringView getMethodStr(http_method it);
+    static StringView getMethodStr(EHttpMethod it);
 
     /**
     * @brief 支持<=18的后缀
@@ -48,36 +48,27 @@ public:
     */
     static const StringView getMimeType(const s8* filename, usz iLen);
 
-    /**
-    * @param flag, 组合值, 0=只写入, 1=写入并加索引, 2=结束
-    */
-    void writeLength(usz sz, s32 flag = 0) {
+    void writeLength(usz sz) {
         s8 tmp[128];
         snprintf(tmp, sizeof(tmp), "%llu", sz);
-        writeHead("Content-Length", tmp, flag);
+        writeHead("Content-Length", tmp);
     }
 
-
-    void writeContentRange(usz total, usz start, usz stop, s32 flag = 0) {
+    void writeContentRange(usz total, usz start, usz stop) {
         s8 tmp[128];
         snprintf(tmp, sizeof(tmp), "bytes %llu-%llu/%llu", start, stop, total);
-        writeHead("Content-Range", tmp, flag);
+        writeHead("Content-Range", tmp);
     }
 
+    void writeHead(const s8* name, const s8* value);
 
+    void writeHeadFinish() {
+        writeBody("\r\n", 2);
+    }
 
-    /**
-    * @param flag, 组合值, 0=只写入, 1=写入并加索引, 2=结束
-    */
-    void writeHead(const s8* name, const s8* value, s32 flag = 0);
+    void writeBody(const void* buf, usz bsz);
 
-    /**
-    * @param flag, 组合值, 0=写入并结束, 1=写入并加Chunk
-    */
-    void writeBody(const void* buf, usz bsz, s32 flag = 0);
-
-
-    Packet& getCache() {
+    RingBuffer& getCache() {
         return mCache;
     }
 
@@ -85,26 +76,14 @@ public:
         return mHead;
     }
 
-    StringView getBody() const {
-        DASSERT(mCache.size() > 0);
-        StringView ret(mCache.getPointer(), mCache.size());
-        return ret;
-    }
-
-    void onHeadName(const void* buf, usz sz) {
-        mTemp.set((s8*)buf, sz);
-    }
-
-    //Range: bytes=200-1000, 2000-6576, 19000-
-    void onHeadValue(const void* buf, usz sz) {
-        StringView vvv((s8*)buf, sz);
-        mHead.add(mTemp, vvv);
+    void onHeader(const StringView& key, const StringView& val) {
+        mHead.add(key, val);
     }
 
     void clear() {
         mFlag = 0;
         mHead.clear();
-        mCache.shrink(512);
+        mCache.reset();
     }
 
     /*
@@ -113,7 +92,7 @@ public:
     s32 onHeadFinish(s32 flag, ssz bodySize);
 
     void setKeepAlive(bool it) {
-        if(it) {
+        if (it) {
             mFlag &= ~F_CONNECTION_CLOSE;
             mFlag |= F_CONNECTION_KEEP_ALIVE;
             writeHead("Connection", "keep-alive");
@@ -126,7 +105,7 @@ public:
 
     void setChunked(s32 flag = 0) {
         mFlag |= F_CHUNKED;
-        writeHead("Transfer-Encoding", "chunked", flag);
+        writeHead("Transfer-Encoding", "chunked");
     }
 
     bool isKeepAlive()const {
@@ -140,22 +119,16 @@ public:
     }
 
     void clearBody() {
-        mCache.resize(0);
+        mCache.reset();
     }
 
     usz getBodySize()const {
-        return mCache.size();
+        return mCache.getSize();
     }
-
-    void onChunkHead(usz chunksz) {
-        mCache.reallocate(mCache.size() + chunksz);
-    }
-
 
 protected:
     s32 mFlag;
-    StringView mTemp;
-    Packet mCache;
+    RingBuffer mCache;
     HttpHead mHead;
 };
 

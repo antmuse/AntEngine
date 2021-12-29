@@ -6,12 +6,15 @@ export BUILD_DIR = $(shell pwd)
 
 
 MK_DIRS = $(BUILD_DIR)/Source \
-		  $(BUILD_DIR)/Source/Test
+		  $(BUILD_DIR)/Source/Test \
+		  $(BUILD_DIR)/Source/HttpClient \
+		  $(BUILD_DIR)/Source/Server
 
 
 
 .DEFAULT:
 all:path
+	@rm ./Bin/*.bin
 	@for dir in $(MK_DIRS); \
 		do \
 		make -C $$dir; \
@@ -30,7 +33,7 @@ path:
 
 .PHONY: clean
 clean:
-	rm -rf Bin/AntTest.bin
+	rm -rf Bin/*.bin
 	rm -rf Bin/Temp/*
 	rm -rf Lib/libAntEngine.a
 	@echo "------------------------cleared"

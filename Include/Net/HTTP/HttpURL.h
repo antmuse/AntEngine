@@ -27,7 +27,7 @@
 #define	APP_HTTPURL_H
 
 
-#include "http_parser.h"
+#include "Net/HTTP/HttpParser.h"
 #include "Strings.h"
 
 namespace app {
@@ -81,7 +81,7 @@ public:
 
 private:
     String mData;
-    http_parser_url mNodes;
+    HttpParserURL mNodes;
 };
 
 }//namespace net

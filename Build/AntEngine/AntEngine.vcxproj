@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Depend\http_parser\http_parser.cpp" />
     <ClCompile Include="..\..\Depend\jsoncpp\json_reader.cpp" />
     <ClCompile Include="..\..\Depend\jsoncpp\json_value.cpp" />
     <ClCompile Include="..\..\Depend\jsoncpp\json_writer.cpp" />
@@ -38,11 +37,15 @@
     <ClCompile Include="..\..\Source\EngineConfig.cpp" />
     <ClCompile Include="..\..\Source\FileReader.cpp" />
     <ClCompile Include="..\..\Source\FileWriter.cpp" />
+    <ClCompile Include="..\..\Source\Handle.cpp" />
     <ClCompile Include="..\..\Source\HashDict.cpp" />
     <ClCompile Include="..\..\Source\EncoderMD5.cpp" />
     <ClCompile Include="..\..\Source\Logger.cpp" />
     <ClCompile Include="..\..\Source\MemoryHub.cpp" />
+    <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpParser.cpp" />
     <ClCompile Include="..\..\Source\Net\TlsContext.cpp" />
     <ClCompile Include="..\..\Source\Net\HandleTLS.cpp" />
     <ClCompile Include="..\..\Source\Net\TlsSession.cpp" />
@@ -92,7 +95,6 @@
     <ClCompile Include="..\..\Source\Windows\System.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Depend\http_parser\http_parser.h" />
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h" />
     <ClInclude Include="..\..\Depend\jsoncpp\json\assertions.h" />
     <ClInclude Include="..\..\Depend\jsoncpp\json\config.h" />
@@ -129,9 +131,12 @@
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Loop.h" />
     <ClInclude Include="..\..\Include\MapFile.h" />
+    <ClInclude Include="..\..\Include\MemSlabPool.h" />
     <ClInclude Include="..\..\Include\MsgHeader.h" />
     <ClInclude Include="..\..\Include\Net\Acceptor.h" />
     <ClInclude Include="..\..\Include\Net\HandleTLS.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpFileSave.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpParser.h" />
     <ClInclude Include="..\..\Include\Net\TlsContext.h" />
     <ClInclude Include="..\..\Include\Net\TlsSession.h" />
     <ClInclude Include="..\..\Include\Net\EventPoller.h" />
@@ -184,7 +189,6 @@
   <ItemGroup>
     <None Include="..\..\.gitignore" />
     <None Include="..\..\Bin\Config\config.json" />
-    <None Include="..\..\Depend\http_parser\LICENSE-MIT" />
     <None Include="..\..\Depend\jsoncpp\LICENSE" />
     <None Include="..\..\LICENSE" />
     <None Include="..\..\README.md" />
