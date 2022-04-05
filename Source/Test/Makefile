@@ -1,4 +1,4 @@
-﻿#build test
+#build test
 
 CC = gcc
 CXX = g++
@@ -27,22 +27,18 @@ BIN = AntTest.bin
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
-LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -lssl -lcrypto -lz -lpthread
-BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
+	LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -lssl -lcrypto -lz -lpthread
+	BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
 
 OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/test
 DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/test
 
-$(shell mkdir -p $(OBJ_DIR))
-$(shell mkdir -p $(OBJ_DIR)/Test)
-$(shell mkdir -p $(DEP_DIR))
-$(shell mkdir -p $(DEP_DIR)/Test)
 
 OBJS := $(addprefix $(OBJ_DIR)/,$(OBJS))
 DEPS := $(addprefix $(DEP_DIR)/,$(DEPS))
 
 #------------------------------------------------------
-all:$(DEPS) $(OBJS) $(BIN)
+all:TEMP_DIR $(DEPS) $(OBJS) $(BIN)
 	@echo "------------------------bin=$(BIN)"
 
 ifneq ("$(wildcard $(DEPS))","")
@@ -61,3 +57,7 @@ $(OBJ_DIR)/%.o:%.cpp
 
 $(DEP_DIR)/%.d:%.cpp
 	$(CXX) $(INC_DIR) -MM $^ -MF $@
+
+TEMP_DIR:
+	$(shell mkdir -p $(OBJ_DIR)/Test)
+	$(shell mkdir -p $(DEP_DIR)/Test)

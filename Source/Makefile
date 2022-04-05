@@ -1,4 +1,4 @@
-﻿#build lib
+#build lib
 
 CC = gcc
 CXX = g++
@@ -34,36 +34,20 @@ SRCS += $(wildcard ../Depend/jsoncpp/*.cpp)
 
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
-BIN = libAntEngine.a
+	BIN = libAntEngine.a
 
 BIN := $(addprefix $(BUILD_DIR)/Lib/,$(BIN))
 
 OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/all
 DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/all
 
-$(shell mkdir -p $(OBJ_DIR))
-$(shell mkdir -p $(OBJ_DIR)/Linux)
-$(shell mkdir -p $(OBJ_DIR)/Net)
-$(shell mkdir -p $(OBJ_DIR)/db)
-$(shell mkdir -p $(OBJ_DIR)/Net/HTTP)
-$(shell mkdir -p $(OBJ_DIR)/Net/RedisClient)
-$(shell mkdir -p $(OBJ_DIR)/../Depend/http_parser)
-$(shell mkdir -p $(OBJ_DIR)/../Depend/jsoncpp)
-$(shell mkdir -p $(DEP_DIR))
-$(shell mkdir -p $(DEP_DIR)/Linux)
-$(shell mkdir -p $(DEP_DIR)/Net)
-$(shell mkdir -p $(DEP_DIR)/db)
-$(shell mkdir -p $(DEP_DIR)/Net/HTTP)
-$(shell mkdir -p $(DEP_DIR)/Net/RedisClient)
-$(shell mkdir -p $(DEP_DIR)/../Depend/http_parser)
-$(shell mkdir -p $(DEP_DIR)/../Depend/jsoncpp)
 
 OBJS := $(addprefix $(OBJ_DIR)/,$(OBJS))
 DEPS := $(addprefix $(DEP_DIR)/,$(DEPS))
 
 
 #------------------------------------------------------
-all:$(DEPS) $(OBJS) $(BIN)
+all:TEMP_DIR $(DEPS) $(OBJS) $(BIN)
 	@echo "------------------------bin=$(BIN)"
 
 
@@ -84,3 +68,22 @@ $(OBJ_DIR)/%.o:%.cpp
 
 $(DEP_DIR)/%.d:%.cpp
 	$(CXX) $(INC_DIR) -MM $^ -MF $@
+
+TEMP_DIR:
+	#$(shell mkdir -p $(OBJ_DIR))
+	#$(shell mkdir -p $(OBJ_DIR)/Net)
+	$(shell mkdir -p $(OBJ_DIR)/Linux)
+	$(shell mkdir -p $(OBJ_DIR)/db)
+	$(shell mkdir -p $(OBJ_DIR)/Net/HTTP)
+	$(shell mkdir -p $(OBJ_DIR)/Net/RedisClient)
+	$(shell mkdir -p $(OBJ_DIR)/../Depend/http_parser)
+	$(shell mkdir -p $(OBJ_DIR)/../Depend/jsoncpp)
+	#$(shell mkdir -p $(DEP_DIR))
+	#$(shell mkdir -p $(DEP_DIR)/Net)
+	$(shell mkdir -p $(DEP_DIR)/Linux)
+	$(shell mkdir -p $(DEP_DIR)/db)
+	$(shell mkdir -p $(DEP_DIR)/Net/HTTP)
+	$(shell mkdir -p $(DEP_DIR)/Net/RedisClient)
+	$(shell mkdir -p $(DEP_DIR)/../Depend/http_parser)
+	$(shell mkdir -p $(DEP_DIR)/../Depend/jsoncpp)
+

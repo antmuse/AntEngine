@@ -1,4 +1,4 @@
-﻿#ture = debug
+#ture = debug
 #false = release with symbol
 #release = release without symbol
 DEBUG ?= release
