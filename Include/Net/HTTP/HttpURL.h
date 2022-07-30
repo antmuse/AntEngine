@@ -27,11 +27,22 @@
 #define	APP_HTTPURL_H
 
 
-#include "Net/HTTP/HttpParser.h"
 #include "Strings.h"
 
 namespace app {
 namespace net {
+
+enum EHttpUrlFields {
+    UF_SCHEMA = 0
+    , UF_HOST = 1
+    , UF_PORT = 2
+    , UF_PATH = 3
+    , UF_QUERY = 4
+    , UF_FRAGMENT = 5
+    , UF_USERINFO = 6
+    , UF_MAX = 7
+};
+
 
 class HttpURL {
 public:
@@ -81,7 +92,18 @@ public:
 
 private:
     String mData;
-    HttpParserURL mNodes;
+
+    u16 mFieldSet;           /* Bitmask of (1 << UF_*) values */
+    u16 mPort;                /* Converted UF_PORT string */
+    struct {
+        u16 mOffset;          /* Offset into buffer in which field starts */
+        u16 mLen;             /* Length of run in buffer */
+    } mFieldData[UF_MAX];
+
+    /* Parse a URL; return nonzero on failure */
+    s32 parseURL(const s8* buf, usz buflen, s32 is_connect);
+
+    s32 parseHost(const s8* buf, s32 found_at);
 };
 
 }//namespace net

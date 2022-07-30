@@ -4,22 +4,19 @@
 #include "Loop.h"
 #include "Packet.h"
 #include "Net/HandleTLS.h"
+#include "Net/Acceptor.h"
 
 namespace app {
 namespace net {
 
-
-class Linker {
+class NetServer;
+class Linker :public RefCount {
 public:
     Linker();
 
-    ~Linker();
+    virtual ~Linker();
 
-    static void funcOnLink(net::RequestTCP* it) {
-        //it->mUser;
-        Linker* con = new Linker();
-        con->onLink(it); //Linker×Ô»Ù¶ÔÏó
-    }
+    bool onLink(NetServer* sev, net::RequestTCP* it);
 
 private:
 
@@ -31,7 +28,6 @@ private:
 
     void onRead(net::RequestTCP* it);
 
-    void onLink(net::RequestTCP* it);
 
     DFINLINE s32 writeIF(net::RequestTCP* it) {
         return mTLS ? mTCP.write(it) : mTCP.getHandleTCP().write(it);
@@ -62,8 +58,47 @@ private:
     }
 
     bool mTLS;
+    NetServer* mServer;
     net::HandleTLS mTCP;
     Packet mPack;
+};
+
+class NetServer :public RefCount {
+public:
+    NetServer(bool tls) :mTLS(tls) { }
+    virtual ~NetServer() { }
+
+    static void funcOnLink(net::RequestTCP* it) {
+        DASSERT(it && it->mUser);
+        net::Acceptor* accp = reinterpret_cast<net::Acceptor*>(it->mUser);
+        NetServer* web = reinterpret_cast<NetServer*>(accp->getUser());
+        web->onLink(it);
+    }
+
+    bool isTLS()const {
+        return mTLS;
+    }
+
+    void bind(net::Linker* it) {
+        grab();
+        it->grab();
+    }
+
+    void unbind(net::Linker* it) {
+        drop();
+        it->drop();
+    }
+
+private:
+    //friend class HttpLayer;
+
+    void onLink(net::RequestTCP* it) {
+        net::Linker* con = new net::Linker();
+        con->onLink(this, it);
+        con->drop();
+    }
+
+    bool mTLS;
 };
 
 

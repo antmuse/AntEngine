@@ -24,7 +24,7 @@ s32 HttpFileSave::onSent(net::HttpMsg& msg) {
 
 s32 HttpFileSave::onOpen(net::HttpMsg& msg) {
     mDone = false;
-    mBody = &msg.getCache();
+    mBody = &msg.getCacheOut();
     s32 ret = mFile.open("Log/httpfile.html", 4);
     if (EE_OK == ret) {
         mWrited = mFile.getFileSize();
@@ -78,7 +78,7 @@ s32 HttpFileSave::launchWrite() {
     if (0 == mReqs.mUsed && mBody->getSize() > 0) {
         StringView buf = mBody->peekHead();
         mReqs.mData = buf.mData;
-        mReqs.mAllocated = buf.mLen;
+        mReqs.mAllocated = static_cast<u32>(buf.mLen);
         mReqs.mUsed = mReqs.mAllocated;
         if (EE_OK != mFile.write(&mReqs, mWrited)) {
             return mFile.launchClose();

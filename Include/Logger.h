@@ -32,11 +32,14 @@
 #include "Strings.h"
 
 
-#if defined(DDEBUG) && defined(DOS_WINDOWS)
+#if defined(DDEBUG)
 #define DLOG(TYPE, FORMAT, ...)  Logger::log(TYPE, FORMAT, __VA_ARGS__)
 #else
 #define DLOG(TYPE, FORMAT, ...)
 #endif
+
+#define DLOGG(TYPE, FORMAT, ...)  Logger::log(TYPE, "%s:%d "##FORMAT, __FILE__,__LINE__,__VA_ARGS__)
+
 
 namespace app {
 

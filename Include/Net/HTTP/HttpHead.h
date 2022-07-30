@@ -71,10 +71,50 @@ public:
 
 class HttpHead {
 public:
-
     HttpHead();
 
     ~HttpHead();
+    
+    void writeLength(usz sz) {
+        s8 tmp[128];
+        StringView key("Content-Length",sizeof("Content-Length")-1);
+        StringView val(tmp,snprintf(tmp, sizeof(tmp), "%llu", sz));
+        add(key,val);
+    }
+
+    void writeContentRange(usz total, usz start, usz stop) {
+        s8 tmp[128];
+        StringView key("Content-Range",sizeof("Content-Range")-1);
+        StringView val(tmp,snprintf(tmp, sizeof(tmp), "bytes %llu-%llu/%llu", start, stop, total));
+        add(key,val);
+    }
+
+    //@brief default is "text/html; charset=utf-8"
+    void writeDefaultContentType() {
+        StringView key("Content-Type",sizeof("Content-Type")-1);
+        StringView val("text/html;charset=utf-8",sizeof("text/html;charset=utf-8")-1);
+        add(key,val);
+    }
+
+    void writeContentType(const StringView& val) {
+        StringView key("Content-Type",sizeof("Content-Type")-1);
+        add(key,val);
+    }
+
+    void writeKeepAlive(bool it) {
+        StringView key("Connection",sizeof("Connection")-1);
+        StringView val("keep-alive",sizeof("keep-alive")-1);
+        if (!it) {
+            val.set("close",sizeof("close")-1);
+        }
+        add(key,val);
+    }
+
+    void writeChunked() {
+        StringView key("Transfer-Encoding",sizeof("Transfer-Encoding")-1);
+        StringView val("chunked",sizeof("chunked")-1);
+        add(key,val);
+    }
 
     //Transfer-Encoding : chunked
     bool isChunked()const;

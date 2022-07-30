@@ -312,8 +312,7 @@ public:
     template <class B>
     TString<T, TAlloc>& operator=(const B* const c) {
         if (!c) {
-            mBuffer[0] = 0;
-            mLen = 0;
+            setLen(0);
             return *this;
         }
 

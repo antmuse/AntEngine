@@ -34,7 +34,7 @@ const u32 gCacheSZ = 4 * 1024;
 
 
 TcpProxy::TcpProxy(Loop& loop) :
-    mLoop(loop), mType(0) {
+    mLoop(loop), mType(0), mHub(nullptr) {
 
     //front
     mTLS.getHandleTCP().setClose(EHT_TCP_LINK, TcpProxy::funcOnClose, this);
@@ -62,11 +62,18 @@ s32 TcpProxy::onTimeout2(HandleTime& it) {
     return EE_ERROR;
 }
 
+void TcpProxy::unbind() {
+    if (mHub) {
+        mHub->drop();
+        mHub = nullptr;
+    }
+    drop();
+}
 
 void TcpProxy::onClose(Handle* it) {
     if ((2 & mType) > 0 ? mTLS2.isClose() : mTLS2.getHandleTCP().isClose()) {
         Logger::log(ELL_INFO, "TcpProxy::onClose>>front=%s", mTLS.getRemote().getStr());
-        delete this;
+        unbind();
     } else {
         mLoop.closeHandle(&mTLS2.getHandleTCP());
     }
@@ -76,7 +83,7 @@ void TcpProxy::onClose(Handle* it) {
 void TcpProxy::onClose2(Handle* it) {
     if ((1 & mType) > 0 ? mTLS.isClose() : mTLS.getHandleTCP().isClose()) {
         Logger::log(ELL_INFO, "TcpProxy::onClose2>>backend=%s", mTLS2.getRemote().getStr());
-        delete this;
+        unbind();
     } else {
         mLoop.closeHandle(&mTLS.getHandleTCP());
     }
@@ -184,9 +191,13 @@ void TcpProxy::onConnect(net::RequestTCP* it) {
 
 
 void TcpProxy::onLink(net::RequestTCP* it) {
+    DASSERT(nullptr == mHub);
+
     net::Acceptor* accp = (net::Acceptor*)(it->mUser);
     net::RequestAccept* req = (net::RequestAccept*)it;
-    mType = reinterpret_cast<EngineConfig::ProxyCfg*>(accp->getUser())->mType;
+    mHub = reinterpret_cast<TcpProxyHub*>(accp->getUser());
+
+    mType = mHub->getConfig().mType;
     s64 tmout = accp->getHandleTCP().getTimeout();
     s64 tgap = accp->getHandleTCP().getTimeGap();
     /*mTLS.getHandleTCP().setSocket(req->mSocket);
@@ -218,9 +229,13 @@ void TcpProxy::onLink(net::RequestTCP* it) {
     }
     if (EE_OK != ecode) {
         mTLS.getHandleTCP().getSock().close();
-        delete this;
+        mHub = nullptr;
         return;
     }
+
+    //bind
+    grab();
+    mHub->grab();
 
     //backend start connect
     net::RequestTCP* conn = RequestTCP::newRequest(gCacheSZ);

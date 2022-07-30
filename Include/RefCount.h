@@ -23,26 +23,57 @@
 ***************************************************************************************************/
 
 
-#include "Net/HTTP/HttpResponse.h"
+#ifndef APP_REFCOUNT_H
+#define	APP_REFCOUNT_H
+
+#include <atomic>
+#include "Config.h"
 
 namespace app {
-namespace net {
 
-HttpResponse::HttpResponse() :
-    mStatusCode(HTTP_STATUS_OK){
-    mBrief[0] = 0;
-}
+/**
+ * @brief 引用计数
+ *        不推荐多重继承, 子类形成菱形继承时(多继承)注意需虚继承自此类, eg:
+ *        class SonA : virtual public TRefCount {};
+ *        class SonB : virtual public TRefCount {};
+ *        class Grandson : public SonA, public SonB {};
+ */
+template <class T>
+class TRefCount {
+public:
+    TRefCount() : mRefCount(1) {
+    }
 
-HttpResponse::~HttpResponse() {
-}
+    virtual ~TRefCount() {
+        DASSERT(0 == mRefCount);
+    }
+
+    s32 getRefCount() const {
+        return mRefCount;
+    }
+
+    void grab() const {
+        DASSERT(mRefCount > 0);
+        ++mRefCount;
+    }
+
+    s32 drop() const {
+        DASSERT(mRefCount > 0);
+        s32 ret = --mRefCount;
+        if (0 == ret) {
+            delete this;
+        }
+        return ret;
+    }
+
+private:
+    mutable T mRefCount;
+};
 
 
-void HttpResponse::writeStatus(s32 val, const s8* str) {
-    s8 tmp[32]; //len=18="HTTP/1.1 %d OK\r\n"
-    mStatusCode = val;
-    usz tsz = snprintf(tmp, sizeof(tmp), "HTTP/1.1 %d %s\r\n", val, str);
-    mCache.write(tmp, tsz < sizeof(tmp) ? tsz : sizeof(tmp) - 1);
-}
+using RefCount = TRefCount<s32>;
+using RefCountAtomic = TRefCount<std::atomic<s32>>;
 
-}//namespace net
-}//namespace app
+} //namespace app
+
+#endif //APP_REFCOUNT_H

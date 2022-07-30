@@ -30,17 +30,15 @@ namespace app {
 namespace net {
 
 
-Acceptor::Acceptor(Loop& loop, FunReqTcpCallback func, void* iUser) :
+Acceptor::Acceptor(Loop& loop, FunReqTcpCallback func, RefCount* iUser) :
     mOnLink(func),
     mLoop(loop) {
-
     mTCP.setClose(EHT_TCP_ACCEPT, Acceptor::funcOnClose, this);
 
     //accept无需加入时间堆
     mTCP.setTime(nullptr, 30 * 1000, 60 * 1000, -1);
 
-    mTCP.getLink().mParent = (Node3*)iUser; //借用时间堆mLink上指针，存iUser
-
+    setUser(iUser);
     memset(mFlyRequests, 0, sizeof(mFlyRequests));
 }
 
@@ -56,7 +54,7 @@ Acceptor::~Acceptor() {
 
 
 s32 Acceptor::close() {
-    return mLoop.closeHandle(&mTCP);
+    return mTCP.launchClose();
 }
 
 
@@ -89,14 +87,15 @@ s32 Acceptor::open(const NetAddress& addr) {
         Logger::log(ELL_INFO, "Acceptor::open>>listen=%s, backend=%s",
             mTCP.getLocal().getStr(), mTCP.getRemote().getStr());
     }
+    //setUser(nullptr);
     return ret;
 }
 
 void Acceptor::onClose(Handle* it) {
     Logger::log(ELL_INFO, "Acceptor::onClose>>listen=%s, backend=%s",
         mTCP.getLocal().getStr(), mTCP.getRemote().getStr());
-
-    delete this;
+    setUser(nullptr);
+    drop(); // delete this;
 }
 
 

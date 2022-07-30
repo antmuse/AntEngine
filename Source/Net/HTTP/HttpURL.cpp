@@ -42,7 +42,8 @@ void HttpURL::append(const s8* buf, size_t sz) {
 
 
 void HttpURL::clear() {
-    memset(&mNodes, 0, sizeof(mNodes));
+    mFieldSet = 0;
+    memset(&mFieldData, 0, sizeof(mFieldData));
     mData.setLen(0);
 }
 
@@ -117,7 +118,7 @@ bool HttpURL::decode(const s8* uri, usz len) {
     }
     mData.setLen(0);
     mData.append(uri, len);
-    //mData.setLen(decodeURL((s8*)mData.c_str(), mData.getLen()));
+    mData.setLen(decodeURL((s8*)mData.c_str(), mData.getLen()));
     return parser();
 }
 
@@ -132,19 +133,19 @@ bool HttpURL::isHttps()const {
 StringView HttpURL::getNode(u32 idx)const {
     StringView ret;
     if (idx < UF_MAX) {
-        ret.set((s8*)mData.c_str() + mNodes.mFieldData[idx].mOffset, mNodes.mFieldData[idx].mLen);
+        ret.set((s8*)mData.c_str() + mFieldData[idx].mOffset, mFieldData[idx].mLen);
     }
     return ret;
 }
 
 bool HttpURL::parser() {
-    s32 ret = mNodes.parseURL(mData.c_str(), mData.getLen(), 0);
+    s32 ret = parseURL(mData.c_str(), mData.getLen(), 0);
     if (0 == ret) {
         StringView ret = getNode(UF_SCHEMA);
         ret.toLower();
-        if (0 == mNodes.mPort) {
+        if (0 == mPort) {
             ret = getNode(UF_PORT);
-            mNodes.mPort = ret.mLen > 0 ? App10StrToU32(ret.mData) : (isHttps() ? 443 : 80);
+            mPort = ret.mLen > 0 ? App10StrToU32(ret.mData) : (isHttps() ? 443 : 80);
         }
     } else {
         clear();
@@ -153,8 +154,21 @@ bool HttpURL::parser() {
 }
 
 u16 HttpURL::getPort()const {
-    return mNodes.mPort;
+    return mPort;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/////////
 
 }//namespace net
 }//namespace app

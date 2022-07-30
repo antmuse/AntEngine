@@ -79,7 +79,7 @@ public:
     }
 
     ~TVector() {
-        clear();
+        clearAll();
     }
 
 
@@ -241,20 +241,26 @@ public:
         ++mUsed;
     }
 
-
     /**
-    * @brief 析构所有元素并删除空间
+    * @brief 析构所有元素
     */
     void clear() {
+        for (usz i = 0; i < mUsed; ++i) {
+            mAllocator.destruct(&mData[i]);
+        }
+        mUsed = 0;
+        mSorted = true;
+    }
+
+    /**
+    * @brief 析构所有元素并删除数组空间
+    */
+    void clearAll() {
         if (mData) {
-            for (usz i = 0; i < mUsed; ++i) {
-                mAllocator.destruct(&mData[i]);
-            }
+            clear();
             mAllocator.deallocate(mData);
             mData = nullptr;
-            mUsed = 0;
             mAllocated = 0;
-            mSorted = true;
         }
     }
 

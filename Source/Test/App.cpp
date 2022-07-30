@@ -127,6 +127,9 @@ int main(int argc, char** argv) {
         break;
     }
 
+    Engine::getInstance().postCommand(ECT_EXIT);
+    eng.run();
+
     Logger::log(ELL_INFO, "main>>exit...");
     Logger::flush();
     eng.uninit();

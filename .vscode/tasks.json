@@ -1,0 +1,43 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build.help",
+            "type": "shell",
+            "args": [
+                "help"
+            ],
+            "command": "make"
+        },
+        {
+            "label": "build.all",
+            "type": "shell",
+            "args": [
+                "DEBUG=true"
+            ],
+            "command": "make"
+        },
+        {
+            "label": "build.AntEngine.a",
+            "type": "shell",
+            "args": [
+                "-C",
+                "${workspaceFolder}/Source",
+                "DEBUG=true"
+            ],
+            "command": "make"
+        },
+        {
+            "label": "build.Test",
+            "type": "shell",
+            "args": [
+                "-C",
+                "${workspaceFolder}/Source/Test",
+                "DEBUG=true"
+            ],
+            "command": "make"
+        }
+    ]
+}

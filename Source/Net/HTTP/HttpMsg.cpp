@@ -24,59 +24,65 @@
 
 
 #include "Net/HTTP/HttpMsg.h"
-#include <assert.h>
+#include "Logger.h"
+#include "Net/HTTP/HttpLayer.h"
 
 namespace app {
 namespace net {
 static const s32 G_MAX_BODY = 1024 * 1024 * 10;
 
-HttpMsg::HttpMsg() :
-    mFlag(0) {
-    mCache.init();
+HttpMsg::HttpMsg(HttpLayer* it) :
+    mStationID(0),
+    mLayer(it),
+    mEvent(nullptr),
+    mFlags(0),
+    mMethod(HTTP_GET),
+    mType(EHTTP_BOTH),
+    mStatusCode(HTTP_STATUS_OK){
+    //mBrief.setLen(0);
+    mCacheIn.init();
+    mCacheOut.init();
+    if (it) {
+        it->grab();
+    }
 }
 
 
 HttpMsg::~HttpMsg() {
-}
-
-
-StringView HttpMsg::getMethodStr(EHttpMethod it) {
-#define DCASE(num, name, str) case HTTP_##name: ret.set(#str,sizeof(#str)-1);break;
-
-    StringView ret;
-    switch (it) {
-        HTTP_METHOD_MAP(DCASE)
-    default:
-        ret.set("NULL", 4);
-        break;
+    if (mLayer) {
+        mLayer->drop();
+        mLayer = nullptr;
     }
-
-#undef DCASE
-    return ret;
 }
 
 
-
-s32 HttpMsg::onHeadFinish(s32 flag, ssz bodySize) {
-    mFlag = flag;
-    mCache.reset();
-    return 0;
+void HttpMsg::writeStatus(s32 val, const s8* str) {
+    s8 tmp[64]; //len=17="HTTP/1.1 200 OK\r\n"
+    mStatusCode = val;
+    usz tsz = snprintf(tmp, sizeof(tmp), "HTTP/1.1 %d %s\r\n", val, str);
+    if (tsz >= sizeof(tmp)) {
+        tsz = sizeof(tmp);
+        tmp[tsz - 2] = '\r';
+        tmp[tsz - 1] = '\n';
+    }
+    mCacheOut.write(tmp, static_cast<s32>(tsz));
 }
 
 
-void HttpMsg::writeBody(const void* buf, usz bsz) {
-    mCache.write(buf, bsz);
+void HttpMsg::writeOutBody(const void* buf, usz bsz) {
+    mCacheOut.write(buf, bsz);
 }
 
-void HttpMsg::writeHead(const s8* name, const s8* value) {
+
+void HttpMsg::writeOutHead(const s8* name, const s8* value) {
     if (name && value) {
         usz klen = strlen(name);
         usz vlen = strlen(value);
         if (klen > 0) {
-            mCache.write(name, klen);
-            mCache.write(":", 1);
-            mCache.write(value, vlen);
-            mCache.write("\r\n", 2);
+            mCacheOut.write(name, klen);
+            mCacheOut.write(":", 1);
+            mCacheOut.write(value, vlen);
+            mCacheOut.write("\r\n", 2);
         }
     }
 }
@@ -85,8 +91,8 @@ void HttpMsg::writeHead(const s8* name, const s8* value) {
 const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
     DASSERT(filename && iLen > 0);
     /*
-    *»ùÓÚÎÄ¼şºó×ºµÄmime type±í¡£
-    *ºó×º±ØĞë°´Ë³ĞòÅÅĞò£¬ÕâÑù²ÅÄÜ½øĞĞ¶ş·Ö²éÕÒ
+    *åŸºäºæ–‡ä»¶åç¼€çš„mime typeè¡¨ã€‚
+    *åç¼€å¿…é¡»æŒ‰é¡ºåºæ’åºï¼Œè¿™æ ·æ‰èƒ½è¿›è¡ŒäºŒåˆ†æŸ¥æ‰¾
     */
     static const struct {
         StringView mExt;
@@ -289,7 +295,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
     };
 
 
-    s8 suffix[20]; //ÈßÓà2,Ö§³Ö<=18µÄºó×º
+    s8 suffix[20]; //ï¿½ï¿½ï¿½ï¿½2,Ö§ï¿½ï¿½<=18ï¿½Äºï¿½×º
     s32 pos = sizeof(suffix) - 1;
     suffix[pos--] = 0;
     ssz i;
@@ -318,6 +324,43 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
     //default
     return StringView("application/octet-stream", sizeof("application/octet-stream") - 1);
 }
+
+
+s32 HttpMsg::writeGet(const String& req) {
+    mCacheOut.reset();
+    mURL.append(req.c_str(), req.getLen());
+    if (!mURL.parser()) {
+        return EE_ERROR;
+    }
+    StringView buf = mURL.getPath();
+    mCacheOut.write("GET ", sizeof("GET ") - 1);
+    mCacheOut.write(buf.mData, mURL.get().getLen() - (buf.mData - mURL.get().c_str()));
+    mCacheOut.write(" HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);
+
+    buf = mURL.getHost();
+    mCacheOut.write("Host:", sizeof("Host:") - 1);
+    mCacheOut.write(buf.mData,buf.mLen);
+    mCacheOut.write("\r\n", sizeof("\r\n") - 1);
+
+    dumpHead(mHeadIn, mCacheOut);
+    mCacheOut.write("\r\n", sizeof("\r\n") - 1);
+    return EE_OK;
+}
+
+
+
+void HttpMsg::dumpHead(const HttpHead& hds, RingBuffer& out) {
+    usz mx = hds.size();
+    for (usz i = 0; i < mx; ++i) {
+        const HeadLine& line = hds[i];
+        out.write(line.mKey.c_str(), line.mKey.getLen());
+        out.write(":", 1);
+        out.write(line.mVal.c_str(), line.mVal.getLen());
+        out.write("\r\n", sizeof("\r\n") - 1);
+    }
+}
+
+
 
 }//namespace net
 }//namespace app

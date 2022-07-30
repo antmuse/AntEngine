@@ -29,7 +29,7 @@
 #include "FileWriter.h"
 #include "Net/TcpProxy.h"
 #include "Net/Acceptor.h"
-#include "Net/HTTP/HttpLayer.h"
+#include "Net/HTTP/Website.h"
 
 
 namespace app {
@@ -179,10 +179,10 @@ bool Engine::init(const s8* fname, bool child) {
         ret = createProcess();
     }
 
-    if(mMain){
+    if (mMain) {
         Logger::addPrintReceiver();
         ret = runMainProcess();
-    }else{
+    } else {
 #if defined(DOS_WINDOWS)
         net::Socket cmdsock = (net::netsocket)GetStdHandle(STD_INPUT_HANDLE);
         Logger::log(ELL_INFO, "Engine::init>>pid = %d, cmdsock = %llu", mPID, cmdsock.getValue());
@@ -266,11 +266,11 @@ bool Engine::createProcess() {
             if (0 == nd.mID) {//child
                 pair.getSocketA().close();
                 runChildProcess(pair.getSocketB());
-                mMain=false;
+                mMain = false;
                 return true;
             } else {
                 pair.getSocketB().close();
-                if(nd.mID<0){ //error
+                if (nd.mID < 0) { //error
                     pair.close();
                     continue;
                 }
@@ -290,7 +290,9 @@ bool Engine::createProcess() {
 
 void Engine::initTask() {
     for (usz i = 0; i < mConfig.mProxy.size(); ++i) {
-        net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxy::funcOnLink, &mConfig.mProxy[i]);
+        net::TcpProxyHub* pxhub = new net::TcpProxyHub(mConfig.mProxy[i]);
+        net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxyHub::funcOnLink, pxhub);
+        pxhub->drop();
         nd->setTimeout(mConfig.mProxy[i].mTimeout);
         nd->setBackend(mConfig.mProxy[i].mRemote);
         if (0 == nd->open(mConfig.mProxy[i].mLocal)) {
@@ -299,7 +301,7 @@ void Engine::initTask() {
         } else {
             Logger::log(ELL_ERROR, "Engine::init>>fail TcpProxy=[%s->%s]",
                 mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
-            delete nd;
+            nd->drop();
         }
     }
 
@@ -309,7 +311,9 @@ void Engine::initTask() {
         case 0: //http
         case 1: //https
         {
-            net::Acceptor* nd = new net::Acceptor(mLoop, net::HttpLayer::funcOnLink, &mConfig.mWebsite[i]);
+            net::Website* website = new net::Website(mConfig.mWebsite[i]);
+            net::Acceptor* nd = new net::Acceptor(mLoop, net::Website::funcOnLink, website);
+            website->drop();
             nd->getHandleTCP().setTimeGap(mConfig.mWebsite[i].mTimeout);
             nd->getHandleTCP().setTimeout(mConfig.mWebsite[i].mTimeout);
             if (0 == nd->open(mConfig.mWebsite[i].mLocal)) {
@@ -318,7 +322,8 @@ void Engine::initTask() {
             } else {
                 Logger::log(ELL_ERROR, "Engine::init>>fail website=%s,path=%s",
                     mConfig.mWebsite[i].mLocal.getStr(), mConfig.mWebsite[i].mRootPath.c_str());
-                delete nd;
+                //delete website & nd;
+                nd->drop();
             }
             break;
         }
@@ -327,6 +332,8 @@ void Engine::initTask() {
             break;
         }
     }
+
+    //mConfig.mWebsite.clear();
 }
 
 } //namespace app

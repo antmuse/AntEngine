@@ -41,7 +41,7 @@ RingBuffer::~RingBuffer() {
     uninit();
 }
 
-//mTailPos指到新的可用node
+
 void RingBuffer::pushBack() {
     if (mEmptyList) {
         SRingBufNode* empty_block = mEmptyList;
@@ -55,7 +55,7 @@ void RingBuffer::pushBack() {
     mTailPos.mPosition = 0;
 }
 
-//弹出node挂到EmptyList
+
 void RingBuffer::popFront() {
     SRingBufNode* empty_block = mEmptyList;
     SRingBufNode* head_block = mHeadPos.mNode;
@@ -111,15 +111,15 @@ void RingBuffer::reset() {
 void RingBuffer::write(const void* data, s32 size) {
     const s8* pos = (const s8*)data;
     s32 leftover = size;
-    DASSERT(mTailPos.mNode && "Tail block should never be nullptr");
+    DASSERT(nullptr!=mTailPos.mNode);
 
     while (leftover > 0) {
-        s32 copysz = D_RBUF_BLOCK_SIZE - mTailPos.mPosition;
-        DASSERT(mTailPos.mPosition <= D_RBUF_BLOCK_SIZE && "Tail index should always <= block size");
+        s32 copysz = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
+        DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
 
         if (copysz == 0) {
             pushBack();
-            copysz = D_RBUF_BLOCK_SIZE;
+            copysz = sizeof(SRingBufNode::mData);
         }
 
         if (copysz > leftover) {
@@ -136,13 +136,13 @@ void RingBuffer::write(const void* data, s32 size) {
 }
 
 s32 RingBuffer::peekTailNode(s8** data, s32 size) {
-    s32 available = D_RBUF_BLOCK_SIZE - mTailPos.mPosition;
-    DASSERT(mTailPos.mNode && "Tail block should never be nullptr");
-    DASSERT(mTailPos.mPosition <= D_RBUF_BLOCK_SIZE && "Tail index should always be <= block size");
+    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
+    DASSERT(nullptr!=mTailPos.mNode);
+    DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
 
     if (available == 0) {
         pushBack();
-        available = D_RBUF_BLOCK_SIZE;
+        available = sizeof(SRingBufNode::mData);
     }
 
     *data = mTailPos.mNode->mData + mTailPos.mPosition;
@@ -150,15 +150,15 @@ s32 RingBuffer::peekTailNode(s8** data, s32 size) {
 }
 
 void RingBuffer::commitTailPos(s32 size) {
-    s32 available = D_RBUF_BLOCK_SIZE - mTailPos.mPosition;
+    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
     s32 to_commit = size;
-    DASSERT(mTailPos.mNode && "Tail mNode should never be nullptr");
+    DASSERT(nullptr!=mTailPos.mNode);
     if (to_commit > available) {
         to_commit = available;
     }
     mTailPos.mPosition += to_commit;
     mSize += to_commit;
-    DASSERT(mTailPos.mPosition <= D_RBUF_BLOCK_SIZE && "Tail index should always be <= block size");
+    DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
 }
 
 
@@ -166,21 +166,21 @@ s32 RingBuffer::read(void* data, s32 len) {
     s32 initial_size = mSize;
     s8* pos = (s8*)data;
     s32 leftover = len;
-    DASSERT(mHeadPos.mNode && "Head block should never be nullptr");
+    DASSERT(nullptr!=mHeadPos.mNode);
 
     while (leftover > 0) {
         const s8* block_pos = mHeadPos.mNode->mData + mHeadPos.mPosition;
 
         s32 copysz;
         if (mHeadPos.mNode == mTailPos.mNode) {
-            DASSERT(mTailPos.mPosition >= mHeadPos.mPosition && "Tail index should always be >= head index");
+            DASSERT(mTailPos.mPosition >= mHeadPos.mPosition);
             copysz = mTailPos.mPosition - mHeadPos.mPosition;
             if (copysz == 0) {
-                DASSERT(initial_size >= mSize && "The ring buffer size should remain the same or decrease");
+                DASSERT(initial_size >= mSize);
                 return initial_size - mSize;
             }
         } else {
-            copysz = D_RBUF_BLOCK_SIZE - mHeadPos.mPosition;
+            copysz = sizeof(SRingBufNode::mData) - mHeadPos.mPosition;
             if (copysz == 0) {
                 popFront();
                 continue;
@@ -199,7 +199,7 @@ s32 RingBuffer::read(void* data, s32 len) {
         leftover -= copysz;
     }
 
-    DASSERT(initial_size >= mSize && "The ring buffer size should remain the same or decrease");
+    DASSERT(initial_size >= mSize);
     return initial_size - mSize;
 }
 
@@ -208,30 +208,26 @@ StringView RingBuffer::peekHead() {
     if (mHeadPos.mNode == mTailPos.mNode) {
         s32 len = mTailPos.mPosition - mHeadPos.mPosition;
         DASSERT(len >= 0);
-        if (len > 0) {
-            ret.mLen = (usz)len;
-            ret.mData = mHeadPos.mNode->mData + mHeadPos.mPosition;
-        }
+        ret.mLen = (usz)len;
+        ret.mData = mHeadPos.mNode->mData + mHeadPos.mPosition;
     } else {
-        s32 len = D_RBUF_BLOCK_SIZE - mHeadPos.mPosition;
+        s32 len = sizeof(SRingBufNode::mData) - mHeadPos.mPosition;
         DASSERT(len >= 0);
-        if (len > 0) {
-            ret.mLen = (usz)len;
-            ret.mData = mHeadPos.mNode->mData + mHeadPos.mPosition;
-        }
+        ret.mLen = (usz)len;
+        ret.mData = mHeadPos.mNode->mData + mHeadPos.mPosition;
     }
     return ret;
 }
 
 void RingBuffer::commitHead(s32 used) {
-    DASSERT(used >= 0 && used <= D_RBUF_BLOCK_SIZE && mSize >= used);
+    DASSERT(used >= 0 && used <= sizeof(SRingBufNode::mData) && mSize >= used);
     mSize -= used;
     if (mHeadPos.mNode == mTailPos.mNode) {
         s32 leftover = mTailPos.mPosition - mHeadPos.mPosition;
         DASSERT(leftover >= 0);
         mHeadPos.mPosition += used;
     } else {
-        s32 leftover = D_RBUF_BLOCK_SIZE - mHeadPos.mPosition;
+        s32 leftover = sizeof(SRingBufNode::mData) - mHeadPos.mPosition;
         if (leftover == used) {
             popFront();
         } else {
@@ -243,14 +239,13 @@ void RingBuffer::commitHead(s32 used) {
 SRingBufPos RingBuffer::peekHeadNode(SRingBufPos pos, StringView* bufs, s32* bufs_count) {
     SRingBufPos current = pos;
     s32 count = 0;
-    DASSERT(pos.mNode && "Position block should never be nullptr");
+    DASSERT(nullptr!=pos.mNode);
 
     while (count < *bufs_count) {
         StringView* buf = bufs + count;
         if (current.mNode == mTailPos.mNode) {
             s32 len = mTailPos.mPosition - current.mPosition;
-            DASSERT(mTailPos.mPosition >= current.mPosition &&
-                "Tail index should always be greater than or equal to mHeadPos index");
+            DASSERT(mTailPos.mPosition >= current.mPosition);
             if (len != 0) {
                 buf->mLen = (usz)len;
                 buf->mData = current.mNode->mData + current.mPosition;
@@ -259,7 +254,7 @@ SRingBufPos RingBuffer::peekHeadNode(SRingBufPos pos, StringView* bufs, s32* buf
             *bufs_count = count;
             return mTailPos;
         } else {
-            s32 len = D_RBUF_BLOCK_SIZE - current.mPosition;
+            s32 len = sizeof(SRingBufNode::mData) - current.mPosition;
             if (len != 0) {
                 buf->mLen = len;
                 buf->mData = current.mNode->mData + current.mPosition;
@@ -275,12 +270,9 @@ SRingBufPos RingBuffer::peekHeadNode(SRingBufPos pos, StringView* bufs, s32* buf
 
 void RingBuffer::commitHeadPos(const SRingBufPos& pos) {
     while (mHeadPos.mNode != pos.mNode && mHeadPos.mNode != mTailPos.mNode) {
-        mSize -= D_RBUF_BLOCK_SIZE - mHeadPos.mPosition;
+        mSize -= sizeof(SRingBufNode::mData) - mHeadPos.mPosition;
         popFront();
     }
-    //if (pos.mNode == mTailPos.mNode) {
-    //    mSize -= pos.mPosition - mHeadPos.mPosition;
-    //}
     mSize -= pos.mPosition - mHeadPos.mPosition;
     mHeadPos = pos;
 }

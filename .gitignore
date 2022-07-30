@@ -9,6 +9,7 @@ CMakeFiles
 
 
 # files
+.vscode/*.log
 Bin/*.o
 Bin/*.bin
 Bin/*.dll

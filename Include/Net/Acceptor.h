@@ -26,6 +26,7 @@
 #ifndef APP_ACCEPTOR_H
 #define	APP_ACCEPTOR_H
 
+#include "RefCount.h"
 #include "Net/Socket.h"
 #include "Net/HandleTCP.h"
 #include "Net/NetAddress.h"
@@ -40,15 +41,26 @@
 namespace app {
 namespace net {
 
-class Acceptor {
+class Acceptor :public RefCount {
 public:
-    Acceptor(Loop& loop, FunReqTcpCallback func, void* iUser = nullptr);
+    Acceptor(Loop& loop, FunReqTcpCallback func, RefCount* iUser = nullptr);
 
-    ~Acceptor();
+    virtual ~Acceptor();
 
-    void* getUser() {
-        return mTCP.getLink().mParent;
+    RefCount* getUser() {
+        return reinterpret_cast<RefCount*>(mTCP.getLink().mParent);
     }
+    void setUser(RefCount* it) {
+        RefCount* my = getUser();
+        if (my) {
+            my->drop();
+        }
+        if (it) {
+            it->grab();
+        }
+        mTCP.getLink().mParent = (Node3*)it; //借用时间堆mLink上指针，存iUser
+    }
+
 
     s32 postAccept();
 
@@ -84,7 +96,6 @@ public:
 
 
 private:
-
     void onClose(Handle* it);
 
     void onLink(net::RequestTCP* it);

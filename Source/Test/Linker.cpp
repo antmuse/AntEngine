@@ -6,7 +6,8 @@ namespace app {
 namespace net {
 
 Linker::Linker() :
-    mTLS(true),
+    mTLS(false),
+    mServer(nullptr),
     mPack(1024) {
 }
 
@@ -27,13 +28,20 @@ void Linker::onClose(Handle* it) {
     } else {
         DASSERT(&mTCP.getHandleTCP() == it && "Linker::onClose tcp handle?");
     }
-    delete this;
+    if (mServer) {
+        mServer->unbind(this);
+        mServer = nullptr;
+    } else {
+        drop();
+    }
 }
 
 
-void Linker::onLink(net::RequestTCP* it) {
-    net::Acceptor* accp = (net::Acceptor*)(it->mUser);
-    mTLS = nullptr != accp->getUser();
+bool Linker::onLink(NetServer* sev, net::RequestTCP* it) {
+    DASSERT(sev);
+    mServer = sev;
+    mTLS = sev->isTLS();
+
     if (mTLS) {
         mTCP.setClose(EHT_TCP_LINK, Linker::funcOnClose, this);
         mTCP.setTime(Linker::funcOnTime, 15 * 1000, 30 * 1000, -1);
@@ -48,12 +56,14 @@ void Linker::onLink(net::RequestTCP* it) {
     s32 ret = mTLS ? mTCP.open(*(net::RequestAccept*)it, read)
         : mTCP.getHandleTCP().open(*(net::RequestAccept*)it, read);
     if (0 == ret) {
+        mServer->bind(this);
         Logger::log(ELL_INFO, "Linker::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
+        mServer = nullptr;
         net::RequestTCP::delRequest(read);
         Logger::log(ELL_INFO, "Linker::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(), mTCP.getLocal().getStr(), ret);
-        delete this;
     }
+    return 0 == ret;
 }
 
 

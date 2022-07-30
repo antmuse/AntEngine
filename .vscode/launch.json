@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) 启动",
+            "name": "g++生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Bin/AntTest.bin",
@@ -14,7 +14,12 @@
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/Bin",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${LD_LIBRARY_PATH}:${workspaceFolder}/lib"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
@@ -28,7 +33,9 @@
                     "text": "-gdb-set follow-fork-mode child",
                     "ignoreFailures": true
                 }
-            ]
+            ],
+            "preLaunchTask": "build.all",
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 }

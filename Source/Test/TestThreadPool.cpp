@@ -3,6 +3,7 @@
 #include <chrono>
 #include "ThreadPool.h"
 #include "MemoryHub.h"
+#include "Queue.h"
 
 namespace app {
 
@@ -81,15 +82,59 @@ private:
 };
 
 
+
+//QueueNode
+class QueueNode {
+public:
+    QueueNode() :mID(++GID) {
+    }
+    static std::atomic<s32> G_CNT_R;
+    static std::atomic<s32> G_CNT_W;
+    static s32 G_MAX_MSG;
+private:
+    QueueNode* mNext;
+    std::atomic<s32> mID;
+    static std::atomic<s32> GID;
+};
+std::atomic<s32> QueueNode::GID = 0;
+std::atomic<s32> QueueNode::G_CNT_R = 0;
+std::atomic<s32> QueueNode::G_CNT_W = 0;
+s32 QueueNode::G_MAX_MSG = 200;
+
+class QueueTask {
+public:
+    void read(Queue* que) {
+        while (QueueNode::G_CNT_R < QueueNode::G_MAX_MSG) {
+            QueueNode* nd = (QueueNode*)que->readMsg();
+            if (nd) {
+                ++QueueNode::G_CNT_R;
+                delete nd;
+            }
+        }
+    }
+    void write(Queue* que) {
+        while (true) {
+            s32 cnt = ++QueueNode::G_CNT_W;
+            if (cnt > QueueNode::G_MAX_MSG) {
+                --QueueNode::G_CNT_W;
+                break;
+            }
+            QueueNode* nd = new QueueNode();
+            que->writeMsg(nd);
+        }
+    }
+};
+
 s32 AppTestThreadPool(s32 argc, s8** argv) {
+    const s32 threads = 30;
     for (s32 i = sizeof(GHUB_CNT) / sizeof(GHUB_CNT[0]) - 1; i >= 0; --i) {
         GHUB_CNT[i].store(0);
     }
     GHUB = new MemoryHub();
     ThreadPool pool;
     s32 posted = 30;
-    pool.start(30);
-    printf("AppTestThreadPool>>pool thread=%d\n", posted);
+    pool.start(threads);
+    printf("AppTestThreadPool>>pool thread=%d\n", threads);
 
     std::atomic<s64> cnt(0);
     std::atomic<s64> urg(0);
@@ -146,6 +191,37 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
     }
     printf("step4>>mem pool total = %d\n\n", posted);
     GHUB->drop();
+
+
+
+
+    //test queue
+    printf("\n\nstep5>>test queue start\n\n");
+    Queue* que = new Queue(0,1000);
+    QueueNode::G_MAX_MSG = 5000000;
+    QueueTask allwk[threads];
+    pool.start(threads);
+    for (posted = 0; posted < threads / 2; ++posted) {
+        pool.postTask(&QueueTask::write, allwk + posted, que);
+    }
+    std::this_thread::sleep_for(gap);
+    printf("step5>>test queue, que.size = %llu\n\n", que->getMsgCount());
+    for (; posted < threads; ++posted) {
+        pool.postTask(&QueueTask::read, allwk + posted, que);
+    }
+    while (QueueNode::G_CNT_W < QueueNode::G_MAX_MSG) {
+        std::this_thread::sleep_for(gap);
+    }
+    printf("step5>>test queue write done\n");
+    while (QueueNode::G_CNT_R < QueueNode::G_MAX_MSG) {
+        std::this_thread::sleep_for(gap);
+    }
+    printf("step5>>test queue stop, que.size = %llu\n\n", que->getMsgCount());
+    que->setNoBlock();
+    pool.stop();
+    delete que;
+
+
     return 0;
 }
 

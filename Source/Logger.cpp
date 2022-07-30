@@ -119,6 +119,7 @@ private:
 
 
 Logger::Logger() {
+    //AppStrConverterInit();
 }
 
 

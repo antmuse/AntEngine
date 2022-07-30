@@ -66,10 +66,10 @@ s32 AppTicker::onTimeout(HandleTime* it) {
                 snprintf(url, sizeof(url), "%s", "http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx");
             }
             net::HttpLayer* nd = new net::HttpLayer(net::EHTTP_RESPONSE);
-            nd->getRequest().getHead().add("Connection", "keep-alive");
-            nd->getRequest().getHead().add("Accept", "*/*");
+            nd->getMsg()->getHeadOut().writeKeepAlive(true);
+            nd->getMsg()->getHeadOut().add("Accept", "*/*");
             HttpFileSave* evt = new HttpFileSave();
-            nd->setEvent(evt);
+            nd->getMsg()->setEvent(evt);
             s32 fly = nd->get(url);
             printf("url = %s, ip=%s\n", url, nd->getHandle().getRemote().getStr());
             if (EE_OK != fly) {

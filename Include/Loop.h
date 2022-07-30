@@ -41,7 +41,6 @@
 
 namespace app {
 
-
 class Loop {
 public:
     Loop();

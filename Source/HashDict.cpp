@@ -294,7 +294,9 @@ DictNode* HashDict::unlink(const void* key) {
 
 
 void HashDict::releaseNode(DictNode* he) {
-    if(he == nullptr) { return; }
+    if(he == nullptr) {
+        return;
+    }
     releaseKey(he);
     releaseValue(he);
     free(he);

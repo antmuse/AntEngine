@@ -294,6 +294,12 @@ DFINLINE const T& AppClamp(const T& value, const T& low, const T& high) {
     return AppMin(AppMax(value, low), high);
 }
 
+
+DFINLINE bool AppBitAt(void* a, usz i) {
+    return !!(((unsigned char*)a)[i >> 3] & (1 << (i & 7)));
+}
+
+
 }//namespace app
 
 #endif	//APP_CONFIG_H

@@ -26,25 +26,24 @@
 #ifndef APP_CONNECTOR_H
 #define	APP_CONNECTOR_H
 
+#include "RefCount.h"
 #include "Loop.h"
+#include "EngineConfig.h"
 #include "Net/HandleTLS.h"
 
 namespace app {
 namespace net {
 
 
-class TcpProxy {
+class TcpProxyHub;
+
+class TcpProxy :public RefCount {
 public:
     TcpProxy(Loop& loop);
 
-    ~TcpProxy();
+    virtual ~TcpProxy();
 
-
-    static void funcOnLink(net::RequestTCP* it) {
-        TcpProxy* con = new TcpProxy(*it->mHandle->getLoop());
-        con->onLink(it); //TcpProxy×Ô»Ù¶ÔÏó
-    }
-
+    void onLink(net::RequestTCP* it);
 
 private:
 
@@ -61,7 +60,6 @@ private:
     void onRead2(net::RequestTCP* it);
 
     void onConnect(net::RequestTCP* it);
-    void onLink(net::RequestTCP* it);
 
     static s32 funcOnTime(HandleTime* it) {
         TcpProxy& nd = *(TcpProxy*)it->getUser();
@@ -109,15 +107,36 @@ private:
         nd.onConnect(it);
     }
 
-
+    void unbind();
 
     //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
     u8 mType;
     Loop& mLoop;
+    TcpProxyHub* mHub;
     net::HandleTLS mTLS;
     net::HandleTLS mTLS2; //backend
 };
 
+
+
+class TcpProxyHub :public RefCount {
+public:
+    TcpProxyHub(EngineConfig::ProxyCfg& cfg) :mConfig(cfg) { }
+    virtual ~TcpProxyHub() { }
+
+    static void funcOnLink(net::RequestTCP* it) {
+        TcpProxy* con = new TcpProxy(*it->mHandle->getLoop());
+        con->onLink(it);
+        con->drop();
+    }
+
+    const EngineConfig::ProxyCfg& getConfig()const {
+        return mConfig;
+    }
+
+private:
+    EngineConfig::ProxyCfg mConfig;
+};
 
 } //namespace net
 } //namespace app
