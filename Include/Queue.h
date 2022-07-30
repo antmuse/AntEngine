@@ -1,4 +1,4 @@
-/***************************************************************************************************
+ï»¿/***************************************************************************************************
  * MIT License
  *
  * Copyright (c) 2021 antmuse@live.cn/antmuse@qq.com
@@ -28,17 +28,57 @@
 
 #include <mutex>
 #include <condition_variable>
-#include "Config.h"
+#include "RefCount.h"
 
 namespace app {
 
+/**
+ * @brief é€šç”¨çš„é˜Ÿåˆ—ç»“ç‚¹, å¸¦å¼•ç”¨è®¡æ•°
+ */
+class QueueNode final {
+public:
+    u16 mUsed;
+    u16 mAllocated;  //must <= 64K = 2^16 = 65535
+    std::atomic<s32> mRefCount;
+    QueueNode* mNext;
+    s8 mBuffer[0];
+    QueueNode() { }
+    ~QueueNode() { }
+    QueueNode(QueueNode&&) = delete;
+    QueueNode& operator=(QueueNode&&) = delete;
 
-class Queue {
+    template <class T>
+    T& getData()const {
+        return *(T*)mBuffer;
+    }
+
+    static s32 getLinkOffset() {
+        return static_cast<s32>(DOFFSET(QueueNode, mNext));
+    }
+
+    /** @param bsz should be <=64K */
+    static QueueNode* createNode(usz bsz) {
+        bsz &= 0xFFFF;
+        QueueNode* ret = reinterpret_cast<QueueNode*>(new s8[bsz + sizeof(QueueNode)]);
+        ret->mUsed = 0;
+        ret->mAllocated = static_cast<u16>(bsz);
+        ret->mRefCount = 1;
+        //ret->mNext = 0; managered by queue
+        return ret;
+    }
+
+    static void releaseNode(void* it) {
+        delete[] reinterpret_cast<s8*>(it);
+    }
+};
+
+
+class Queue : public RefCountAtomic {
 public:
     /**
-     * @brief [¶àÉú²úÕß-¶àÏû·ÑÕß]ÀàĞÍµÄÏûÏ¢¶ÓÁĞ, ²»¹ÜÀíÏûÏ¢µÄÄÚ´æÇÒÁ´±íÖ¸ÕëĞèÔÚÏûÏ¢ÉÏ
-     * @param maxlen Ğ´¶ÓÁĞ×î´óÊıÁ¿
-     * @param linkOFF Á´±íÖ¸ÕëÔÚmsgÉÏµÄÏà¶ÔÎ»ÖÃ
+     * @brief [å¤šç”Ÿäº§è€…-å¤šæ¶ˆè´¹è€…]ç±»å‹çš„æ¶ˆæ¯é˜Ÿåˆ—, ä¸ç®¡ç†æ¶ˆæ¯çš„å†…å­˜ä¸”é“¾è¡¨æŒ‡é’ˆéœ€åœ¨æ¶ˆæ¯ä¸Š
+     * @param maxlen å†™é˜Ÿåˆ—æœ€å¤§æ•°é‡
+     * @param linkOFF é“¾è¡¨æŒ‡é’ˆåœ¨msgä¸Šçš„ç›¸å¯¹ä½ç½®
      */
     Queue(s32 linkOFF, usz maxlen) :
         mLinkOFF(linkOFF),
@@ -113,7 +153,7 @@ private:
 
         mHeadRead = mHeadWrite;
         {
-            //Í¬Ê±³ÖÓĞÏû·ÑÕßËøºÍÉú²úÕßËø
+            //åŒæ—¶æŒæœ‰æ¶ˆè´¹è€…é”å’Œç”Ÿäº§è€…é”
             std::unique_lock<std::mutex> ak(mMutexWrite);
             while (0 == mMsgCount && !mNoBlock) {
                 mConditionRead.wait(ak);
@@ -130,7 +170,7 @@ private:
     }
 
 
-    //1=ÔòÉú²úÕß¶ÓÁĞ×î´ó³¤¶ÈÎªmMsgMax, 0=²»ÏŞÖÆ×î´ó³¤¶È
+    //1=åˆ™ç”Ÿäº§è€…é˜Ÿåˆ—æœ€å¤§é•¿åº¦ä¸ºmMsgMax, 0=ä¸é™åˆ¶æœ€å¤§é•¿åº¦
     s32 mNoBlock;
     s32 mLinkOFF;
     usz mMsgMax;
