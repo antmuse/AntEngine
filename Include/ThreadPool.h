@@ -1,4 +1,4 @@
-/***************************************************************************************************
+ï»¿/***************************************************************************************************
  * MIT License
  *
  * Copyright (c) 2021 antmuse@live.cn/antmuse@qq.com
@@ -86,9 +86,9 @@ public:
     ThreadPool& operator=(const ThreadPool&&) = delete;
 
     /**
-    * @brief ÔÚThreadPool::startÇ°ÉèÖÃÃ¿¸öÏß³ÌĞèÒªµ÷ÓÃµÄ³õÊ¼»¯»òÇåÀíº¯Êı.
-    * @param init Ïß³Ì¿ªÊ¼Ê±»Øµ÷º¯Êı
-    * @param uninit Ïß³Ì½áÊøÊ±»Øµ÷º¯Êı
+    * @brief åœ¨ThreadPool::startå‰è®¾ç½®æ¯ä¸ªçº¿ç¨‹éœ€è¦è°ƒç”¨çš„åˆå§‹åŒ–æˆ–æ¸…ç†å‡½æ•°.
+    * @param init çº¿ç¨‹å¼€å§‹æ—¶å›è°ƒå‡½æ•°
+    * @param uninit çº¿ç¨‹ç»“æŸæ—¶å›è°ƒå‡½æ•°
     */
     void setThreadCalls(FuncVoid init, FuncVoid uninit) {
         mThreadInit = init;
@@ -104,6 +104,14 @@ public:
         return mAllocated;
     }
 
+    /**
+     * @note ä»…æ”¯æŒæ™®é€šçš„ç±»æˆå‘˜å‡½æ•°, ä¸æ”¯æŒè™‘å‡½æ•°
+     * @param func ç±»æˆå‘˜å‡½æ•°, ä¸æ”¯æŒè™‘å‡½æ•°
+     * @param hold ç±»å¯¹è±¡åœ°å€, å³thisæŒ‡é’ˆ
+     * @param dat å›è°ƒå‚æ•°
+     * @param urgent ä¼˜å…ˆçº§
+     * @return ture if success, else failed.
+     */
     template<class T, class P>
     bool postTask(void(T::* func)(P*), const T* hold, P* dat, bool urgent = false) {
         std::unique_lock<std::mutex> ak(mMutex);
@@ -179,8 +187,8 @@ private:
     u32 mAllocated;
     u32 mMaxAllocated;
     bool mRunning;
-    Task* mAllTask;     //µ¥Ïò»·ĞÍÁ´±í£¬Ö¸Ïò¶ÓÎ²
-    Task* mIdleTask;    //µ¥ÏòÁ´±í
+    Task* mAllTask;     //å•å‘ç¯å‹é“¾è¡¨ï¼ŒæŒ‡å‘é˜Ÿå°¾
+    Task* mIdleTask;    //å•å‘é“¾è¡¨
     FuncVoid mThreadInit;
     FuncVoid mThreadUninit;
 

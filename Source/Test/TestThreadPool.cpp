@@ -53,7 +53,7 @@ public:
     virtual void show1() {
         printf("MyTask2=%p\n", this);
     }
-    virtual void run(std::atomic<s64>* val) {
+    void run(std::atomic<s64>* val) {
         ++(*val);
         //printf("MyTask::run=%p,val=%p\n", this, val);
         AppTestMemHub();
@@ -71,7 +71,7 @@ public:
     virtual void show2() {
         printf("MyTask2=%p\n", this);
     }
-    virtual void run(std::atomic<s64>* val) {
+    void run(std::atomic<s64>* val) {
         ++(*val);
         ++(*val);
         //printf("MyTask2::run=%p,val=%p\n", this, val);
