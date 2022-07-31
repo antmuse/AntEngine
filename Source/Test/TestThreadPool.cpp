@@ -99,10 +99,10 @@ private:
     MyQueNode* mNext;
     std::atomic<s32> mID;
 };
-std::atomic<s32> MyQueNode::GID = 0;
-std::atomic<s32> MyQueNode::G_CNT_R = 0;
-std::atomic<s32> MyQueNode::G_CNT_R_FAIL = 0;
-std::atomic<s32> MyQueNode::G_CNT_W = 0;
+std::atomic<s32> MyQueNode::GID(0);
+std::atomic<s32> MyQueNode::G_CNT_R(0);
+std::atomic<s32> MyQueNode::G_CNT_R_FAIL(0);
+std::atomic<s32> MyQueNode::G_CNT_W(0);
 s32 MyQueNode::G_MAX_MSG = 200;
 
 class QueueTask {

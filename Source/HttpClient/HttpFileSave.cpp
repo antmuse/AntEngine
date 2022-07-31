@@ -24,7 +24,7 @@ s32 HttpFileSave::onSent(net::HttpMsg& msg) {
 
 s32 HttpFileSave::onOpen(net::HttpMsg& msg) {
     mDone = false;
-    mBody = &msg.getCache();
+    mBody = &msg.getCacheOut();
     return mFile.open("Log/httpfile.html", 4);
 }
 

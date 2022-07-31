@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         }
         break;
     }
-    DLOGG(ELL_ERROR, "my pid=%d, start...", eng.getPID());
+    //DLOGG(ELL_ERROR, "my pid=%d, start...", eng.getPID());
     AppTicker tick;
     tick.start();
     eng.run();
