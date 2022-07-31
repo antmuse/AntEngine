@@ -35,21 +35,17 @@ namespace app {
 /**
  * @brief 通用的队列结点, 带引用计数
  */
-class QueueNode final {
+class QueueNode {
 public:
     u16 mUsed;
     u16 mAllocated;  //must <= 64K = 2^16 = 65535
     std::atomic<s32> mRefCount;
     QueueNode* mNext;
-    s8 mBuffer[0];
-    QueueNode() { }
-    ~QueueNode() { }
-    QueueNode(QueueNode&&) = delete;
-    QueueNode& operator=(QueueNode&&) = delete;
+    //s8 mBuffer[0];
 
     template <class T>
-    T& getData()const {
-        return *(T*)mBuffer;
+    T* getData()const {
+        return reinterpret_cast<T*>(((s8*)(this)) + sizeof(*this));
     }
 
     static s32 getLinkOffset() {
@@ -82,9 +78,9 @@ public:
      */
     Queue(s32 linkOFF, usz maxlen) :
         mLinkOFF(linkOFF),
-        mMsgMax(maxlen),
+        mMsgMax(AppClamp(maxlen, 8ULL, 0x0FFFFFFFULL)),
         mMsgCount(0),
-        mNoBlock(0),
+        mBlockFlag(1 | 2),
         mHeadA(nullptr),
         mHeadB(nullptr) {
         mHeadRead = &mHeadA;
@@ -99,26 +95,49 @@ public:
         return mMsgCount;
     }
 
-    void setNoBlock() {
-        mNoBlock = 1;
-        mMutexWrite.lock();
-        mConditionRead.notify_all();
-        mConditionWrite.notify_all();
-        mMutexWrite.unlock();
+    void setBlock(bool block) {
+        std::atomic<s32>& flag = *reinterpret_cast<std::atomic<s32>*>(&mBlockFlag);
+        if (block) {
+            flag = (1 | 2);
+        } else {
+            mMutexWrite.lock();
+            mConditionRead.notify_one();
+            mConditionWrite.notify_all();
+            mMutexWrite.unlock();
+        }
     }
 
-    void setBlock() {
-        mNoBlock = 0;
+    void setBlockRead(bool block) {
+        std::atomic<s32>& flag = *reinterpret_cast<std::atomic<s32>*>(&mBlockFlag);
+        if (block) {
+            flag |= 1;
+        } else {
+            flag &= ~1;
+            mMutexRead.lock();
+            mConditionRead.notify_one();
+            mMutexRead.unlock();
+        }
     }
 
+    void setBlockWrite(bool block) {
+        std::atomic<s32>& flag = *reinterpret_cast<std::atomic<s32>*>(&mBlockFlag);
+        if (block) {
+            flag |= 2;
+        } else {
+            flag &= ~2;
+            mMutexWrite.lock();
+            mConditionWrite.notify_all();
+            mMutexWrite.unlock();
+        }
+    }
 
     void writeMsg(void* msg) {
         void** link = (void**)((s8*)msg + mLinkOFF);
         *link = nullptr;
         {
             std::unique_lock<std::mutex> ak(mMutexWrite);
-            while (mMsgCount > mMsgMax - 1 && !mNoBlock) {
-                mConditionWrite.wait(ak);
+            while (mMsgCount > mMsgMax - 1 && isBlockWrite()) {
+                mConditionWrite.wait(ak); //maybe more than 1 writer waiting here
             }
             *mTailWrite = link;
             mTailWrite = link;
@@ -140,6 +159,10 @@ public:
         return msg;
     }
 
+    void* getHead() const {
+        s8* msg = reinterpret_cast<s8*>(*mHeadRead);
+        return msg ? (msg - mLinkOFF) : nullptr;
+    }
 
 private:
     Queue(const Queue&) = delete;
@@ -155,8 +178,8 @@ private:
         {
             //同时持有消费者锁和生产者锁
             std::unique_lock<std::mutex> ak(mMutexWrite);
-            while (0 == mMsgCount && !mNoBlock) {
-                mConditionRead.wait(ak);
+            while (0 == mMsgCount && isBlockRead()) {
+                mConditionRead.wait(ak); //only 1 reader waiting here
             }
             cnt = mMsgCount;
             if (cnt > mMsgMax - 1) {
@@ -169,9 +192,19 @@ private:
         return cnt;
     }
 
+    bool isBlockRead()const {
+        return (mBlockFlag & 1) > 0;
+    }
+    bool isBlockWrite()const {
+        return (mBlockFlag & 2) > 0;
+    }
+    /**
+     * 1=消费者阻塞
+     * 2=则生产者队列最大长度为mMsgMax时阻塞, 0=不限制最大长度且不阻塞
+     * 0=皆不阻塞
+     */
+    s32 mBlockFlag;
 
-    //1=则生产者队列最大长度为mMsgMax, 0=不限制最大长度
-    s32 mNoBlock;
     s32 mLinkOFF;
     usz mMsgMax;
     usz mMsgCount;

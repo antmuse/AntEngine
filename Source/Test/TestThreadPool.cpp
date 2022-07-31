@@ -86,18 +86,22 @@ private:
 //MyQueNode
 class MyQueNode {
 public:
-    MyQueNode() :mID(++GID) {
-    }
+    static std::atomic<s32> GID;
     static std::atomic<s32> G_CNT_R;
+    static std::atomic<s32> G_CNT_R_FAIL;
     static std::atomic<s32> G_CNT_W;
     static s32 G_MAX_MSG;
+
+    MyQueNode() :mID(++GID) {
+    }
+
 private:
     MyQueNode* mNext;
     std::atomic<s32> mID;
-    static std::atomic<s32> GID;
 };
 std::atomic<s32> MyQueNode::GID = 0;
 std::atomic<s32> MyQueNode::G_CNT_R = 0;
+std::atomic<s32> MyQueNode::G_CNT_R_FAIL = 0;
 std::atomic<s32> MyQueNode::G_CNT_W = 0;
 s32 MyQueNode::G_MAX_MSG = 200;
 
@@ -109,6 +113,9 @@ public:
             if (nd) {
                 ++MyQueNode::G_CNT_R;
                 delete nd;
+            } else {
+                //printf("read=0\n");
+                ++MyQueNode::G_CNT_R_FAIL;
             }
         }
     }
@@ -196,11 +203,12 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
 
 
     //test queue
-    printf("\n\nstep5>>test queue start\n\n");
-    Queue* que = new Queue(0,1000);
     MyQueNode::G_MAX_MSG = 5000000;
+    printf("\n\nstep5>>test queue start, max = %d\n\n", MyQueNode::G_MAX_MSG);
+    Queue* que = new Queue(0,1000);
     QueueTask allwk[threads];
     pool.start(threads);
+    que->setBlockRead(false);
     for (posted = 0; posted < threads / 2; ++posted) {
         pool.postTask(&QueueTask::write, allwk + posted, que);
     }
@@ -216,8 +224,12 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
     while (MyQueNode::G_CNT_R < MyQueNode::G_MAX_MSG) {
         std::this_thread::sleep_for(gap);
     }
-    printf("step5>>test queue stop, que.size = %llu\n\n", que->getMsgCount());
-    que->setNoBlock();
+
+    f32 ratio = 100.f * MyQueNode::G_CNT_R_FAIL.load();
+    ratio /= MyQueNode::G_MAX_MSG;
+    printf("step5>>test queue stop, read0=%d=%.2f%%, que.size = %llu\n\n",
+        MyQueNode::G_CNT_R_FAIL.load(), ratio, que->getMsgCount());
+    que->setBlock(false);
     pool.stop();
     que->drop();
 

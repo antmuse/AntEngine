@@ -52,12 +52,12 @@ public:
         return mRefCount;
     }
 
-    void grab() const {
+    virtual void grab() const {
         DASSERT(mRefCount > 0);
         ++mRefCount;
     }
 
-    s32 drop() const {
+    virtual s32 drop() const {
         DASSERT(mRefCount > 0);
         s32 ret = --mRefCount;
         if (0 == ret) {
