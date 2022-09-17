@@ -33,6 +33,7 @@ static const s32 G_MAX_BODY = 1024 * 1024 * 10;
 
 HttpMsg::HttpMsg(HttpLayer* it) :
     mStationID(0),
+    mRespStatus(0),
     mLayer(it),
     mEvent(nullptr),
     mFlags(0),
@@ -49,6 +50,7 @@ HttpMsg::HttpMsg(HttpLayer* it) :
 
 
 HttpMsg::~HttpMsg() {
+    setEvent(nullptr);
     if (mLayer) {
         mLayer->drop();
         mLayer = nullptr;

@@ -89,9 +89,12 @@ void HttpLayer::msgBegin() {
     if (mMsg) {
         mHttpError = HPE_CB_MsgBegin;
         mTCP.launchClose();
-    } else {
-        mMsg = new HttpMsg(this);
+        return; //error
     }
+
+    mMsg = new HttpMsg(this);
+    mMsg->mStationID = ES_INIT;
+    msgStep();
 }
 
 void HttpLayer::msgEnd() {
@@ -110,10 +113,8 @@ void HttpLayer::msgPath() {
     if (mMsg) {
         mMsg->mType = (EHttpParserType)mType;
         mMsg->mFlags = mFlags;
-        mMsg->mStationID = ES_CHECK;
-        mWebsite->stepMsg(mMsg);
-
-        //mTCP.launchClose();
+        mMsg->mStationID = ES_PATH;
+        msgStep();
     }
 }
 
@@ -122,7 +123,7 @@ s32 HttpLayer::headDone() {
     if (mMsg) {
         mMsg->mFlags = mFlags;
         mMsg->mStationID = ES_HEAD;
-        mWebsite->stepMsg(mMsg);
+        msgStep();
     }
     return 0;
 }
@@ -132,21 +133,34 @@ void HttpLayer::chunkHeadDone() {
     if (mMsg) {
         mMsg->mFlags = mFlags;
         mMsg->mStationID = ES_HEAD;
-        mWebsite->stepMsg(mMsg);
+        msgStep();
+    }
+}
+
+void HttpLayer::msgStep() {
+    if (EE_OK != mWebsite->stepMsg(mMsg)) {
+        mTCP.launchClose();
     }
 }
 
 void HttpLayer::msgBody() {
     if (mMsg) {
         mMsg->mStationID = ES_BODY;
-        mWebsite->stepMsg(mMsg);
+        msgStep();
+    }
+}
+
+void HttpLayer::msgError() {
+    if (mMsg) {
+        mMsg->mStationID = ES_ERROR;
+        msgStep();
     }
 }
 
 void HttpLayer::chunkMsg() {
     if (mMsg) {
         mMsg->mStationID = ES_BODY;
-        mWebsite->stepMsg(mMsg);
+        msgStep();
     }
 }
 
@@ -182,6 +196,10 @@ bool HttpLayer::sendReq() {
 bool HttpLayer::sendResp(HttpMsg* msg) {
     DASSERT(msg);
 
+    if (msg->getRespStatus() > 0) {
+        return true;
+    }
+
     RingBuffer& bufs = msg->getCacheOut();
     net::RequestTCP* nd = net::RequestTCP::newRequest(0);
     nd->mUser = msg;
@@ -195,7 +213,8 @@ bool HttpLayer::sendResp(HttpMsg* msg) {
         net::RequestTCP::delRequest(nd);
         return false;
     }
-    mMsg->grab();
+    msg->grab();
+    msg->setRespStatus(1);
     return true;
 }
 
@@ -333,6 +352,7 @@ void HttpLayer::onWrite(net::RequestTCP* it, HttpMsg* msg) {
     if (EE_OK != it->mError) {
         Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     } else {
+        msg->setRespStatus(0);
         msg->getCacheOut().commitHead(static_cast<s32>(it->mUsed));
         if (msg->getCacheOut().getSize() > 0) {
             sendResp(msg);
@@ -2744,6 +2764,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
     }
     mReadSize = nread;
     mState = p_state;
+    msgError();
     return (p - data);
 }
 

@@ -12,11 +12,10 @@ namespace net {
 s32 StationInit::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
-    msg->setStationID(ES_CHECK);
     return 0;
 }
 
-s32 StationAccessCheck::onMsg(HttpMsg* msg) {
+s32 StationPath::check(HttpMsg* msg) {
     DASSERT(msg);
 
     String& requrl = const_cast<String&>(msg->getURL().get());
@@ -29,18 +28,15 @@ s32 StationAccessCheck::onMsg(HttpMsg* msg) {
         return ES_ERROR;
     }
 
-    if (requrl == "/") {
-        msg->getURL().append("index.html", sizeof("index.html") - 1);
-    } else {
-        
-    }
-
-    msg->setStationID(ES_PATH);
-    return ES_PATH;
+    
+    return EE_OK;
 }
 
 s32 StationPath::onMsg(HttpMsg* msg) {
     DASSERT(msg);
+    if (EE_OK != check(msg)) {
+        return EE_ERROR;
+    }
 
     const String& requrl = msg->getURL().get();
     const StringView str = HttpMsg::getMimeType(requrl.c_str(), requrl.getLen());
@@ -53,18 +49,30 @@ s32 StationPath::onMsg(HttpMsg* msg) {
         //msg->getHeadOut().add()
     }
 
+    if (requrl == "/") {
+        msg->getURL().append("index.html", sizeof("index.html") - 1);
+    }
+
     if (requrl.equalsn("/api/", sizeof("/api/") - 1)) {
 
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
-
+        HttpEventer* evt = new HttpFileRead();
+        msg->setEvent(evt);
+        evt->drop();
+    } else {
+        HttpEventer* evt = new HttpFileRead();
+        msg->setEvent(evt);
+        evt->drop();
     }
 
-    return 0;
+    return EE_OK;
 }
 
 
 s32 StationReqHead::onMsg(HttpMsg* msg) {
     DASSERT(msg);
+
+    msg->getHeadOut().writeKeepAlive(msg->isKeepAlive());
 
     if (msg->isChunked()) {
         //msg->getHeadIn().clear();
@@ -72,7 +80,7 @@ s32 StationReqHead::onMsg(HttpMsg* msg) {
 
     }
 
-    return 0;
+    return EE_OK;
 }
 
 s32 StationBody::onMsg(HttpMsg* msg) {
@@ -82,70 +90,69 @@ s32 StationBody::onMsg(HttpMsg* msg) {
     }
 
     if (msg->isChunked()) {
+
     }
-    return 0;
+    return EE_OK;
 }
 
 s32 StationBodyDone::onMsg(HttpMsg* msg) {
     DASSERT(msg);
-
-    
-    msg->setStationID(ES_RESP_HEAD);
-    return ES_RESP_HEAD;
-}
-
-
-//+public headers
-s32 StationRespHead::onMsg(HttpMsg* msg) {
-    DASSERT(msg);
-
     HttpHead& hed = msg->getHeadOut();
     StringView key(DSTRV("Host"));
-    StringView val(DSTRV("witcore.cn"));
+    StringView val(DSTRV("127.0.0.1"));
     hed.add(key, val);
 
     key.set(DSTRV("Access-Control-Allow-Origin"));
     val.set(DSTRV("*"));
     hed.add(key, val);
 
-    key.set(DSTRV("Content-Type"));
-    val.set(DSTRV("text/html;charset=utf-8"));
-    hed.add(key, val);
+    //key.set(DSTRV("Content-Type"));
+    //val.set(DSTRV("text/html;charset=utf-8"));
+    //hed.add(key, val);
+
+    hed.writeChunked();
+
+    msg->writeStatus(200);
+    msg->dumpHeadOut();
+    msg->writeOutBody("\r\n", 2);
+    //msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
+
+    HttpEventer* evt = msg->getEvent();
+    if (!evt || EE_OK != evt->onOpen(*msg)) {
+        return EE_ERROR;
+    }
+
+    msg->setStationID(ES_RESP_HEAD);
+    return EE_OK;
+}
+
+
+//+public headers
+s32 StationRespHead::onMsg(HttpMsg* msg) {
+    DASSERT(msg);
+    
+    //s32 bsz = msg->getCacheOut().getSize();
+    if (!msg->getHttpLayer()->sendResp(msg)) {
+        return EE_ERROR;
+    }
 
     msg->setStationID(ES_RESP_BODY);
-    return ES_RESP_BODY;
+    return EE_OK;
 }
 
 s32 StationRespBody::onMsg(HttpMsg* msg) {
     DASSERT(msg);
-
-    //HttpEventer* evt = new HttpFileRead();
-
-    static const s8* ebody = "<html>\n"
-        "<head>\n"
-        u8"<title> ³É¹¦ </title>\n"
-        "</head>\n"
-        "<body>\n"
-        u8"<hr><br>success page<br><hr>"
-        "</body>\n"
-        "</html>";
-    static const usz esz = strlen(ebody);
-
-
-    s8 tmp[128];
-    msg->writeStatus(200);
-    msg->dumpHeadOut();
-    //msg->writeOutBody("\r\n", sizeof("\r\n") - 1);
-    msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
-    msg->writeOutBody(ebody, esz);
-
-    if (msg->getHttpLayer()->sendResp(msg)) {
+    s32 bsz = msg->getCacheOut().getSize();
+    if (0 == bsz) {
         msg->setStationID(ES_RESP_BODY_DONE);
-        return 0;
+        return EE_OK;
     }
 
-    msg->setStationID(ES_CLOSE);
-    return ES_CLOSE;
+    if (!msg->getHttpLayer()->sendResp(msg)) {
+        return EE_ERROR;
+    }
+
+    return EE_OK;
 }
 
 s32 StationRespBodyDone::onMsg(HttpMsg* msg) {
@@ -153,18 +160,18 @@ s32 StationRespBodyDone::onMsg(HttpMsg* msg) {
 
     if (msg->getCacheOut().getSize() > 0) {
         msg->getHttpLayer()->sendResp(msg);
-        return 0;
     }
 
     msg->setStationID(ES_CLOSE);
-    return ES_CLOSE;
+    return EE_OK;
 }
 
 
 s32 StationClose::onMsg(HttpMsg* msg) {
     DASSERT(msg);
-    //msg->setStationID(ES_BODY);
-    return 0;
+
+    msg->setEvent(nullptr);
+    return EE_OK;
 }
 
 
@@ -190,8 +197,7 @@ s32 StationError::onMsg(HttpMsg* msg) {
 
     msg->getHttpLayer()->sendResp(msg);
 
-    msg->setStationID(ES_RESP_BODY_DONE);
-    return 0;
+    return EE_OK;
 }
 
 } //namespace net

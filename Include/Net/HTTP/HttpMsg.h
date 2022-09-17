@@ -278,6 +278,13 @@ public:
     }
 
     void setEvent(HttpEventer* it) {
+        if (mEvent) {
+            mEvent->onClose();
+            mEvent->drop();
+        }
+        if (it) {
+            it->grab();
+        }
         mEvent = it;
     }
 
@@ -411,11 +418,19 @@ public:
         dumpHead(mHeadOut, mCacheOut);
     }
 
+
 protected:
     void dumpHead(const HttpHead& hds, RingBuffer& out);
 
+    u8 getRespStatus()const {
+        return mRespStatus;
+    }
+    void setRespStatus(u8 it) {
+        mRespStatus = it;
+    }
 
     friend class HttpLayer;
+    u8 mRespStatus; //for HttpLayer
     u8 mStationID;
     u16 mStatusCode;
     u16 mFlags;

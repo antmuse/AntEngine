@@ -7,7 +7,6 @@ namespace net {
 
 enum EStationID {
     ES_INIT = 0,
-    ES_CHECK,                   //link: ES_PATH/ES_CLOSE
     ES_PATH,
     ES_HEAD,
     ES_BODY,
@@ -26,7 +25,7 @@ public:
     virtual ~MsgStation() { };
 
     /**
-     * @return 0=done, >0= go on next station, <0= error
+     * @return 0 if success else error
     */
     virtual s32 onMsg(HttpMsg* msg) = 0;
 
@@ -48,14 +47,8 @@ public:
     StationPath() { };
     virtual ~StationPath() { };
     virtual s32 onMsg(HttpMsg* msg) override;
-};
-
-
-class StationAccessCheck : public MsgStation {
-public:
-    StationAccessCheck() { };
-    virtual ~StationAccessCheck() { };
-    virtual s32 onMsg(HttpMsg* msg) override;
+private:
+    s32 check(HttpMsg* msg);
 };
 
 

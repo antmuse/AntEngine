@@ -62,6 +62,10 @@ public:
         return mMsg;
     }
 
+    Website* getWebsite() const {
+        return mWebsite;
+    }
+
     s32 get(const String& gurl);
 
     s32 post(const String& gurl);
@@ -260,6 +264,8 @@ private:
     void msgPath();
     void msgEnd();
     void msgBody();
+    void msgError();
+    void msgStep();
 };
 
 }//namespace net

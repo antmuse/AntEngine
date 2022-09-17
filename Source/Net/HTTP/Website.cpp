@@ -16,18 +16,12 @@ s32 Website::stepMsg(HttpMsg* msg) {
     if (!msg) {
         return EE_ERROR;
     }
-    MsgStation* stn;
-    s32 ret = 0;
-    do {
-        stn = getStation(msg->getStationID());
-        if (!stn) {
-            stn = getStation(ES_ERROR);
-        }
+    MsgStation* stn = getStation(msg->getStationID());
+    if (!stn) {
+        stn = getStation(ES_ERROR);
         DASSERT(stn);
-        ret = stn->onMsg(msg);
-    } while (ret > 0);
-
-    return ret > 0 ? EE_OK : EE_ERROR;
+    }
+    return stn->onMsg(msg);
 }
 
 
@@ -50,10 +44,6 @@ void Website::init() {
 
     nd = new StationPath();
     setStation(ES_PATH, nd);
-    nd->drop();
-
-    nd = new StationAccessCheck();
-    setStation(ES_CHECK, nd);
     nd->drop();
 
     nd = new StationReqHead();

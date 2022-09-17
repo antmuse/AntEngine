@@ -92,6 +92,7 @@ void RingBuffer::uninit() {
     mTailPos.mNode = nullptr;
     //mHeadPos.mPosition = 0;
     //mTailPos.mPosition = 0;
+    mSize = 0;
 }
 
 s32 RingBuffer::getSize() const {
@@ -135,6 +136,40 @@ void RingBuffer::write(const void* data, s32 size) {
     }
 }
 
+bool RingBuffer::rewrite(SRingBufPos& ndpos, const void* data, s32 size) {
+    const s8* pos = (const s8*)data;
+    s32 leftover = size;
+    DASSERT(nullptr != ndpos.mNode);
+
+    while (leftover > 0) {
+        s32 copysz = sizeof(SRingBufNode::mData) - ndpos.mPosition;
+        DASSERT(ndpos.mPosition <= sizeof(SRingBufNode::mData));
+
+        if (copysz == 0) {
+            //pushBack();
+            if (!ndpos.mNode->mNext) {
+                return false;
+            }
+            ndpos.mNode = ndpos.mNode->mNext;
+            ndpos.mPosition = 0;
+            copysz = sizeof(SRingBufNode::mData);
+        }
+
+        if (copysz > leftover) {
+            copysz = leftover;
+        }
+
+        memcpy(ndpos.mNode->mData + ndpos.mPosition, pos, copysz);
+
+        ndpos.mPosition += copysz;
+        mSize += copysz;
+        pos += copysz;
+        leftover -= copysz;
+    }
+    return true;
+}
+
+
 s32 RingBuffer::peekTailNode(s8** data, s32 size) {
     s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
     DASSERT(nullptr!=mTailPos.mNode);
@@ -143,6 +178,27 @@ s32 RingBuffer::peekTailNode(s8** data, s32 size) {
     if (available == 0) {
         pushBack();
         available = sizeof(SRingBufNode::mData);
+    }
+
+    *data = mTailPos.mNode->mData + mTailPos.mPosition;
+    return size > available ? available : size;
+}
+
+s32 RingBuffer::peekTailNode(s32 reserved, s8** data, s32 size) {
+    DASSERT(nullptr != mTailPos.mNode && reserved >= 0);
+    DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
+
+    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
+    while (true) {
+        if (reserved >= available) {
+            reserved -= available;
+            pushBack();
+            available = sizeof(SRingBufNode::mData);
+        } else {
+            mTailPos.mPosition += reserved;
+            available -= reserved;
+            break;
+        }
     }
 
     *data = mTailPos.mNode->mData + mTailPos.mPosition;

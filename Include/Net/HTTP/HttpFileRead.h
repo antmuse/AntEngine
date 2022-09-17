@@ -18,7 +18,8 @@ public:
     virtual s32 onClose()override;
 
 private:
-    RingBuffer mBuf;
+    //RingBuffer mBuf;
+    SRingBufPos mChunkPos;
     RingBuffer* mBody;
     RequestFD mReqs;
     HandleFile mFile;

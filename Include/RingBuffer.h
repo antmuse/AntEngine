@@ -110,12 +110,15 @@ public:
 
     void write(const void* data, s32 size);
 
+    bool rewrite(SRingBufPos& pos, const void* data, s32 size);
+
     s32 getSize() const;
 
     /**
     * @brief peek data bufs when writing.
     */
     s32 peekTailNode(s8** data, s32 size);
+    s32 peekTailNode(s32 reserved, s8** data, s32 size);
 
     /**
     * @param how many bytes writed in peeked tail cache before.
