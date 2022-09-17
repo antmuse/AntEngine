@@ -85,7 +85,7 @@ static s32 AppStrNocaseCMP(const T* s1, const T* s2, usz n) {
     if (s1 == s2 || n == 0) {
         return 0;
     }
-    s32 ca, cb;
+    T ca, cb;
     do {
         ca = *s1++;
         cb = *s2++;
@@ -104,7 +104,7 @@ static s32 AppStrCMP(const T* s1, const T* s2, usz n) {
     if (s1 == s2 || n == 0) {
         return 0;
     }
-    s32 ca, cb;
+    T ca, cb;
     do {
         ca = *s1++;
         cb = *s2++;
@@ -181,6 +181,32 @@ public:
         mData = it.mData;
         mLen = it.mLen;
         return *this;
+    }
+
+    bool operator==(const TStrView<T>& other) const {
+        if (mLen == other.mLen) {
+            for (usz i = 0; i < mLen; ++i) {
+                if (mData[i] != other.mData[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool operator==(const T* str) const {
+        if (str && mData) {
+            return 0 == AppStrCMP(mData, str, mLen);
+        }
+        return false;
+    }
+
+    bool equalsn(const T* str, usz len) const {
+        if (str && mData) {
+            return 0 == AppStrCMP(mData, str, len);
+        }
+        return false;
     }
 
     void set(const T* str, usz len) {

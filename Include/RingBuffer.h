@@ -26,6 +26,7 @@
 #ifndef APP_RINGBUFFER_H
 #define APP_RINGBUFFER_H
 
+#include "Nocopy.h"
 #include "Strings.h"
 
 #define D_RBUF_BLOCK_SIZE (4 * 1024)
@@ -57,7 +58,7 @@ struct SRingBufPos {
     }
 };
 
-class RingBuffer {
+class RingBuffer : public Nocopy {
 public:
     RingBuffer();
 
@@ -66,19 +67,16 @@ public:
     void swap(RingBuffer& it) {
         SRingBufPos tail = mTailPos;
         SRingBufPos hd = mHeadPos;
-        SRingBufNode* emp = mEmptyList;
         s32 sz = mSize;
         long rt = mRet;
 
         mTailPos = it.mTailPos;
         mHeadPos = it.mHeadPos;
-        mEmptyList = it.mEmptyList;
         mSize = it.mSize;
         mRet = it.mRet;
 
         it.mTailPos = tail;
         it.mHeadPos = hd;
-        it.mEmptyList = emp;
         it.mSize = sz;
         it.mRet = rt;
     }
@@ -142,7 +140,6 @@ public:
 private:
     SRingBufPos mTailPos;
     SRingBufPos mHeadPos;
-    SRingBufNode* mEmptyList;
     s32 mSize;
     long mRet; //for tls
 
@@ -152,6 +149,6 @@ private:
     void pushBack();
 };
 
-}//namespace app {
+}//namespace app
 
 #endif //APP_RINGBUFFER_H

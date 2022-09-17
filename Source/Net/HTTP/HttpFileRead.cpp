@@ -33,10 +33,15 @@ s32 HttpFileRead::onOpen(net::HttpMsg& msg) {
     net::Website* site = msg.getHttpLayer()->getWebsite();
     String fnm(site->getConfig().mRootPath);
     fnm += msg.getURL().getPath();
-    if (EE_OK == mFile.open(fnm, 1) && EE_OK == launchRead()) {
+    if (EE_OK == mFile.open(fnm, 1)) {
         msg.grab();
         grab();
         mMsg = &msg;
+        if (EE_OK != launchRead()) {
+            mDone = true;
+            mFile.launchClose();
+            return EE_POSTED;
+        }
         return EE_OK;
     }
     return EE_ERROR;
@@ -70,10 +75,10 @@ void HttpFileRead::onFileRead(net::RequestTCP* it) {
     }
     if (it->mUsed > 0) {
         s8 chunked[8];
-        snprintf(chunked, sizeof(chunked), "%04X\r\n", it->mUsed);
+        snprintf(chunked, sizeof(chunked), "%04x\r\n", it->mUsed);
         mBody->rewrite(mChunkPos, chunked, G_BLOCK_HEAD_SIZE);
         mBody->commitTailPos(it->mUsed);
-        //mBody->write("\r\n", 2);
+        mBody->write("\r\n", 2);
         if (it->mUsed < it->mAllocated) {
             mDone = true;
             mBody->write("0\r\n\r\n", 5);

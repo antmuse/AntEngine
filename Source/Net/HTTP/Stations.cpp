@@ -38,23 +38,16 @@ s32 StationPath::onMsg(HttpMsg* msg) {
         return EE_ERROR;
     }
 
-    const String& requrl = msg->getURL().get();
-    const StringView str = HttpMsg::getMimeType(requrl.c_str(), requrl.getLen());
-    msg->getHeadOut().writeContentType(str);
-
-    StringView svv("If-Range", sizeof("If-Range") - 1);
-    svv = msg->getHeadIn().get(svv);
-    if (svv.mLen > 0) {
-        svv.set("Range", sizeof("Range") - 1);
-        //msg->getHeadOut().add()
-    }
-
-    if (requrl == "/") {
+    //default page
+    if (msg->getURL().get() == "/") {
         msg->getURL().append("index.html", sizeof("index.html") - 1);
+        msg->getURL().parser();
     }
+
+    StringView requrl = msg->getURL().getPath();
 
     if (requrl.equalsn("/api/", sizeof("/api/") - 1)) {
-
+        //
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
         HttpEventer* evt = new HttpFileRead();
         msg->setEvent(evt);
@@ -63,6 +56,16 @@ s32 StationPath::onMsg(HttpMsg* msg) {
         HttpEventer* evt = new HttpFileRead();
         msg->setEvent(evt);
         evt->drop();
+    }
+
+    const StringView str = HttpMsg::getMimeType(requrl.mData, requrl.mLen);
+    msg->getHeadOut().writeContentType(str);
+
+    StringView svv("If-Range", sizeof("If-Range") - 1);
+    svv = msg->getHeadIn().get(svv);
+    if (svv.mLen > 0) {
+        svv.set("Range", sizeof("Range") - 1);
+        //msg->getHeadOut().add()
     }
 
     return EE_OK;
@@ -119,6 +122,7 @@ s32 StationBodyDone::onMsg(HttpMsg* msg) {
 
     HttpEventer* evt = msg->getEvent();
     if (!evt || EE_OK != evt->onOpen(*msg)) {
+        msg->setStationID(ES_ERROR);
         return EE_ERROR;
     }
 

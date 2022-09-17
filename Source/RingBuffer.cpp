@@ -27,13 +27,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Logger.h"
+#include "Node.h"
 
 namespace app {
 
 RingBuffer::RingBuffer()
-    :mEmptyList(nullptr)
-    , mSize(0)
-    , mRet(-1) {
+    : mSize(0), mRet(-1) {
     //init();
 }
 
@@ -43,56 +42,41 @@ RingBuffer::~RingBuffer() {
 
 
 void RingBuffer::pushBack() {
-    if (mEmptyList) {
-        SRingBufNode* empty_block = mEmptyList;
-        mTailPos.mNode->mNext = empty_block;
-        mEmptyList = empty_block->mNext;
-        empty_block->mNext = nullptr;
+    if (mTailPos.mNode->mNext != mHeadPos.mNode) {
+        mTailPos.mNode = mTailPos.mNode->mNext;
     } else {
-        mTailPos.mNode->mNext = new SRingBufNode();
+        AppPushRingQueueTail_1(mTailPos.mNode, new SRingBufNode());
     }
-    mTailPos.mNode = mTailPos.mNode->mNext;
     mTailPos.mPosition = 0;
 }
 
 
 void RingBuffer::popFront() {
-    SRingBufNode* empty_block = mEmptyList;
-    SRingBufNode* head_block = mHeadPos.mNode;
-    mEmptyList = head_block;
     mHeadPos.mPosition = 0;
-    mHeadPos.mNode = head_block->mNext;
-    head_block->mNext = empty_block;
+    mHeadPos.mNode = mHeadPos.mNode->mNext;
 }
 
 void RingBuffer::init() {
     if (!mHeadPos.mNode) {
-        SRingBufNode* block = new SRingBufNode();
-        mEmptyList = nullptr;
-        mHeadPos.init(0, block);
-        mTailPos.init(0, block);
+        AppPushRingQueueTail_1(mHeadPos.mNode, new SRingBufNode());
+        mHeadPos.mPosition = 0;
+        mTailPos = mHeadPos;
     }
     mRet = -1;
 }
 
 void RingBuffer::uninit() {
-    SRingBufNode* curr = mEmptyList;
+    SRingBufNode* curr = AppPopRingQueueHead_1(mHeadPos.mNode);
     while (curr) {
-        mEmptyList = mEmptyList->mNext;
         delete curr;
-        curr = mEmptyList;
+        curr = AppPopRingQueueHead_1(mHeadPos.mNode);
     }
-
-    curr = mHeadPos.mNode;
-    while (curr) {
-        mHeadPos.mNode = mHeadPos.mNode->mNext;
-        delete curr;
-        curr = mHeadPos.mNode;
-    }
+    DASSERT(nullptr == mHeadPos.mNode);
     mTailPos.mNode = nullptr;
-    //mHeadPos.mPosition = 0;
-    //mTailPos.mPosition = 0;
+    mHeadPos.mPosition = 0;
+    mTailPos.mPosition = 0;
     mSize = 0;
+    mRet = -1;
 }
 
 s32 RingBuffer::getSize() const {
@@ -101,7 +85,8 @@ s32 RingBuffer::getSize() const {
 
 void RingBuffer::reset() {
     while (mHeadPos.mNode != mTailPos.mNode) {
-        popFront();
+        SRingBufNode* nd = AppPopRingQueueHead_1(mHeadPos.mNode);
+        delete nd;
     }
     mHeadPos.mPosition = 0;
     mTailPos.mPosition = 0;
@@ -146,8 +131,8 @@ bool RingBuffer::rewrite(SRingBufPos& ndpos, const void* data, s32 size) {
         DASSERT(ndpos.mPosition <= sizeof(SRingBufNode::mData));
 
         if (copysz == 0) {
-            //pushBack();
-            if (!ndpos.mNode->mNext) {
+            //@note can't pushBack() here
+            if (ndpos.mNode->mNext == mTailPos.mNode && mTailPos.mPosition < leftover) {
                 return false;
             }
             ndpos.mNode = ndpos.mNode->mNext;
@@ -171,10 +156,10 @@ bool RingBuffer::rewrite(SRingBufPos& ndpos, const void* data, s32 size) {
 
 
 s32 RingBuffer::peekTailNode(s8** data, s32 size) {
-    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
     DASSERT(nullptr!=mTailPos.mNode);
     DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
 
+    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
     if (available == 0) {
         pushBack();
         available = sizeof(SRingBufNode::mData);
@@ -264,7 +249,7 @@ StringView RingBuffer::peekHead() {
     if (mHeadPos.mNode == mTailPos.mNode) {
         s32 len = mTailPos.mPosition - mHeadPos.mPosition;
         DASSERT(len >= 0);
-        ret.mLen = (usz)len;
+        ret.mLen = AppMin(len, mSize);
         ret.mData = mHeadPos.mNode->mData + mHeadPos.mPosition;
     } else {
         s32 len = sizeof(SRingBufNode::mData) - mHeadPos.mPosition;
@@ -279,8 +264,7 @@ void RingBuffer::commitHead(s32 used) {
     DASSERT(used >= 0 && used <= sizeof(SRingBufNode::mData) && mSize >= used);
     mSize -= used;
     if (mHeadPos.mNode == mTailPos.mNode) {
-        s32 leftover = mTailPos.mPosition - mHeadPos.mPosition;
-        DASSERT(leftover >= 0);
+        DASSERT(mTailPos.mPosition - mHeadPos.mPosition >= used);
         mHeadPos.mPosition += used;
     } else {
         s32 leftover = sizeof(SRingBufNode::mData) - mHeadPos.mPosition;
