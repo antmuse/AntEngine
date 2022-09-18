@@ -115,18 +115,13 @@ s32 HandleFile::open(const String& fname, s32 flag) {
 
     s32 attr = 0;
 
-    mFile = ::open(mFilename.c_str(), O_NONBLOCK | O_CREAT | O_RDWR | O_DIRECT, 0644);
+    //mFile = ::open(mFilename.c_str(), O_NONBLOCK | O_CREAT | O_RDWR | O_DIRECT, 0644);
+    mFile = ::open(mFilename.c_str(), O_RDONLY, 0644);
 
     if (0 == mFile) {
+        mFlag |= (EHF_CLOSING | EHF_CLOSE);
         return EE_NO_OPEN;
     }
-
-    /*LARGE_INTEGER fsize;
-    if (TRUE == GetFileSizeEx(mFile, &fsize)) {
-        mFileSize = fsize.QuadPart;
-    }*/
-    //s32 efd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    //TODO>>
 
     return mLoop->openHandle(this);
 }
@@ -146,32 +141,60 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
     //TODO>>
 
     mLoop->bindFly(this);
+
     return EE_OK;
 }
 
 
 s32 HandleFile::read(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
+    if (req->mUsed + sizeof(usz) > req->mAllocated) {
+        return EE_ERROR;
+    }
     if (0 == (EHF_READABLE & mFlag)) {
         return EE_NO_READABLE;
     }
     req->mError = 0;
     req->mType = ERT_READ;
     req->mHandle = this;
-
+    *(ssz*)(req->mData + req->mUsed) = offset;
 
     //io_submit
     //TODO>>
 
-
     mLoop->bindFly(this);
+    if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::readByPool, this, req)) {
+        mLoop->unbindFly(this);
+        return EE_ERROR;
+    }
     return EE_OK;
 }
 
 
 #if defined(DOS_LINUX) || defined(DOS_ANDROID)
+
+//called by thread pool
 void HandleFile::readByPool(RequestFD* it) {
+    ssz offset = *(usz*)(it->mData + it->mUsed);
+    ssz ret = pread64(mFile, it->mData + it->mUsed, it->mAllocated - it->mUsed, offset);
+    if (ret > 0) {
+        it->mUsed += ret;
+    } else if (ret < 0) {
+        it->mError = System::getAppError();
+    }
+
+    CommandTask task;
+    task.pack(&HandleFile::doneByPool, this, it);
+    if (EE_OK != mLoop->postTask(task)) {
+    }
 }
+
+//called by loop thread
+void HandleFile::doneByPool(RequestFD* it) {
+    it->mCall(it);
+    mLoop->unbindFly(this);
+}
+
 #endif
 
 }//namespace app

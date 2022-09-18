@@ -74,6 +74,8 @@ void HttpFileRead::onFileClose(Handle* it) {
 
 void HttpFileRead::onFileRead(net::RequestTCP* it) {
     if (it->mError) {
+        mDone = true;
+        mFile.launchClose();
         return;
     }
     if (it->mUsed > 0) {

@@ -171,7 +171,7 @@ s32 StationRespBodyDone::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
     if (msg->getCacheOut().getSize() > 0) {
-        msg->getHttpLayer()->sendResp(msg);
+        return msg->getHttpLayer()->sendResp(msg) ? EE_OK : EE_ERROR;
     }
 
     msg->setStationID(ES_CLOSE);
@@ -194,7 +194,7 @@ s32 StationError::onMsg(HttpMsg* msg) {
     msg->getCacheOut().reset();
     static const s8* ebody = "<html>\n"
         "<head>\n"
-        u8"<title> ´íÎó </title>\n"
+        u8"<title> ï¿½ï¿½ï¿½ï¿½ </title>\n"
         "</head>\n"
         "<body>\n"
         u8"<hr><br>*_*<br><hr>"

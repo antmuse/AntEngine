@@ -39,6 +39,7 @@ using RequestFD = net::RequestTCP;
 using FD = s32;
 class RequestFD : public net::RequestTCP {
 public:
+    // usz mOffset;
 };
 #endif
 
@@ -97,6 +98,7 @@ protected:
 
 #if defined(DOS_LINUX) || defined(DOS_ANDROID)
     void readByPool(RequestFD* it);
+    void doneByPool(RequestFD* it);
 #endif
 };
 

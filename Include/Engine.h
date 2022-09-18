@@ -75,12 +75,25 @@ struct CommandTask : public MsgHeader {
     FuncTask mCall;
     const void* mThis;
     void* mData;
-    void pack(FuncTask func, const void* it, void* dat) {
+
+
+    template<class P>
+    void pack(void(*func)(P*), P* dat) {
         init(ECT_TASK, sizeof(*this), 0, ECT_VERSION);
         mCall = func;
+        mThis = nullptr;
+        mData = dat;
+    }
+
+    template<class T, class P>
+    void pack(void(T::* func)(P*), const void* it, P* dat) {
+        init(ECT_TASK, sizeof(*this), 0, ECT_VERSION);
+        void* fff = reinterpret_cast<void*>(&func);
+        mCall = *(FuncTask*)fff;
         mThis = it;
         mData = dat;
     }
+    
     void operator()() {
         if (mThis) {
             ((FuncTaskClass)mCall)(mThis, mData);
