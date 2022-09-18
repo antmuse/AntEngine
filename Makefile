@@ -14,7 +14,7 @@ MK_DIRS = $(BUILD_DIR)/Source \
 
 .DEFAULT:
 all:path
-	rm Bin/*.bin
+	rm -rf Bin/*.bin
 	@for dir in $(MK_DIRS); \
 		do \
 		make -C $$dir; \
