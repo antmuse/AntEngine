@@ -266,19 +266,24 @@ u32 Loop::getWaitTime() {
 }
 
 
-bool Loop::start(net::Socket& sock) {
-    mCMD.mSock = sock;
-    sock = DINVALID_SOCKET;
+bool Loop::start(net::Socket& sockRead, net::Socket& sockWrite) {
+    mCMD.mSock = sockRead;
     mCMD.setClose(EHT_TCP_LINK, LoopOnClose, this);
     mCMD.setTime(LoopOnTime, 15 * 1000, 20 * 1000, -1);
 
     if(!mPoller.open()) {
+        sockRead.close();
+        sockWrite.close();
         return false;
     }
     if (0 != mCMD.mSock.setBlock(false)) {
+        sockRead.close();
+        sockWrite.close();
         return false;
     }
     if (EE_OK != openHandle(&mCMD)) {
+        //sockRead.close();
+        sockWrite.close();
         return false;
     }
     mReadCMD.mType = ERT_READ;
@@ -294,6 +299,9 @@ bool Loop::start(net::Socket& sock) {
         Logger::log(ELL_ERROR, "Loop::start>>cmd recv, ecode=%d", mReadCMD.mError);
         return false;
     }
+    mSendCMD = sockWrite;
+    sockRead = DINVALID_SOCKET;
+    sockWrite = DINVALID_SOCKET;
     return true;
 }
 
@@ -312,6 +320,7 @@ void Loop::stop() {
         closeHandle((Handle*)curr);
     }
     mCMD.mSock.close();
+    mSendCMD.close();
 }
 
 
@@ -562,6 +571,11 @@ void Loop::addPending(Request* it) {
         it->mNext = it;
     }
     mRequest = it;
+}
+
+
+s32 Loop::postTask(const MsgHeader& task) {
+    return task.mSize == mSendCMD.send(&task, task.mSize) ? EE_OK : EE_ERROR;
 }
 
 } //namespace app

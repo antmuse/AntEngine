@@ -406,9 +406,9 @@ bool Loop::start(net::Socket& sock, net::Socket& sockW) {
         Logger::log(ELL_ERROR, "Loop::start>>cmd recv, ecode=%d", mReadCMD.mError);
         return false;
     }
+    mSendCMD = sockW;
     sock = DINVALID_SOCKET;
     sockW = DINVALID_SOCKET;
-    mSendCMD = sockW;
     return true;
 }
 

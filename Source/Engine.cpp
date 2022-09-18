@@ -189,9 +189,9 @@ bool Engine::init(const s8* fname, bool child) {
             Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
             return false;
         }
-
+        net::Socket tmp;
         Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
-        ret = runChildProcess(cmdsock);
+        ret = runChildProcess(cmdsock, tmp);
 #endif
     }
 
