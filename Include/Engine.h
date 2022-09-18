@@ -31,7 +31,6 @@
 #include "EngineConfig.h"
 #include "Loop.h"
 #include "Logger.h"
-#include "MsgHeader.h"
 #include "MapFile.h"
 #include "MemSlabPool.h"
 #include "ThreadPool.h"
@@ -48,6 +47,8 @@ enum ECommandType {
     ECT_ACTIVE = 2,
     ECT_ACTIVE_RESP = ECT_RESP_BIT | ECT_ACTIVE,
 
+    ECT_TASK = 3,
+    
     ECT_VERSION = 0xF001
 };
 
@@ -67,6 +68,25 @@ struct CommandActive : public MsgHeader {
     }
     void packResp(u32 sn) {
         finish(ECT_ACTIVE_RESP, sn, ECT_VERSION);
+    }
+};
+
+struct CommandTask : public MsgHeader {
+    FuncTask mCall;
+    const void* mThis;
+    void* mData;
+    void pack(FuncTask func, const void* it, void* dat) {
+        init(ECT_TASK, sizeof(*this), 0, ECT_VERSION);
+        mCall = func;
+        mThis = it;
+        mData = dat;
+    }
+    void operator()() {
+        if (mThis) {
+            ((FuncTaskClass)mCall)(mThis, mData);
+        } else {
+            mCall(mData);
+        }
     }
 };
 
@@ -155,10 +175,10 @@ private:
     EngineConfig mConfig;
     net::TlsContext mTlsENG;
     TVector<Process> mChild;
-    Process mMainProcess;
+
     bool createProcess();
     bool runMainProcess();
-    bool runChildProcess(net::Socket& it);
+    bool runChildProcess(net::Socket& readSock, net::Socket& writeSock);
 
     void initTask();
 };

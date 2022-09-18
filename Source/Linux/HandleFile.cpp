@@ -169,4 +169,9 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
 }
 
 
+#if defined(DOS_LINUX) || defined(DOS_ANDROID)
+void HandleFile::readByPool(RequestFD* it) {
+}
+#endif
+
 }//namespace app

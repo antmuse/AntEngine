@@ -28,6 +28,7 @@
 #include "System.h"
 #include "Engine.h"
 #include "Logger.h"
+#include "HandleFile.h"
 #include "Net/HandleTCP.h"
 #include <sys/epoll.h>
 
@@ -69,27 +70,33 @@ void Loop::onRead(net::RequestTCP* it) {
     }
 
     mPackCMD.resize(mPackCMD.size() + it->mUsed);
-    u32 pksz = 0;
-    for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer();
-        mPackCMD.size() >= sizeof(MsgHeader) && pksz < mPackCMD.size();
-        cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
-        switch (cmd->mType) {
-        case ECT_EXIT:
-            Logger::logInfo("Loop::onCommands>>pid=%d, exit",Engine::getInstance().getPID());
-            stop();
-            break;
-        case ECT_ACTIVE:
-            Logger::logInfo("Loop::onCommands>>pid=%d, active",Engine::getInstance().getPID());
-            break;
-        default:break;
-        }//switch
-        pksz += cmd->mSize;
+    if (mPackCMD.size() >= sizeof(MsgHeader)) {
+        u32 pksz = 0;
+        for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer(); cmd->mSize + pksz <= mPackCMD.size();
+             cmd = reinterpret_cast<MsgHeader*>((s8*)cmd + cmd->mSize)) {
+            switch (cmd->mType) {
+            case ECT_EXIT:
+                Logger::logInfo("Loop::onCommands>>pid=%d, exit", Engine::getInstance().getPID());
+                stop();
+                break;
+            case ECT_ACTIVE:
+                Logger::logInfo("Loop::onCommands>>pid=%d, active", Engine::getInstance().getPID());
+                break;
+            case ECT_TASK: {
+                CommandTask* task = reinterpret_cast<CommandTask*>(cmd);
+                (*task)();
+                break;
+            }
+            default:
+                break;
+            } // switch
+            pksz += cmd->mSize;
+        }
+        mPackCMD.clear(pksz);
     }
-
     if (0 != mStop) {
         return;
     }
-    mPackCMD.clear(pksz);
     mReadCMD.mData = mPackCMD.getWritePointer();
     mReadCMD.mAllocated = (u32)mPackCMD.getWriteSize();
     mReadCMD.mUsed = 0;
@@ -366,19 +373,24 @@ u32 Loop::getWaitTime() {
 }
 
 
-bool Loop::start(net::Socket& sock) {
+bool Loop::start(net::Socket& sock, net::Socket& sockW) {
     mCMD.mSock = sock;
-    sock = DINVALID_SOCKET;
     mCMD.setClose(EHT_TCP_LINK, LoopOnClose, this);
     mCMD.setTime(LoopOnTime, 15 * 1000, 20 * 1000, -1);
 
     if(!mPoller.open()) {
+        sock.close();
+        sockW.close();
         return false;
     }
     if (0 != mCMD.mSock.setBlock(false)) {
+        sock.close();
+        sockW.close();
         return false;
     }
     if (EE_OK != openHandle(&mCMD)) {
+        sock.close();
+        sockW.close();
         return false;
     }
     mReadCMD.mType = ERT_READ;
@@ -394,6 +406,9 @@ bool Loop::start(net::Socket& sock) {
         Logger::log(ELL_ERROR, "Loop::start>>cmd recv, ecode=%d", mReadCMD.mError);
         return false;
     }
+    sock = DINVALID_SOCKET;
+    sockW = DINVALID_SOCKET;
+    mSendCMD = sockW;
     return true;
 }
 
@@ -412,6 +427,7 @@ void Loop::stop() {
         closeHandle((Handle*)curr);
     }
     mCMD.mSock.close();
+    mSendCMD.close();
 }
 
 
@@ -504,6 +520,15 @@ s32 Loop::closeHandle(Handle* it) {
     {
         HandleTime* nd = reinterpret_cast<HandleTime*>(it);
         mTimeHub.remove(&nd->mLink);
+        break;
+    }
+    case EHT_FILE:
+    {
+        HandleFile* nd = reinterpret_cast<HandleFile*>(it);
+        ret = nd->close();
+        if (nd->mCallTime) {
+            mTimeHub.remove(&nd->mLink);
+        }
         break;
     }
     default:
@@ -614,6 +639,17 @@ s32 Loop::openHandle(Handle* it) {
         mTimeHub.insert(&nd->mLink);
         break;
     }
+    case EHT_FILE:
+    {
+        HandleFile* nd = reinterpret_cast<HandleFile*>(it);
+        //Logger::log(ELL_ERROR, "Loop::openHandle>>file=%s, ecode=%d", nd->getFileName().c_str(), ret);
+        nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
+        if (nd->mCallTime) {
+            nd->mTimeout += Timer::getRelativeTime();
+            mTimeHub.insert(&nd->mLink);
+        }
+        break;
+    }
     case EHT_UNKNOWN:
     default:
         DASSERT(0 && "invalid handle type");
@@ -643,5 +679,9 @@ void Loop::addPending(Request* it) {
     mRequest = it;
 }
 
+
+s32 Loop::postTask(const MsgHeader& task){
+    return task.mSize == mSendCMD.send(&task, task.mSize) ? EE_OK : EE_ERROR;
+}
 
 } //namespace app

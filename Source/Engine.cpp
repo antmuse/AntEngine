@@ -86,8 +86,7 @@ void Engine::postCommand(s32 val) {
                     i, mChild[i].mID);
             }
         }
-        //if (mMainProcess.mHandle) {
-        mMainProcess.mSocket.sendAll(&cmd, sizeof(cmd));
+        mLoop.postTask(cmd);
     }
 }
 
@@ -223,27 +222,28 @@ bool Engine::runMainProcess() {
     unpath += System::getPID();
     unpath += ".unpath";
 
-    mMainProcess.mHandle = nullptr;
     net::SocketPair pair;
-    if (pair.open(unpath.c_str())) {
-        mMainProcess.mID = System::getPID();
-        mMainProcess.mStatus = 0;
-        mMainProcess.mSocket = pair.getSocketA();
-    } else {
+    if (!pair.open(unpath.c_str())) {
         Logger::log(ELL_ERROR, "Engine::runMainProcess>> fail");
         return false;
     }
     mThreadPool.start(mConfig.mMaxThread);
-    bool ret = mLoop.start(pair.getSocketB());
-    if (ret) { initTask(); }
+    bool ret = mLoop.start(pair.getSocketB(), pair.getSocketA());
+    if (ret) {
+        initTask();
+    } else {
+        Logger::log(ELL_ERROR, "Engine::runMainProcess>> start loop fail");
+    }
     return ret;
 }
 
-bool Engine::runChildProcess(net::Socket& cmdsock) {
+bool Engine::runChildProcess(net::Socket& cmdsock, net::Socket& write) {
     mThreadPool.start(mConfig.mMaxThread);
-    bool ret = mLoop.start(cmdsock);
+    bool ret = mLoop.start(cmdsock, write);
     if (ret) {
         initTask();
+    } else {
+        write.close();
     }
     return ret;
 }
@@ -264,8 +264,8 @@ bool Engine::createProcess() {
             nd.mStatus = 1;
 #if defined(DOS_LINUX)
             if (0 == nd.mID) {//child
-                pair.getSocketA().close();
-                runChildProcess(pair.getSocketB());
+                // pair.getSocketA().close();
+                runChildProcess(pair.getSocketB(), pair.getSocketA());
                 mMain = false;
                 return true;
             } else {

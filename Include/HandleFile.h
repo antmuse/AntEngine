@@ -46,7 +46,7 @@ public:
 
 /**
 * @class HandleFile
-* @brief Òì²½ÎÄ¼þ
+* @brief ï¿½ì²½ï¿½Ä¼ï¿½
 */
 class HandleFile : public HandleTime {
 public:
@@ -67,12 +67,12 @@ public:
     }
 
     /**
-    * @param offset Ð´ÈëÆðÊ¼´¦
+    * @param offset Ð´ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
     */
     s32 write(RequestFD* it, usz offset = 0);
 
     /**
-    * @param offset ¶ÁÈ¡ÆðÊ¼´¦
+    * @param offset ï¿½ï¿½È¡ï¿½ï¿½Ê¼ï¿½ï¿½
     */
     s32 read(RequestFD* it, usz offset = 0);
 
@@ -86,7 +86,7 @@ public:
     */
     s32 open(const String& fname, s32 flag = 1);
 
-    //½Ø¶Ï»òÀ©Õ¹ÎÄ¼þ
+    //ï¿½Ø¶Ï»ï¿½ï¿½ï¿½Õ¹ï¿½Ä¼ï¿½
     bool setFileSize(usz fsz);
 
 protected:
@@ -94,6 +94,10 @@ protected:
     FD mFile;
     usz mFileSize;
     String mFilename;
+
+#if defined(DOS_LINUX) || defined(DOS_ANDROID)
+    void readByPool(RequestFD* it);
+#endif
 };
 
 

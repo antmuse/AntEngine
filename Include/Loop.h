@@ -27,6 +27,7 @@
 #define	APP_LOOP_H
 
 #include "Strings.h"
+#include "MsgHeader.h"
 #include "BinaryHeap.h"
 #include "Handle.h"
 #include "Net/HandleTCP.h"
@@ -53,7 +54,7 @@ public:
         return mStop > 0;
     }
 
-    bool start(net::Socket& sock);
+    bool start(net::Socket& sockRead, net::Socket& sockWrite);
 
     void stop();
 
@@ -127,6 +128,7 @@ public:
         return mPoller;
     }
 
+    s32 postTask(const MsgHeader& task);
 
 protected:
     void updatePending();
@@ -162,6 +164,8 @@ private:
     net::HandleTCP mCMD;
     Packet mPackCMD;
     net::RequestTCP mReadCMD;
+
+    net::Socket mSendCMD;
 
     Loop(const Loop&) = delete;
     Loop(const Loop&&) = delete;

@@ -66,27 +66,34 @@ void Loop::onRead(net::RequestTCP* it) {
     }
 
     mPackCMD.resize(mPackCMD.size() + it->mUsed);
-    u32 pksz = 0;
-    for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer();
-        mPackCMD.size() >= sizeof(MsgHeader) && pksz < mPackCMD.size();
-        cmd = (MsgHeader*)((s8*)cmd + cmd->mSize)) {
-        switch (cmd->mType) {
-        case ECT_EXIT:
-            Logger::logInfo("Loop::onCommands>> exit");
-            stop();
-            break;
-        case ECT_ACTIVE:
-            Logger::logInfo("Loop::onCommands>> active");
-            break;
-        default:break;
-        }//switch
-        pksz += cmd->mSize;
+    if (mPackCMD.size() >= sizeof(MsgHeader)) {
+        u32 pksz = 0;
+        for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer(); cmd->mSize + pksz <= mPackCMD.size();
+             cmd = reinterpret_cast<MsgHeader*>((s8*)cmd + cmd->mSize)) {
+            switch (cmd->mType) {
+            case ECT_EXIT:
+                Logger::logInfo("Loop::onCommands>>pid=%d, exit", Engine::getInstance().getPID());
+                stop();
+                break;
+            case ECT_ACTIVE:
+                Logger::logInfo("Loop::onCommands>>pid=%d, active", Engine::getInstance().getPID());
+                break;
+            case ECT_TASK: {
+                CommandTask* task = reinterpret_cast<CommandTask*>(cmd);
+                (*task)();
+                break;
+            }
+            default:
+                break;
+            } // switch
+            pksz += cmd->mSize;
+        }
+        mPackCMD.clear(pksz);
     }
 
     if (0 != mStop) {
         return;
     }
-    mPackCMD.clear(pksz);
     mReadCMD.mData = mPackCMD.getWritePointer();
     mReadCMD.mAllocated = (u32)mPackCMD.getWriteSize();
     mReadCMD.mUsed = 0;
