@@ -104,6 +104,7 @@ private:
 
     void onRead(net::RequestTCP* it);
 
+    void postClose();
 
     DFINLINE s32 writeIF(net::RequestTCP* it) {
         return mHTTPS ? mTCP.write(it) : mTCP.getHandleTCP().write(it);

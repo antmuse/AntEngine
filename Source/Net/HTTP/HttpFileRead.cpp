@@ -31,6 +31,9 @@ s32 HttpFileRead::onOpen(net::HttpMsg& msg) {
     mReaded = 0;
     mBody = &msg.getCacheOut();
     net::Website* site = msg.getHttpLayer()->getWebsite();
+    if (!site) {
+        return EE_ERROR;
+    }
     String fnm(site->getConfig().mRootPath);
     fnm += msg.getURL().getPath();
     if (EE_OK == mFile.open(fnm, 1)) {
@@ -90,7 +93,11 @@ void HttpFileRead::onFileRead(net::RequestTCP* it) {
 
     net::Website* site = mMsg->getHttpLayer()->getWebsite();
     if (site) {
-        site->stepMsg(mMsg);
+        if (EE_OK != site->stepMsg(mMsg)) {
+            mDone = true;
+        }
+    } else {
+        mDone = true;
     }
 
     mReaded += it->mUsed;

@@ -104,6 +104,7 @@ s32 HandleFile::open(const String& fname, s32 flag) {
         fmode, nullptr, cmod, attr, nullptr);
 
     if (INVALID_HANDLE_VALUE == mFile) {
+        mFlag |= (EHF_CLOSING | EHF_CLOSE);
         return EE_NO_OPEN;
     }
 

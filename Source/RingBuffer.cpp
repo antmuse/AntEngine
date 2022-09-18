@@ -94,6 +94,7 @@ void RingBuffer::reset() {
     mRet = -1;
 }
 
+
 void RingBuffer::write(const void* data, s32 size) {
     const s8* pos = (const s8*)data;
     s32 leftover = size;

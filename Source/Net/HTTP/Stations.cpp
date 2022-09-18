@@ -2,6 +2,7 @@
 #include "Net/HTTP/HttpLayer.h"
 #include "Net/HTTP/HttpFileRead.h"
 #include "Net/HTTP/HttpFileSave.h"
+#include "Net/HTTP/Website.h"
 
 //def str view
 #define DSTRV(V) V, sizeof(V) - 1
@@ -123,6 +124,13 @@ s32 StationBodyDone::onMsg(HttpMsg* msg) {
     HttpEventer* evt = msg->getEvent();
     if (!evt || EE_OK != evt->onOpen(*msg)) {
         msg->setStationID(ES_ERROR);
+        msg->setStatus(404);
+        StringView key("Transfer-Encoding", sizeof("Transfer-Encoding") - 1);
+        hed.remove(key);
+        net::Website* site = msg->getHttpLayer()->getWebsite();
+        if (site) {
+            return site->stepMsg(msg);
+        }
         return EE_ERROR;
     }
 
@@ -174,7 +182,7 @@ s32 StationRespBodyDone::onMsg(HttpMsg* msg) {
 s32 StationClose::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
-    msg->setEvent(nullptr);
+    //msg->setEvent(nullptr);
     return EE_OK;
 }
 
@@ -182,7 +190,8 @@ s32 StationClose::onMsg(HttpMsg* msg) {
 s32 StationError::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
-    msg->getHeadOut().clear();
+    //msg->getHeadOut().clear();
+    msg->getCacheOut().reset();
     static const s8* ebody = "<html>\n"
         "<head>\n"
         u8"<title> ´íÎó </title>\n"
@@ -199,9 +208,7 @@ s32 StationError::onMsg(HttpMsg* msg) {
     msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
     msg->writeOutBody(ebody, esz);
 
-    msg->getHttpLayer()->sendResp(msg);
-
-    return EE_OK;
+    return msg->getHttpLayer()->sendResp(msg) ? EE_OK : EE_ERROR;
 }
 
 } //namespace net

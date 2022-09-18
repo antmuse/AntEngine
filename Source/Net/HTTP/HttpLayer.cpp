@@ -88,7 +88,7 @@ s32 HttpLayer::post(const String& gurl) {
 void HttpLayer::msgBegin() {
     if (mMsg) {
         mHttpError = HPE_CB_MsgBegin;
-        mTCP.launchClose();
+        postClose();
         return; //error
     }
 
@@ -101,7 +101,7 @@ void HttpLayer::msgEnd() {
     DASSERT(mMsg);
     if (mMsg) {
         mMsg->mStationID = ES_BODY_DONE;
-        mWebsite->stepMsg(mMsg);
+        msgStep();
         mMsg->drop();
         mMsg = nullptr;
     }
@@ -139,7 +139,7 @@ void HttpLayer::chunkHeadDone() {
 
 void HttpLayer::msgStep() {
     if (EE_OK != mWebsite->stepMsg(mMsg)) {
-        mTCP.launchClose();
+        postClose();
     }
 }
 
@@ -286,12 +286,6 @@ s32 HttpLayer::onTimeout(HandleTime& it) {
 
 
 void HttpLayer::onClose(Handle* it) {
-    if (mMsg) {
-        mMsg->mStationID = ES_CLOSE;
-        mWebsite->stepMsg(mMsg);
-        mMsg->drop();
-        mMsg = nullptr;
-    }
 #ifdef DDEBUG
     if (mHTTPS) {
         DASSERT((&mTCP == it) && "HttpLayer::onClose https handle?");
@@ -299,6 +293,13 @@ void HttpLayer::onClose(Handle* it) {
         DASSERT((&mTCP.getHandleTCP() == it) && "HttpLayer::onClose http handle?");
     }
 #endif
+
+    if (mMsg) {
+        mMsg->mStationID = ES_CLOSE;
+        mWebsite->stepMsg(mMsg);
+        mMsg->drop();
+        mMsg = nullptr;
+    }
     if (mWebsite) {
         mWebsite->unbind(this);
         mWebsite = nullptr;
@@ -357,7 +358,9 @@ void HttpLayer::onWrite(net::RequestTCP* it, HttpMsg* msg) {
         if (msg->getCacheOut().getSize() > 0) {
             sendResp(msg);
         } else {
-            mWebsite->stepMsg(msg);
+            if (EE_OK != mWebsite->stepMsg(msg)) {
+                postClose();
+            }
         }
     }
     net::RequestTCP::delRequest(it);
@@ -386,7 +389,7 @@ void HttpLayer::onRead(net::RequestTCP* it) {
         if (0 == it->getWriteSize()) {
             //可能受到超长header攻击或其它错误
             Logger::logError("HttpLayer::onRead>>remote=%p, msg overflow", mTCP.getRemote().getStr());
-            mTCP.launchClose();
+            postClose();
         } else if (0 == mHttpError) {
             if (EE_OK == readIF(it)) {
                 return;
@@ -400,6 +403,9 @@ void HttpLayer::onRead(net::RequestTCP* it) {
 }
 
 
+void HttpLayer::postClose() {
+    mHTTPS ? mTCP.launchClose() : mTCP.getHandleTCP().launchClose();
+}
 
 
 
@@ -934,6 +940,126 @@ static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
     /* We should never fall out of the switch above unless there's an error */
     return s_dead;
 }
+
+//not strict check
+static EPareState AppParseUrlChar2(EPareState s, const s8 ch) {
+    if (ch == ' ' || ch == '\r' || ch == '\n') {
+        return s_dead;
+    }
+
+#if DHTTP_PARSE_STRICT
+    if (ch == '\t' || ch == '\f') {
+        return s_dead;
+    }
+#endif
+
+    switch (s) {
+    case s_req_spaces_before_url:
+        /* Proxied requests are followed by scheme of an absolute URI (alpha).
+         * All methods except CONNECT are followed by '/' or '*'.
+         */
+        if (ch == '/' || ch == '*') {
+            return s_req_path;
+        }
+        if (IS_ALPHA(ch)) {
+            return s_req_schema;
+        }
+        break;
+
+    case s_req_schema:
+        if (IS_ALPHA(ch)) {
+            return s;
+        }
+        if (ch == ':') {
+            return s_req_schema_slash;
+        }
+        break;
+
+    case s_req_schema_slash:
+        if (ch == '/') {
+            return s_req_schema_slash2;
+        }
+        break;
+
+    case s_req_schema_slash2:
+        if (ch == '/') {
+            return s_req_server_start;
+        }
+        break;
+
+    case s_req_server_with_at:
+        if (ch == '@') {
+            return s_dead;
+        }
+
+        /* fall through */
+    case s_req_server_start:
+    case s_req_server:
+        if (ch == '/') {
+            return s_req_path;
+        }
+        if (ch == '?') {
+            return s_req_query_string_start;
+        }
+        if (ch == '@') {
+            return s_req_server_with_at;
+        }
+        if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
+            return s_req_server;
+        }
+        break;
+
+    case s_req_path:
+        switch (ch) {
+        case '?':
+            return s_req_query_string_start;
+        case '#':
+            return s_req_fragment_start;
+        default:
+            return s;
+        }
+        break;
+
+    case s_req_query_string_start:
+    case s_req_query_string:
+        switch (ch) {
+        case '?':
+            // allow extra '?' in query string
+            return s_req_query_string;
+        case '#':
+            return s_req_fragment_start;
+        default:
+            return s_req_query_string;
+        }
+        break;
+
+    case s_req_fragment_start:
+        switch (ch) {
+        case '?':
+            return s_req_fragment;
+        case '#':
+            return s;
+        default:
+            return s_req_fragment;
+        }
+        break;
+
+    case s_req_fragment:
+        switch (ch) {
+        case '?':
+        case '#':
+        default:
+            return s;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return s_dead;
+}
+
 
 const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, s32& omax, s32& vflag) {
     vflag = 0;
@@ -3151,7 +3277,7 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
     EHttpUrlFields uf;
     EHttpUrlFields old_uf = UF_MAX;
     for (const s8* p = buf; p < buf + buflen; p++) {
-        s = AppParseUrlChar(s, *p);
+        s = AppParseUrlChar2(s, *p);
 
         /* Figure out the next field that we're operating on */
         switch (s) {
