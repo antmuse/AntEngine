@@ -243,7 +243,7 @@ bool Engine::runChildProcess(net::Socket& cmdsock, net::Socket& write) {
     if (ret) {
         initTask();
     } else {
-        write.close();
+        Logger::log(ELL_ERROR, "Engine::runChildProcess>> start loop fail");
     }
     return ret;
 }

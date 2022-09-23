@@ -68,7 +68,7 @@ void Loop::onRead(net::RequestTCP* it) {
     mPackCMD.resize(mPackCMD.size() + it->mUsed);
     u32 pksz = 0;
     for (MsgHeader* cmd = (MsgHeader*)mPackCMD.getPointer();
-        pksz + sizeof(MsgHeader) < mPackCMD.size() && cmd->mSize + pksz <= mPackCMD.size();
+        pksz + sizeof(MsgHeader::mSize) < mPackCMD.size() && cmd->mSize + pksz <= mPackCMD.size();
         cmd = reinterpret_cast<MsgHeader*>((s8*)cmd + cmd->mSize)) {
         switch (cmd->mType) {
         case ECT_EXIT:
