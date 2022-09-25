@@ -40,7 +40,7 @@ Loop::Loop() :
     mRequest(nullptr),
     mTime(Timer::getRelativeTime()),
     mStop(0),
-    mPackCMD(256),
+    mPackCMD(1024),
     mFlyRequest(0),
     mGrabCount(0) {
 }
@@ -205,12 +205,13 @@ void Loop::updatePending() {
                             hnd->mFlag &= ~EHF_SYNC_READ;
                             nd->mCall(nd);
                             unbindFly(hnd);
+                            err = EE_RETRY;
                             break;
                         }
                     } else if (0 == rdsz) {
                         err = EE_NO_READABLE;
                         nd->mError = err;
-                        hnd->mFlag &= ~EHF_READABLE;
+                        hnd->mFlag &= ~(EHF_READABLE | EHF_SYNC_READ);
                         closeHandle(hnd);
                     } else {
                         err = System::getAppError();
@@ -223,7 +224,7 @@ void Loop::updatePending() {
                             break;
                         } else {
                             nd->mError = err;
-                            hnd->mFlag &= ~EHF_READABLE;
+                            hnd->mFlag &= ~(EHF_READABLE | EHF_SYNC_READ);
                             closeHandle(hnd);
                         }
                     }
@@ -235,6 +236,11 @@ void Loop::updatePending() {
                 nd = (net::RequestTCP*)hnd->popReadReq();
                 unbindFly(hnd);
             }//while
+
+            // set flag for next step
+            if ((hnd->mFlag & EHF_READABLE) && EE_RETRY != err) {
+                hnd->mFlag |= EHF_SYNC_READ;
+            }
             relinkTime((HandleTime*)hnd);
             break;
         }
@@ -256,12 +262,13 @@ void Loop::updatePending() {
                         if (nd->mStepSize < nd->mUsed) {
                             hnd->mFlag &= ~EHF_SYNC_WRITE;
                             hnd->addWritePendingHead(nd);
+                            err = EE_RETRY;
                             break;
                         }
                     } else if (0 == wdsz) {
                         err = System::getAppError();
                         nd->mError = err;
-                        hnd->mFlag &= ~EHF_WRITEABLE;
+                        hnd->mFlag &= ~(EHF_WRITEABLE | EHF_SYNC_WRITE);
                         closeHandle(hnd);
                     } else {
                         err = System::getAppError();
@@ -274,7 +281,7 @@ void Loop::updatePending() {
                             break;
                         } else {
                             nd->mError = err;
-                            hnd->mFlag &= ~EHF_WRITEABLE;
+                            hnd->mFlag &= ~(EHF_WRITEABLE | EHF_SYNC_WRITE);
                             closeHandle(hnd);
                         }
                     }
@@ -286,6 +293,11 @@ void Loop::updatePending() {
                 nd = (net::RequestTCP*)hnd->popWriteReq();
                 unbindFly(hnd);
             }//while
+
+            // set flag for next step
+            if ((hnd->mFlag & EHF_WRITEABLE) && EE_RETRY != err) {
+                hnd->mFlag |= EHF_SYNC_WRITE;
+            }
             relinkTime((HandleTime*)hnd);
             break;
         }

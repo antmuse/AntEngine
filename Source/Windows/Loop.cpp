@@ -38,7 +38,7 @@ Loop::Loop() :
     mRequest(nullptr),
     mTime(Timer::getRelativeTime()),
     mStop(0),
-    mPackCMD(256),
+    mPackCMD(1024),
     mFlyRequest(0),
     mGrabCount(0) {
 }

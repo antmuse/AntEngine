@@ -154,13 +154,14 @@ s32 StationRespHead::onMsg(HttpMsg* msg) {
 
 s32 StationRespBody::onMsg(HttpMsg* msg) {
     DASSERT(msg);
+    
     s32 bsz = msg->getCacheOut().getSize();
-    if (0 == bsz) {
-        msg->setStationID(ES_RESP_BODY_DONE);
-        return EE_OK;
-    }
-
-    if (!msg->getHttpLayer()->sendResp(msg)) {
+    // if (0 == bsz) {
+    //     msg->setStationID(ES_RESP_BODY_DONE);
+    //     return EE_OK;
+    // }
+    
+    if (bsz>0 && !msg->getHttpLayer()->sendResp(msg)) {
         return EE_ERROR;
     }
 

@@ -179,10 +179,10 @@ s32 HandleTCP::read(RequestTCP* it) {
     if (EHF_SYNC_READ & mFlag) {
         if (mReadQueue) {
             addReadPendingTail(it);
-        } else {
-            mLoop->addPending(it);
-            mFlag &= ~EHF_SYNC_READ;
+            it = (RequestTCP*)popReadReq();
         }
+        mLoop->addPending(it);
+        mFlag &= ~EHF_SYNC_READ;
         return EE_OK;
     }
 
@@ -208,10 +208,10 @@ s32 HandleTCP::write(RequestTCP* it) {
     if (EHF_SYNC_WRITE & mFlag) {
         if (mWriteQueue) {
             addWritePendingTail(it);
-        } else {
-            mLoop->addPending(it);
-            mFlag &= ~EHF_SYNC_WRITE;
+            it = (RequestTCP*)popWriteReq();
         }
+        mLoop->addPending(it);
+        mFlag &= ~EHF_SYNC_WRITE;
         return EE_OK;
     }
 

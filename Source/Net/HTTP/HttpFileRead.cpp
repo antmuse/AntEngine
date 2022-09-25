@@ -1,6 +1,7 @@
 #include "Net/HTTP/HttpFileRead.h"
 #include "RingBuffer.h"
 #include "Net/HTTP/Website.h"
+#include "Net/HTTP/MsgStation.h"
 
 namespace app {
 
@@ -75,6 +76,7 @@ void HttpFileRead::onFileClose(Handle* it) {
 void HttpFileRead::onFileRead(net::RequestTCP* it) {
     if (it->mError) {
         mDone = true;
+        mMsg->setStationID(net::ES_RESP_BODY_DONE);
         mFile.launchClose();
         Logger::log(ELL_ERROR, "HttpFileRead::onFileRead>>err file=%s", mFile.getFileName().c_str());
         return;
@@ -88,10 +90,12 @@ void HttpFileRead::onFileRead(net::RequestTCP* it) {
         if (it->mUsed < it->mAllocated) {
             mDone = true;
             mBody->write("0\r\n\r\n", 5);
+            mMsg->setStationID(net::ES_RESP_BODY_DONE);
         }
     } else {
         mDone = true;
         mBody->write("0\r\n\r\n", 5);
+        mMsg->setStationID(net::ES_RESP_BODY_DONE);
     }
 
     net::Website* site = mMsg->getHttpLayer()->getWebsite();
