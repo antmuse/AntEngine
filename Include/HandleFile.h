@@ -97,8 +97,8 @@ protected:
     String mFilename;
 
 #if defined(DOS_LINUX) || defined(DOS_ANDROID)
-    void readByPool(RequestFD* it);
-    void doneByPool(RequestFD* it);
+    void stepByPool(RequestFD* it);
+    void stepByLoop(RequestFD* it);
 #endif
 };
 

@@ -207,6 +207,7 @@ s32 StationError::onMsg(HttpMsg* msg) {
     msg->dumpHeadOut();
     msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
     msg->writeOutBody(ebody, esz);
+    msg->setStationID(ES_RESP_BODY_DONE);
 
     return msg->getHttpLayer()->sendResp(msg) ? EE_OK : EE_ERROR;
 }

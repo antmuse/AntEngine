@@ -20,24 +20,24 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
-#include <stdio.h>
+#include "HandleFile.h"
+#include "Engine.h"
+#include "System.h"
 #include <errno.h>
-#include <sys/syscall.h>
-#include <sys/eventfd.h>
-#include <sys/epoll.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include "HandleFile.h"
-#include "System.h"
-#include "Engine.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/epoll.h>
+#include <sys/eventfd.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 namespace app {
 
@@ -49,24 +49,23 @@ static int io_destroy(u32 ctx) {
     return syscall(SYS_io_destroy, ctx);
 }
 
-static int io_getevents(u32 ctx, long min_nr, long nr,
-    struct io_event* events, struct timespec* tmo) {
+static int io_getevents(u32 ctx, long min_nr, long nr, struct io_event* events, struct timespec* tmo) {
     return syscall(SYS_io_getevents, ctx, min_nr, nr, events, tmo);
 }
 
 class HandleAIO {
 public:
-    HandleAIO() :mEventFD(-1) {
+    HandleAIO() : mEventFD(-1) {
     }
     void init() {
         mEventFD = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
         // SYS_gettid
-                // if (posix_memalign(&buf, ALIGN_SIZE, RD_WR_SIZE))        {
-                //     perror("posix_memalign");
-                //     return 5;
-                // }
+        // if (posix_memalign(&buf, ALIGN_SIZE, RD_WR_SIZE)) {
+        //     perror("posix_memalign");
+        //     return 5;
+        // }
+        // const usz aaa = sizeof(struct iocb);
     }
-
 
 private:
     u32 mContext;
@@ -74,13 +73,21 @@ private:
 };
 
 
-HandleFile::HandleFile()
-    :mFile(0)
-    , mFileSize(0) {
+static usz AppGetFileSize(s32 fd) {
+    usz filesize = 0;
+    struct stat statbuff;
+    if (fstat(fd, &statbuff) < 0) {
+        return filesize;
+    } else {
+        filesize = statbuff.st_size;
+    }
+    return filesize;
+}
+
+
+HandleFile::HandleFile() : mFile(-1), mFileSize(0) {
     mType = EHT_FILE;
     mLoop = &Engine::getInstance().getLoop();
-
-    //const usz aaa = sizeof(struct iocb);
 }
 
 
@@ -90,9 +97,9 @@ HandleFile::~HandleFile() {
 
 
 s32 HandleFile::close() {
-    if (0 != mFile) {
+    if (-1 != mFile) {
         ::close(mFile);
-        mFile = 0;
+        mFile = -1;
         mFilename.setLen(0);
         mFileSize = 0;
     }
@@ -100,7 +107,12 @@ s32 HandleFile::close() {
 }
 
 bool HandleFile::setFileSize(usz fsz) {
-    //TODO>>
+    if (0 == ftruncate(mFile, fsz)) {
+        mFileSize = fsz;
+    } else {
+        Logger::log(ELL_ERROR, "HandleFile::setFileSize>> ecode=%d, filesz=%lu, file=%s", System::getAppError(), fsz,
+            mFilename.c_str());
+    }
     return true;
 }
 
@@ -108,21 +120,23 @@ s32 HandleFile::open(const String& fname, s32 flag) {
     close();
     mFilename = fname;
 
-    s32 fmode = (flag & 1) > 0 ? 1 : 0;
-    fmode |= (flag & 2) > 0 ? 2 : 0;
+    s32 fmode = (flag & 2) > 0 ? (O_RDWR | O_TRUNC) : O_RDONLY;
+    // fmode |= (flag & 2) > 0 ? O_WRONLY : 0;
 
-    s32 cmod = (flag & 4) > 0 ? 1 : 0;
-
-    s32 attr = 0;
-
-    //mFile = ::open(mFilename.c_str(), O_NONBLOCK | O_CREAT | O_RDWR | O_DIRECT, 0644);
-    mFile = ::open(mFilename.c_str(), O_RDONLY, 0644);
-
-    if (0 == mFile) {
-        mFlag |= (EHF_CLOSING | EHF_CLOSE);
-        return EE_NO_OPEN;
+    if (flag & 4) {
+        fmode |= O_CREAT;
+        mFile = ::open(mFilename.c_str(), fmode, 0644);
+    } else {
+        mFile = ::open(mFilename.c_str(), fmode);
     }
 
+    if (-1 == mFile) {
+        mFlag |= (EHF_CLOSING | EHF_CLOSE);
+        Logger::log(ELL_ERROR, "HandleFile::open>> mode=0x%X, ecode=%d, file=%s", fmode, System::getAppError(),
+            mFilename.c_str());
+        return EE_NO_OPEN;
+    }
+    mFileSize = AppGetFileSize(mFile);
     return mLoop->openHandle(this);
 }
 
@@ -134,21 +148,22 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
     req->mError = 0;
     req->mType = ERT_WRITE;
-    req->mHandle = this;
+    req->mHandle = (Handle*)(offset); //@note use mHandle to pass offset here
 
-    //io_submit
-    //io_getevents
-    //TODO>>
-
+    // TODO>>using thread pool for file currently, wait for improve. io_uring?
     mLoop->bindFly(this);
-
+    if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::stepByPool, this, req)) {
+        req->mHandle = this; //@note reset mHandle
+        mLoop->unbindFly(this);
+        return EE_ERROR;
+    }
     return EE_OK;
 }
 
 
 s32 HandleFile::read(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
-    if (req->mUsed + sizeof(usz) > req->mAllocated) {
+    if (req->mUsed + sizeof(offset) > req->mAllocated) {
         return EE_ERROR;
     }
     if (0 == (EHF_READABLE & mFlag)) {
@@ -156,14 +171,12 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
     }
     req->mError = 0;
     req->mType = ERT_READ;
-    req->mHandle = this;
-    *(ssz*)(req->mData + req->mUsed) = offset;
+    req->mHandle = (Handle*)(offset); //@note use mHandle to pass offset here
 
-    //io_submit
-    //TODO>>
-
+    // TODO>>using thread pool for file currently, wait for improve. io_uring?
     mLoop->bindFly(this);
-    if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::readByPool, this, req)) {
+    if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::stepByPool, this, req)) {
+        req->mHandle = this; //@note reset mHandle
         mLoop->unbindFly(this);
         return EE_ERROR;
     }
@@ -173,28 +186,40 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
 
 #if defined(DOS_LINUX) || defined(DOS_ANDROID)
 
-//called by thread pool
-void HandleFile::readByPool(RequestFD* it) {
-    ssz offset = *(usz*)(it->mData + it->mUsed);
-    ssz ret = pread64(mFile, it->mData + it->mUsed, it->mAllocated - it->mUsed, offset);
+// called by thread pool
+void HandleFile::stepByPool(RequestFD* it) {
+    ssz offset = (ssz)(it->mHandle);
+    it->mHandle = this; //@note reset mHandle
+    ssz ret = -1;
+    if (ERT_READ == it->mType) {
+        ret = pread64(mFile, it->mData + it->mUsed, it->mAllocated - it->mUsed, offset);
+    } else {
+        ret = pwrite64(mFile, it->mData + it->mUsed, it->mAllocated - it->mUsed, offset);
+        DASSERT(it->mAllocated - it->mUsed == ret);
+    }
     if (ret > 0) {
         it->mUsed += ret;
     } else if (ret < 0) {
         it->mError = System::getAppError();
+        Logger::log(
+            ELL_ERROR, "HandleFile::readByPool>> ecode=%d, offset=%lu, file=%s", it->mError, offset, mFilename.c_str());
     }
 
     CommandTask task;
-    task.pack(&HandleFile::doneByPool, this, it);
+    task.pack(&HandleFile::stepByLoop, this, it);
     if (EE_OK != mLoop->postTask(task)) {
+        it->mError = System::getAppError();
+        Logger::log(ELL_ERROR, "HandleFile::readByPool>> post ecode=%d, offset=%lu, file=%s", it->mError, offset,
+            mFilename.c_str());
     }
 }
 
-//called by loop thread
-void HandleFile::doneByPool(RequestFD* it) {
+// called by loop thread
+void HandleFile::stepByLoop(RequestFD* it) {
     it->mCall(it);
     mLoop->unbindFly(this);
 }
 
 #endif
 
-}//namespace app
+} // namespace app

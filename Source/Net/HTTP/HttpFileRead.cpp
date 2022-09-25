@@ -76,6 +76,7 @@ void HttpFileRead::onFileRead(net::RequestTCP* it) {
     if (it->mError) {
         mDone = true;
         mFile.launchClose();
+        Logger::log(ELL_ERROR, "HttpFileRead::onFileRead>>err file=%s", mFile.getFileName().c_str());
         return;
     }
     if (it->mUsed > 0) {
