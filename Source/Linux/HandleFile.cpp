@@ -216,6 +216,9 @@ void HandleFile::stepByPool(RequestFD* it) {
 
 // called by loop thread
 void HandleFile::stepByLoop(RequestFD* it) {
+    if (0 != it->mError) {
+        mFlag &= ~(EHF_READABLE | EHF_WRITEABLE);
+    }
     it->mCall(it);
     mLoop->unbindFly(this);
 }
