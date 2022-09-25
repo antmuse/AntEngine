@@ -79,7 +79,7 @@ static usz AppGetFileSize(s32 fd) {
     if (fstat(fd, &statbuff) < 0) {
         return filesize;
     } else {
-        filesize = statbuff.st_size;
+        filesize = (S_ISDIR(statbuff.st_mode)) ? 0 : statbuff.st_size;
     }
     return filesize;
 }
@@ -120,8 +120,7 @@ s32 HandleFile::open(const String& fname, s32 flag) {
     close();
     mFilename = fname;
 
-    s32 fmode = (flag & 2) > 0 ? (O_RDWR | O_TRUNC) : O_RDONLY;
-    // fmode |= (flag & 2) > 0 ? O_WRONLY : 0;
+    s32 fmode = (flag & 2) > 0 ? (O_RDWR) : O_RDONLY;
 
     if (flag & 4) {
         fmode |= O_CREAT;
