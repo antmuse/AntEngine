@@ -295,8 +295,16 @@ DFINLINE const T& AppClamp(const T& value, const T& low, const T& high) {
 }
 
 
-DFINLINE bool AppBitAt(void* a, usz i) {
+DFINLINE bool AppIsBitON(const void* a, usz i) {
     return !!(((unsigned char*)a)[i >> 3] & (1 << (i & 7)));
+}
+
+DFINLINE void AppSetBitON(void* a, usz i) {
+    ((unsigned char*)a)[i >> 3] |= (1 << (i & 7));
+}
+
+DFINLINE void AppSetBitOFF(void* a, usz i) {
+    ((unsigned char*)a)[i >> 3] &= ~(1 << (i & 7));
 }
 
 

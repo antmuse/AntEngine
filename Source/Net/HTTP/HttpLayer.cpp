@@ -424,12 +424,6 @@ u32 HttpLayer::GMAX_HEAD_SIZE = HTTP_MAX_HEADER_SIZE;
 #define ULLONG_MAX ((u64) -1) /* 2^64-1 */
 #endif
 
-
-#ifndef BIT_AT
-#define BIT_AT(a, i)  (!!((u32) (a)[(u32) (i) >> 3] & (1 << ((u32) (i) & 7))))
-#endif
-
-
 #define COUNT_HEADER_SIZE(V)                                         \
 do {                                                                 \
   nread += (u32)(V);                                                 \
@@ -763,12 +757,12 @@ enum EHttpHostState {
 
 #if DHTTP_PARSE_STRICT
 #define TOKEN(c)            STRICT_TOKEN(c)
-#define IS_URL_CHAR(c)      (BIT_AT(G_NORMAL_URL_CHAR, (u8)c))
+#define IS_URL_CHAR(c)      (AppIsBitON(G_NORMAL_URL_CHAR, (u8)c))
 #define IS_HOST_CHAR(c)     (IS_ALPHANUM(c) || (c) == '.' || (c) == '-')
 #else
 #define TOKEN(c)            GTokens[(u8)c]
 #define IS_URL_CHAR(c)                                                         \
-  (BIT_AT(G_NORMAL_URL_CHAR, (u8)c) || ((c) & 0x80))
+  (AppIsBitON(G_NORMAL_URL_CHAR, (u8)c) || ((c) & 0x80))
 #define IS_HOST_CHAR(c)                                                        \
   (IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
 #endif
