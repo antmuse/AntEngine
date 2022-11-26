@@ -31,6 +31,7 @@ namespace net {
 
 
 Acceptor::Acceptor(Loop& loop, FunReqTcpCallback func, RefCount* iUser) :
+    mFlyCount(0),
     mOnLink(func),
     mLoop(loop) {
     mTCP.setClose(EHT_TCP_ACCEPT, Acceptor::funcOnClose, this);
@@ -66,9 +67,13 @@ s32 Acceptor::postAccept() {
         if (0 != ret) {
             delete mFlyRequests[i];
             mFlyRequests[i] = nullptr;
+            Logger::log(ELL_INFO, "Acceptor::postAccept>>accept ecode=%d, fly=%d",
+                System::getAppError(), mFlyCount);
             break;
         }
+        ++mFlyCount;
     }
+    Logger::log(ELL_INFO, "Acceptor::postAccept>>accept fly=%d", mFlyCount);
     return ret;
 }
 
@@ -78,7 +83,9 @@ s32 Acceptor::open(const String& addr) {
     return open(mTCP.getLocal());
 }
 
+
 s32 Acceptor::open(const NetAddress& addr) {
+    mFlyCount = 0;
     mTCP.setLocal(addr);
     const_cast<NetAddress&>(mTCP.getRemote()).setAddrSize(mTCP.getLocal().getAddrSize());
     s32 ret = mLoop.openHandle(&mTCP);
@@ -91,9 +98,10 @@ s32 Acceptor::open(const NetAddress& addr) {
     return ret;
 }
 
+
 void Acceptor::onClose(Handle* it) {
-    Logger::log(ELL_INFO, "Acceptor::onClose>>listen=%s, backend=%s",
-        mTCP.getLocal().getStr(), mTCP.getRemote().getStr());
+    Logger::log(ELL_INFO, "Acceptor::onClose>>listen=%s, backend=%s, fly=%d",
+        mTCP.getLocal().getStr(), mTCP.getRemote().getStr(), mFlyCount);
     setUser(nullptr);
     drop(); // delete this;
 }
@@ -102,8 +110,10 @@ void Acceptor::onClose(Handle* it) {
 void Acceptor::onLink(net::RequestTCP* it) {
     net::RequestAccept* req = (net::RequestAccept*)it;
     if (0 != it->mError) {
+        --mFlyCount;
         if (!mLoop.isStop()) {
-            Logger::log(ELL_ERROR, "Acceptor::onLink>>onpost, fatal ecode=%d,it=%p", it->mError, req);
+            Logger::log(ELL_ERROR, "Acceptor::onLink>>onpost, ecode=%d, it=%p, fly=%d",
+                it->mError, req, mFlyCount);
         }
         return;
     }
@@ -111,13 +121,15 @@ void Acceptor::onLink(net::RequestTCP* it) {
         mOnLink(it);
     } else {
         s64 sock = req->mSocket.getValue();
-        Logger::log(ELL_INFO, "Acceptor::onLink>>none accpet for [%s->%s],sock=%lld",
+        Logger::log(ELL_INFO, "Acceptor::onLink>>none accept for [%s->%s],sock=%lld",
             req->mRemote.getStr(), req->mLocal.getStr(), sock);
         req->mSocket.close();
     }
     s32 ret = mTCP.accept(req);
     if (0 != ret) {
-        Logger::log(ELL_ERROR, "Acceptor::onLink>>repost, fatal ecode=%d", System::getAppError());
+        --mFlyCount;
+        Logger::log(ELL_ERROR, "Acceptor::onLink>>repost ecode=%d, fly=%d",
+            System::getAppError(), mFlyCount);
     }
 }
 

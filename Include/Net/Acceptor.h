@@ -111,6 +111,7 @@ private:
     }
 
     const static s32 GMaxFly = 10;
+    s32 mFlyCount;
     FunReqTcpCallback mOnLink;
     net::RequestAccept* mFlyRequests[GMaxFly];
     Loop& mLoop;
