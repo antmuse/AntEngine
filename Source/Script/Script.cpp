@@ -12,7 +12,7 @@ namespace script {
 
 Script::Script(const String& iName, const String& iPath) :
     mName(iName), mPath(iPath) {
-    static std::atomic<s32> mIDCount = 0;
+    static std::atomic<s32> mIDCount(0);
     mID = mIDCount++;
     pFileBuffer = 0;
     fileSize = 0;

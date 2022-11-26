@@ -20,6 +20,7 @@ INC_DIR = -I$(BUILD_DIR)/Include \
 		  -I$(BUILD_DIR)/Depend/http_parser \
 		  -I$(BUILD_DIR)/Depend/jsoncpp \
 		  -I$(BUILD_DIR)/Depend/openssl \
+		  -I$(BUILD_DIR)/Depend/lua/src \
 		  -I/usr/include/mysql \
 
 
@@ -27,8 +28,8 @@ BIN = Server.bin
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
-	LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -lssl -lcrypto -lz -lpthread
-	BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
+LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -llua -lssl -lcrypto -lz -lpthread
+BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
 
 OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/Server
 DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/Server

@@ -15,6 +15,8 @@ MK_DIRS = $(BUILD_DIR)/Source \
 .DEFAULT:
 all:path
 	rm -rf Bin/*.bin
+	make -C ./Depend/lua
+	mv ./Depend/lua/src/liblua.a ./Lib
 	@for dir in $(MK_DIRS); \
 		do \
 		make -C $$dir; \
@@ -36,6 +38,7 @@ clean:
 	rm -rf Bin/*.bin
 	rm -rf Bin/Temp/*
 	rm -rf Lib/libAntEngine.a
+	rm -rf Lib/liblua.a
 	@echo "------------------------cleared"
 
 
