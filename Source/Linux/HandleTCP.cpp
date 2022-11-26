@@ -104,12 +104,13 @@ s32 HandleTCP::accept(RequestAccept* it) {
     mLoop->bindFly(this);
 
     if (EHF_SYNC_READ & mFlag) {
+        /* accept: Allow packets disorder
         if (mReadQueue) {
             addReadPendingTail(it);
-        } else {
-            mLoop->addPending(it);
-            mFlag &= ~EHF_SYNC_READ;
-        }
+            it = (RequestTCP*)popReadReq();
+        } */
+        mLoop->addPending(it);
+        mFlag &= ~EHF_SYNC_READ;
         return EE_OK;
     }
 

@@ -8,7 +8,7 @@
             "name": "g++生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Bin/AntTest.bin",
+            "program": "${workspaceFolder}/Bin/Server.bin",
             "args": [
                 "2"
             ],

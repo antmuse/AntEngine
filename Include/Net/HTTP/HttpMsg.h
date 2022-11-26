@@ -33,6 +33,7 @@
 
 namespace app {
 namespace net {
+
 /* Status Codes */
 #define HTTP_STATUS_MAP(XX)                                                 \
   XX(100, CONTINUE,                        Continue)                        \
@@ -164,16 +165,16 @@ enum EHttpMethod {
   XX(OK, "success")                                                  \
                                                                      \
   /* Callback-related errors */                                      \
-  XX(CB_MsgBegin, "the mCallMsgBegin callback failed")               \
-  XX(CB_URL, "the mCallURL callback failed")                         \
-  XX(CB_HeaderField, "the mCallHeaderField callback failed")         \
-  XX(CB_HeaderValue, "the mCallHeaderValue callback failed")         \
-  XX(CB_HeadersComplete, "the mCallHeadComplete callback failed")    \
-  XX(CB_Body, "the mCallBody callback failed")                       \
-  XX(CB_MsgComplete, "the mCallMsgComplete callback failed")         \
-  XX(CB_Status, "the mCallURL callback failed")                      \
-  XX(CB_ChunkHeader, "the mCallChunkHeader callback failed")         \
-  XX(CB_ChunkComplete, "the mCallChunkComplete callback failed")     \
+  XX(CB_MsgBegin, "the CallMsgBegin callback failed")                \
+  XX(CB_URL, "the CallURL callback failed")                          \
+  XX(CB_HeaderField, "the CallHeaderField callback failed")          \
+  XX(CB_HeaderValue, "the CallHeaderValue callback failed")          \
+  XX(CB_HeadersComplete, "the CallHeadComplete callback failed")     \
+  XX(CB_Body, "the CallBody callback failed")                        \
+  XX(CB_MsgComplete, "the CallMsgComplete callback failed")          \
+  XX(CB_Status, "the CallURL callback failed")                       \
+  XX(CB_ChunkHeader, "the CallChunkHeader callback failed")          \
+  XX(CB_ChunkComplete, "the CallChunkComplete callback failed")      \
                                                                      \
   /* Parsing-related errors */                                       \
   XX(INVALID_EOF_STATE, "stream ended at an unexpected time")        \

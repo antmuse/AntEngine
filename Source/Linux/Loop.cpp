@@ -328,9 +328,11 @@ void Loop::updatePending() {
                         } else if (EE_RETRY == err) {
                             hnd->mFlag &= ~EHF_SYNC_READ;
                             hnd->addReadPendingHead(nd);
+                            // Logger::log(ELL_INFO, "Loop::updatePending>>accept retry, ecode=%d", err);
                             break;
                         } else {
                             nd->mError = err;
+                            hnd->mFlag &= ~(EHF_READABLE | EHF_SYNC_READ);
                             closeHandle(hnd);
                             Logger::log(ELL_ERROR, "Loop::updatePending>>accept ecode=%d", err);
                         }
@@ -345,6 +347,11 @@ void Loop::updatePending() {
                 nd = (net::RequestAccept*)hnd->popReadReq();
                 unbindFly(hnd);
             } //while
+            
+            // set flag for next step
+            if ((hnd->mFlag & EHF_READABLE) && EE_RETRY != err) {
+                hnd->mFlag |= EHF_SYNC_READ;
+            }
             break;
         }
         default:

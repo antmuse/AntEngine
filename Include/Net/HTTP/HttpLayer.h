@@ -92,6 +92,11 @@ public:
     }
     static StringView getMethodStr(EHttpMethod it);
 
+    static const s8* getErrStr(EHttpError it);
+
+    const s8* getErrStr() const {
+        return getErrStr(mHttpError);
+    }
 
 private:
     s32 onTimeout(HandleTime& it);
@@ -145,7 +150,6 @@ private:
 
     bool mHTTPS;
     EHttpParserType mPType;
-    usz mReaded;
     Website* mWebsite;
     HandleTLS mTCP;
     HttpMsg* mMsg;
@@ -178,7 +182,7 @@ private:
 
     /* Get an EHttpError value from an HttpParser */
     EHttpError getError()const {
-        return static_cast<EHttpError>(mHttpError);
+        return mHttpError;
     }
 
     void setError(EHttpError it) {
@@ -235,7 +239,7 @@ private:
     u16 mVersionMinor;
     u16 mStatusCode;     // responses only
     EHttpMethod mMethod; // requests only
-    u8 mHttpError;
+    EHttpError mHttpError;
 
     u8 mBoundaryLen;
     s8 mBoundary[256];

@@ -388,17 +388,20 @@ void HttpLayer::onRead(net::RequestTCP* it) {
 
         if (0 == it->getWriteSize()) {
             //可能受到超长header攻击或其它错误
-            Logger::logError("HttpLayer::onRead>>remote=%p, msg overflow", mTCP.getRemote().getStr());
+            Logger::logError("HttpLayer::onRead>>remote=%s, msg overflow", mTCP.getRemote().getStr());
             postClose();
-        } else if (0 == mHttpError) {
-            if (EE_OK == readIF(it)) {
+        } else {
+            if (0 == mHttpError && EE_OK == readIF(it)) {
                 return;
             }
+            Logger::logError("HttpLayer::onRead>>remote=%s, parser err=%d=%s", mTCP.getRemote().getStr(), mHttpError, getErrStr());
         }
     }
 
-    //stop mReadFile
-    printf("HttpLayer::onRead>>read 0 bytes, ecode=%d\n", it->mError);
+    //del req
+#if defined(DDEBUG)
+    printf("HttpLayer::onRead>>del req, read=%ld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError, getErrStr());
+#endif
     net::RequestTCP::delRequest(it);
 }
 
@@ -1196,7 +1199,7 @@ void HttpLayer::clear() {
 
 void HttpLayer::reset() {
     mHttpError = HPE_OK;
-    mReaded = 0;
+    mReadSize = 0;
     mFlags = 0;
     mUseTransferEncode = 0;
     mContentLen = ULLONG_MAX;
@@ -3089,6 +3092,9 @@ bool HttpLayer::isBodyFinal() const {
     return mState == s_message_done;
 }
 
+const s8* HttpLayer::getErrStr(EHttpError it) {
+    return HttpStrErrorTab[it].description;
+}
 
 StringView HttpLayer::getMethodStr(EHttpMethod it) {
 #define DCASE(num, name, str) case HTTP_##name: ret.set(#str,sizeof(#str)-1);break;
@@ -3367,6 +3373,8 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
 
     return 0;
 }
+
+
 
 
 } //namespace net
