@@ -60,6 +60,12 @@
     <Filter Include="Include\Linux">
       <UniqueIdentifier>{0fa4ac52-9c47-4c56-b641-ac5b36ffd83a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Script">
+      <UniqueIdentifier>{7b9109a9-1ec9-4c1d-aa01-49aa638da804}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Script">
+      <UniqueIdentifier>{23ef56df-fa7e-464e-aa9c-cab3ee790844}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\StrConverter.cpp">
@@ -286,6 +292,15 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp">
       <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\ScriptFunc.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\Script.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\ScriptManager.cpp">
+      <Filter>Source\Script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -576,6 +591,18 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Queue.h">
       <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\HLua.h">
+      <Filter>Include\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\Script.h">
+      <Filter>Include\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\ScriptManager.h">
+      <Filter>Include\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\ScriptFunc.h">
+      <Filter>Include\Script</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

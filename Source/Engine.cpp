@@ -122,6 +122,7 @@ bool Engine::init(const s8* fname, bool child) {
 
     mPID = System::getPID();
     Logger::addFileReceiver();
+    script::ScriptManager::getInstance();
 
     bool ret = 0 == System::loadNetLib();
     if (!ret) {
@@ -201,6 +202,8 @@ bool Engine::init(const s8* fname, bool child) {
 
 
 bool Engine::uninit() {
+    script::ScriptManager::getInstance().removeAll();
+
     Logger::flush();
     mThreadPool.stop();
     clear();

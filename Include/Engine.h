@@ -35,6 +35,7 @@
 #include "MemSlabPool.h"
 #include "ThreadPool.h"
 #include "Net/TlsContext.h"
+#include "Script/ScriptManager.h"
 
 namespace app {
 
@@ -154,6 +155,10 @@ public:
 
     usz getChildCount()const {
         return mChild.size();
+    }
+
+    script::ScriptManager& getScriptManager() {
+        return script::ScriptManager::getInstance();
     }
 
     const EngineConfig& getConfig()const {
