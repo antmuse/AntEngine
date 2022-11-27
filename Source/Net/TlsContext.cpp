@@ -38,7 +38,7 @@
 #include "RingBuffer.h"
 #include "Net/Hostcheck.h"
 #include "Certs.h"
-#include "SpinLock.h"
+#include "Spinlock.h"
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
 #error "openssl version is too low"
