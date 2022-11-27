@@ -31,6 +31,11 @@
 namespace app {
 namespace net {
 
+// call once
+void AppInitTlsLib();
+// call once
+void AppUninitTlsLib();
+
 //不验证
 //验证书,default
 //验证书+域名

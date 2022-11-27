@@ -44,10 +44,10 @@ void AppTestStrConv() {
     Spinlock spi;
     spi.lock();
 
-    bool trlk = spi.trylock();
+    bool trlk = spi.tryLock();
     spi.unlock();
-    trlk = spi.trylock();
-    trlk = spi.trylock();
+    trlk = spi.tryLock();
+    trlk = spi.tryLock();
 }
 
 void AppTestBase64() {

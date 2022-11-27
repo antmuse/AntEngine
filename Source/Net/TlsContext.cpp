@@ -38,6 +38,7 @@
 #include "RingBuffer.h"
 #include "Net/Hostcheck.h"
 #include "Certs.h"
+#include "SpinLock.h"
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
 #error "openssl version is too low"
@@ -47,12 +48,19 @@
 
 namespace app {
 namespace net {
+
 //in file Net/TlsSession.cpp
 extern void AppInitRingBIO();
 extern void AppUninitRingBIO();
 
+
+static Spinlock G_TLS_LOCK;
+
 //call once
-static void AppUninitTlsLib() {
+void AppUninitTlsLib() {
+    if (!G_TLS_LOCK.tryUnlock()) {
+        return;
+    }
     AppUninitRingBIO();
 
     RAND_cleanup();
@@ -68,11 +76,13 @@ static void AppUninitTlsLib() {
 
 //call once
 void AppInitTlsLib() {
+    if (!G_TLS_LOCK.tryLock()) {
+        return;
+    }
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
     //atexit(AppUninitTlsLib);
-
     AppInitRingBIO();
 }
 
@@ -141,8 +151,6 @@ s32 TlsContext::init(s32 vflag, bool debug) {
     if (mTlsContext) {
         return 0;
     }
-    AppInitTlsLib();
-
     SSL_CTX* ssl_ctx = SSL_CTX_new(TLS_method());
     if (!ssl_ctx) {
         return EE_ERROR;
@@ -170,7 +178,6 @@ void TlsContext::uninit() {
     if (mTlsContext) {
         SSL_CTX_free((SSL_CTX*)mTlsContext);
         mTlsContext = nullptr;
-        AppUninitTlsLib();
     }
 }
 

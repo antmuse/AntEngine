@@ -141,6 +141,7 @@ public:
         return mLoop;
     }
 
+    // @return the default TLS context
     net::TlsContext& getTlsContext() {
         return mTlsENG;
     }

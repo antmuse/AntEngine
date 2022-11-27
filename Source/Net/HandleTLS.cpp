@@ -30,6 +30,7 @@
 
 
 namespace app {
+
 s32 Handle::launchClose() {
     DASSERT(mLoop);
     return mLoop->closeHandle(this);
@@ -53,6 +54,7 @@ HandleTLS::~HandleTLS() {
     uninit();
 }
 
+
 void HandleTLS::uninit() {
     if (mTlsSession) {
         TlsSession* session = (TlsSession*)(mTlsSession);
@@ -63,12 +65,14 @@ void HandleTLS::uninit() {
     }
 }
 
-void HandleTLS::init() {
+
+void HandleTLS::init(const TlsContext& tlsCTX) {
     if (!mTlsSession) {
         mInBuffers.init();
         mOutBuffers.init();
-        //TlsContext& tlseng = Engine::getInstance().getTlsContext();
-        mTlsSession = new TlsSession(&mInBuffers, &mOutBuffers);
+        SSL_CTX* ssl_ctx = reinterpret_cast<SSL_CTX*>(tlsCTX.getTlsContext());
+        DASSERT(ssl_ctx);
+        mTlsSession = new TlsSession(ssl_ctx, &mInBuffers, &mOutBuffers);
     }
     mRead.mUser = nullptr; //null表示未在使用中，否则为占用中
     mWrite.mUser = nullptr; //null表示未在使用中，否则为占用中
@@ -210,30 +214,9 @@ s32 HandleTLS::setHost(const s8* host, usz length) {
     return 0;
 }
 
-s32 HandleTLS::open(const NetAddress& addr, RequestTCP* oit) {
-    init();
 
-    mType = EHT_TCP_CONNECT;
-    mTCP.setClose(EHT_TCP_CONNECT, HandleTLS::funcOnClose, this);
-
-    DASSERT(oit && oit->mCall);
-    oit->mType = ERT_CONNECT;
-    oit->mError = 0;
-    oit->mHandle = this;
-
-    mWrite.mUser = this;
-    mWrite.mCall = HandleTLS::funcOnConnect;
-    s32 ret = mTCP.open(addr, &mWrite);
-    mFlag = mTCP.getFlag();
-    if (EE_OK == ret) {
-        grab();
-        AppPushRingQueueTail_1(mFlyWrites, oit);
-    }
-    return ret;
-}
-
-s32 HandleTLS::open(const String& addr, RequestTCP* oit) {
-    init();
+s32 HandleTLS::open(const NetAddress& addr, RequestTCP* oit, const net::TlsContext* tlsctx) {
+    init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
 
     mType = EHT_TCP_CONNECT;
     mTCP.setClose(EHT_TCP_CONNECT, HandleTLS::funcOnClose, this);
@@ -255,8 +238,31 @@ s32 HandleTLS::open(const String& addr, RequestTCP* oit) {
 }
 
 
-s32 HandleTLS::open(const RequestAccept& accp, RequestTCP* oit) {
-    init();
+s32 HandleTLS::open(const String& addr, RequestTCP* oit, const net::TlsContext* tlsctx) {
+    init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
+
+    mType = EHT_TCP_CONNECT;
+    mTCP.setClose(EHT_TCP_CONNECT, HandleTLS::funcOnClose, this);
+
+    DASSERT(oit && oit->mCall);
+    oit->mType = ERT_CONNECT;
+    oit->mError = 0;
+    oit->mHandle = this;
+
+    mWrite.mUser = this;
+    mWrite.mCall = HandleTLS::funcOnConnect;
+    s32 ret = mTCP.open(addr, &mWrite);
+    mFlag = mTCP.getFlag();
+    if (EE_OK == ret) {
+        grab();
+        AppPushRingQueueTail_1(mFlyWrites, oit);
+    }
+    return ret;
+}
+
+
+s32 HandleTLS::open(const RequestAccept& accp, RequestTCP* oit, const net::TlsContext* tlsctx) {
+    init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
     ((TlsSession*)mTlsSession)->setAcceptState();
 
     mType = EHT_TCP_LINK;

@@ -1,6 +1,6 @@
 {
-    "LogPath": "Log/",
-    "PidFile": "Log/pid.txt",
+    "LogPath": "/home/antmuse/all/code/AntEngine/Bin/Log/",
+    "PidFile": "/home/antmuse/all/code/AntEngine/Bin/Log/pid.txt",
     "ShareMem": "GMAP/MainMem.map", //共享内存名
     "ShareMemSize": 1, //[1-10 * 1024], 1MB
     "AcceptPost": 10, //[1-255]监听端口上侯命的请求数
@@ -13,6 +13,13 @@
             "Type": 0, //0=http,1=https
             "Timeout": 30, //秒,0不超时
             "Path": "/home/antmuse/all/code/AntEngine/Bin/Web"
+        },
+        {
+            "Lisen": "0.0.0.0:8443",
+            "Type": 1, //0=http,1=https
+            "Timeout": 30, //秒,0不超时
+            "Path": "/home/antmuse/all/code/AntEngine/Bin/Web",
+            "PathTLS": "/home/antmuse/all/code/AntEngine/Bin/Web/TLS"
         }
     ]
 }

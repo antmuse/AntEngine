@@ -301,8 +301,9 @@ void HttpLayer::onClose(Handle* it) {
         mMsg = nullptr;
     }
     if (mWebsite) {
-        mWebsite->unbind(this);
+        Website* site = mWebsite;
         mWebsite = nullptr;
+        site->unbind(this);
     } else {
         drop();
         Logger::log(ELL_ERROR, "HttpLayer::onClose>>null website");
@@ -327,7 +328,7 @@ bool HttpLayer::onLink(net::RequestTCP* it) {
     net::RequestTCP* nd = net::RequestTCP::newRequest(4 * 1024);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnRead;
-    s32 ret = mHTTPS ? mTCP.open(req, nd) : mTCP.getHandleTCP().open(req, nd);
+    s32 ret = mHTTPS ? mTCP.open(req, nd, &mWebsite->getTlsContext()) : mTCP.getHandleTCP().open(req, nd);
     if (0 == ret) {
         mWebsite->bind(this);
         Logger::log(ELL_INFO, "HttpLayer::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
@@ -400,7 +401,7 @@ void HttpLayer::onRead(net::RequestTCP* it) {
 
     //del req
 #if defined(DDEBUG)
-    printf("HttpLayer::onRead>>del req, read=%ld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError, getErrStr());
+    printf("HttpLayer::onRead>>del req, read=%lld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError, getErrStr());
 #endif
     net::RequestTCP::delRequest(it);
 }

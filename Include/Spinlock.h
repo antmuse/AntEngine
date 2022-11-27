@@ -49,17 +49,21 @@ public:
     */
     void lock() {
         s32 val = 0;
-        while(!mValue.compare_exchange_strong(val, 1)) {
+        while (!mValue.compare_exchange_strong(val, 1)) {
             //busy waiting
             val = 0;
         }
     }
 
-    bool trylock() {
+    bool tryLock() {
         s32 val = 0;
         return mValue.compare_exchange_strong(val, 1);
     }
 
+    bool tryUnlock() {
+        s32 val = 1;
+        return mValue.compare_exchange_strong(val, 0);
+    }
 
     void unlock() {
         mValue.store(0);

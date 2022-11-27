@@ -56,6 +56,7 @@ public:
         u32 mTimeout;           //in milliseconds
         u32 mSpeed;             //in bytes per seconds
         String mRootPath;
+        String mPathTLS;
         net::NetAddress mLocal;
         HashDict* mDict;         //Õ¾µã»º´æ
         WebsiteCfg() :

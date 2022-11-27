@@ -259,8 +259,8 @@ static EHostMatch AppMatchHost(X509* peer_cert, const s8* mHostName) {
 
 
 
-TlsSession::TlsSession(RingBuffer* inBuffers, RingBuffer* outBuffers) {
-    SSL_CTX* ssl_ctx = (SSL_CTX*)(Engine::getInstance().getTlsContext().getTlsContext());
+TlsSession::TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers) {
+    DASSERT(ssl_ctx);
     SSL_CTX_up_ref(ssl_ctx);
     mSSL = SSL_new(ssl_ctx);
     mInBIO = AppCreateBIO(inBuffers);
@@ -346,15 +346,22 @@ s32 TlsSession::verify(s32 verify_flags, const s8* hostname) {
 
 
 void TlsSession::showError() {
-    //TODO>>
-    /*const s8* data;
+    const s8* data;
     s32 flags;
     unsigned long err;
-    while ((err = ERR_get_error_line_data(nullptr, nullptr, &data, &flags)) != 0) {
-        s8 buf[256];
+    s8 buf[256];
+#if (OPENSSL_VERSION_MAJOR >= 3)
+    while ((err = ERR_get_error_all(nullptr, nullptr, nullptr, &data, &flags)) != 0) {
         ERR_error_string_n(err, buf, sizeof(buf));
-        fprintf(stderr, "%s:%s\n", buf, flags & ERR_TXT_STRING ? data : "");
-    }*/
+        Logger::logError("TlsSession::showError, %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
+    }
+#else
+    while ((err = ERR_get_error_line_data(nullptr, nullptr, &data, &flags)) != 0) {
+        ERR_error_string_n(err, buf, sizeof(buf));
+        Logger::logError("TlsSession::showError, %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
+    }
+#endif
+    ERR_clear_error();
 }
 
 }//namespace net

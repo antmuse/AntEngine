@@ -34,8 +34,12 @@
 
 namespace app {
 
-u32 MsgHeader::gSharedSN = 0;
+#if defined(DOS_WINDOWS)
+const s8* G_CFGFILE = "Config/config_win.json";
+#else
 const s8* G_CFGFILE = "Config/config.json";
+#endif
+u32 MsgHeader::gSharedSN = 0;
 
 Engine::Engine() :
     mPPID(0),
@@ -106,6 +110,8 @@ bool Engine::init(const s8* fname, bool child) {
     mAppPath.replace('\\', '/');
     mAppName = fname + mAppPath.getLen();
 
+    Logger::getInstance();
+
     if (!mConfig.load(mAppPath, G_CFGFILE)) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
@@ -117,11 +123,9 @@ bool Engine::init(const s8* fname, bool child) {
     System::getDiskSectorSize();
 
     System::createPath(mConfig.mLogPath);
-
-    Logger::getInstance();
+    Logger::addFileReceiver();
 
     mPID = System::getPID();
-    Logger::addFileReceiver();
     script::ScriptManager::getInstance();
 
     bool ret = 0 == System::loadNetLib();
@@ -130,6 +134,7 @@ bool Engine::init(const s8* fname, bool child) {
         return false;
     }
 
+    net::AppInitTlsLib();
     mTlsENG.init();
 
     if (mConfig.mMaxProcess > 0) {
@@ -208,6 +213,7 @@ bool Engine::uninit() {
     mThreadPool.stop();
     clear();
     mTlsENG.uninit();
+    net::AppUninitTlsLib();
     return 0 == System::unloadNetLib();
 }
 

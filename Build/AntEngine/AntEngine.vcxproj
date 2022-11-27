@@ -203,6 +203,7 @@
   <ItemGroup>
     <None Include="..\..\.gitignore" />
     <None Include="..\..\Bin\Config\config.json" />
+    <None Include="..\..\Bin\Config\config_win.json" />
     <None Include="..\..\Depend\jsoncpp\LICENSE" />
     <None Include="..\..\LICENSE" />
     <None Include="..\..\README.md" />

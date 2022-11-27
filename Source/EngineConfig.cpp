@@ -25,6 +25,7 @@
 
 #include "EngineConfig.h"
 #include "HashFunctions.h"
+#include "Logger.h"
 #include "System.h"
 #include "Timer.h"
 #include "FileWriter.h"
@@ -135,6 +136,10 @@ bool EngineConfig::load(const String& runPath, const String& cfg) {
     delete reder;
     if (ret) {
         mLogPath = val["LogPath"].asCString();
+        mLogPath.replace('\\', '/');
+        if ('/' == mLogPath.lastChar()) {
+            mLogPath.setLen(mLogPath.getLen() - 1);
+        }
         mPidFile = val["PidFile"].asCString();
         mMemName = val["ShareMem"].asCString();
         mMemSize = 1024 * 1024 * AppClamp<s64>(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
@@ -165,6 +170,18 @@ bool EngineConfig::load(const String& runPath, const String& cfg) {
                 nd.mRootPath.replace('\\', '/');
                 if ('/' == nd.mRootPath.lastChar()) {
                     nd.mRootPath.setLen(nd.mRootPath.getLen() - 1);
+                }
+                if (1 == nd.mType) {
+                    if (!val["Website"][i].isMember("PathTLS")) {
+                        Logger::logError("EngineConfig::load, website[%u][%s] PathTLS err",
+                            i, nd.mLocal.getStr());
+                        continue;
+                    }
+                    nd.mPathTLS = val["Website"][i]["PathTLS"].asCString();
+                    nd.mPathTLS.replace('\\', '/');
+                    if ('/' == nd.mPathTLS.lastChar()) {
+                        nd.mPathTLS.setLen(nd.mPathTLS.getLen() - 1);
+                    }
                 }
                 mWebsite.pushBack(nd);
                 mWebsite.getLast().mDict = new HashDict(gDictCalls, nullptr);

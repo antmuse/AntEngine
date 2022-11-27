@@ -5,6 +5,7 @@
 #include "Net/Acceptor.h"
 #include "Net/HTTP/HttpLayer.h"
 #include "Net/HTTP/MsgStation.h"
+#include "Net/TlsContext.h"
 
 namespace app {
 namespace net {
@@ -43,6 +44,10 @@ public:
         return mConfig;
     }
 
+    const TlsContext& getTlsContext() const {
+        return mTlsContext;
+    }
+
     void bind(HttpLayer* it) {
         if (it) {
             it->grab();
@@ -62,6 +67,7 @@ private:
     //friend class HttpLayer;
 
     void init();
+    void loadTLS();
     void clear();
 
     void onLink(net::RequestTCP* it) {
@@ -70,6 +76,7 @@ private:
         con->drop();
     }
 
+    TlsContext mTlsContext;
     TVector<MsgStation*> mStations;
     TVector<MsgStation*> mLineLua;
     TVector<MsgStation*> mLineStatic;

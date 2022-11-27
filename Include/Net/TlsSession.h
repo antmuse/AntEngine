@@ -45,7 +45,14 @@ class TlsSession {
 public:
     static void showError();
 
-    TlsSession(RingBuffer* inBuffers, RingBuffer* outBuffers);
+    TlsSession() = delete;
+
+    /**
+     * @param ssl_ctx, must not be nullptr
+     * @param inBuffers, must not be nullptr
+     * @param outBuffers, must not be nullptr
+     */
+    TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers);
 
     ~TlsSession();
 

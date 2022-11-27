@@ -29,6 +29,7 @@
 
 #include "RingBuffer.h"
 #include "Loop.h"
+#include "Net/TlsContext.h"
 #include "Net/HandleTCP.h"
 
 namespace app {
@@ -41,11 +42,13 @@ public:
     ~HandleTLS();
 
     //connect
-    s32 open(const String& addr, RequestTCP* it);
-    s32 open(const NetAddress& addr, RequestTCP* it);
+    s32 open(const String& addr, RequestTCP* it, const net::TlsContext* tlsctx = nullptr);
+
+    //connect
+    s32 open(const NetAddress& addr, RequestTCP* it, const net::TlsContext* tlsctx = nullptr);
 
     //link
-    s32 open(const RequestAccept& accp, RequestTCP* it);
+    s32 open(const RequestAccept& accp, RequestTCP* it, const net::TlsContext* tlsctx = nullptr);
 
     s32 write(RequestTCP* it);
 
@@ -132,7 +135,7 @@ protected:
         nd.onClose(it);
     }
 
-    void init();
+    void init(const TlsContext& tlsCTX);
 
     void uninit();
 

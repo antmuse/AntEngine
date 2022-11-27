@@ -85,9 +85,9 @@ const s8* const AppLogLevelNames[] = {
 
 class ILogReceiver {
 public:
-    ILogReceiver() {    }
+    ILogReceiver() { }
 
-    virtual ~ILogReceiver() {    }
+    virtual ~ILogReceiver() { }
 
     virtual void log(usz len, const s8* msg) = 0;
 
@@ -97,15 +97,15 @@ protected:
     //against to the format in Logger::postLog()
     DFINLINE static s16 getDay(const s8* msg) {
         DASSERT(msg);
-        //9 = [2021-12-08 12:23:43]...
-        return App2Char2S16(msg + 9);
+        // offset = 8 = 2022-11-27 22:52:59 [2] Engine::init>>pid
+        return App2Char2S16(msg + 8);
     }
 
     //@see getDay()
     DFINLINE static s16 getHour(const s8* msg) {
         DASSERT(msg);
-        //12 = [2021-12-08 12:23:43]...
-        return App2Char2S16(msg + 12);
+        // offset = 11 = 2022-11-27 22:52:59 [2] Engine::init>>pid
+        return App2Char2S16(msg + 11);
     }
 };
 
@@ -162,7 +162,7 @@ public:
 
 
 protected:
-    static void postLog(const s8* msg, va_list args);
+    static void postLog(const ELogLevel logLevel, const s8* msg, va_list args);
     const static u16 MAX_TEXT_BUFFER_SIZE = 4096;
     static s8 mText[MAX_TEXT_BUFFER_SIZE];
     static ELogLevel mMinLevel;

@@ -615,5 +615,8 @@
     <None Include="..\..\.gitignore" />
     <None Include="..\..\LICENSE" />
     <None Include="..\..\README.md" />
+    <None Include="..\..\Bin\Config\config_win.json">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
 </Project>

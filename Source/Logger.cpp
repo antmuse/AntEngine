@@ -66,14 +66,14 @@ public:
     LogFile() :
         mFileSize(0)
         , mTodayID(0)
-        , mFormat("Log/%Y-%m-%d.") {
+        , mFormat("/%Y-%m-%d.") {
         open();
     }
 
     LogFile(const s8* fmt)
         :mFileSize(0)
         , mTodayID(0)
-        , mFormat(fmt ? fmt : "Log/%Y-%m-%d.") {
+        , mFormat(fmt ? fmt : "/%Y-%m-%d.") {
         open();
     }
 
@@ -101,12 +101,13 @@ private:
 
     void open() {
         Engine& eng = Engine::getInstance();
-        String flog = eng.getAppPath();
-        usz addsz = 260 + mFormat.getLen();
+        String flog(eng.getConfig().mLogPath);
+        const usz fmtmax = 260;
+        usz addsz = fmtmax + mFormat.getLen();
         flog.reserve(flog.getLen() + eng.getAppName().getLen() + addsz);
         usz len = flog.getLen();
-        flog.setLen(len + Timer::getTimeStr((s8*)flog.c_str() + len, addsz, mFormat.c_str()));
-        mTodayID = App2Char2S16(flog.c_str() + len + 12);
+        flog.setLen(len + Timer::getTimeStr((s8*)flog.c_str() + len, fmtmax, mFormat.c_str()));
+        mTodayID = App2Char2S16(flog.c_str() + len + 9);
         flog += eng.getAppName();
         flog.deleteFilenameExtension();
         flog += ".log";
@@ -133,6 +134,7 @@ Logger& Logger::getInstance() {
     return it;
 }
 
+
 void Logger::flush() {
     mMutex.lock();
 
@@ -144,31 +146,32 @@ void Logger::flush() {
     mMutex.unlock();
 }
 
+
 void Logger::log(ELogLevel iLevel, const s8* iMsg, ...) {
     if (iLevel >= mMinLevel) {
         va_list args;
         va_start(args, iMsg);
-        postLog(iMsg, args);
+        postLog(iLevel, iMsg, args);
         va_end(args);
     }
 }
+
 
 void Logger::logCritical(const s8* msg, ...) {
     if (ELL_CRITICAL >= mMinLevel) {
         va_list args;
         va_start(args, msg);
-        postLog(msg, args);
+        postLog(ELL_CRITICAL, msg, args);
         va_end(args);
     }
 }
-
 
 
 void Logger::logError(const s8* msg, ...) {
     if (ELL_ERROR >= mMinLevel) {
         va_list args;
         va_start(args, msg);
-        postLog(msg, args);
+        postLog(ELL_ERROR, msg, args);
         va_end(args);
     }
 }
@@ -178,7 +181,7 @@ void Logger::logWarning(const s8* msg, ...) {
     if (ELL_WARN >= mMinLevel) {
         va_list args;
         va_start(args, msg);
-        postLog(msg, args);
+        postLog(ELL_WARN, msg, args);
         va_end(args);
     }
 }
@@ -188,7 +191,7 @@ void Logger::logInfo(const s8* msg, ...) {
     if (ELL_INFO >= mMinLevel) {
         va_list args;
         va_start(args, msg);
-        postLog(msg, args);
+        postLog(ELL_INFO, msg, args);
         va_end(args);
     }
 }
@@ -199,7 +202,7 @@ void Logger::logDebug(const s8* msg, ...) {
     if (ELL_DEBUG >= mMinLevel) {
         va_list args;
         va_start(args, msg);
-        postLog(msg, args);
+        postLog(ELL_DEBUG, msg, args);
         va_end(args);
     }
 }
@@ -210,12 +213,14 @@ void Logger::setLogLevel(const ELogLevel logLevel) {
 }
 
 
-void Logger::postLog(const s8* msg, va_list args) {
+void Logger::postLog(const ELogLevel logLevel, const s8* msg, va_list args) {
     if (msg) {
         mMutex.lock();
 
-        mText[0] = '[';
-        usz used = 1 + Timer::getTimeStr(mText + 1, sizeof(mText) - 1, G_LOG_FMT);
+        usz used = Timer::getTimeStr(mText, sizeof(mText), G_LOG_FMT);
+        mText[used++] = ' ';
+        mText[used++] = '[';
+        mText[used++] = '1' + logLevel;
         mText[used++] = ']';
         mText[used++] = ' ';
         used += vsnprintf(mText + used, sizeof(mText) - used, msg, args);
