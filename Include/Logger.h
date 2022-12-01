@@ -160,12 +160,15 @@ public:
     */
     static void clear();
 
+    static void setPID(s32 id);
 
 protected:
     static void postLog(const ELogLevel logLevel, const s8* msg, va_list args);
     const static u16 MAX_TEXT_BUFFER_SIZE = 4096;
     static s8 mText[MAX_TEXT_BUFFER_SIZE];
     static ELogLevel mMinLevel;
+    static s32 mPID;
+    static s32 mPID_len;
     static std::mutex mMutex;
     static TVector<ILogReceiver*> mAllReceiver;
 

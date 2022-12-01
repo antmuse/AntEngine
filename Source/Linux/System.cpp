@@ -321,7 +321,7 @@ s32 System::createPath(const String& it) {
     if (0 == it.getLen() || it.getLen() >= 260) {
         return EE_ERROR;
     }
-    String path(it.getLen() + 1);
+    String path(it.getLen() + 2);
     const s8* curr = it.c_str();
     const s8* end = curr + it.getLen();
     path += *curr++;

@@ -32,9 +32,14 @@
 namespace app {
 
 
+//log eg: 2022-12-01 20:50:39 [1,PID] Engine::init
+const s32 G_PRE_LEN = 23;  //pre len for PID position
+
 s8 Logger::mText[MAX_TEXT_BUFFER_SIZE];
 TVector<ILogReceiver*> Logger::mAllReceiver;
 std::mutex Logger::mMutex;
+s32 Logger::mPID = 0;
+s32 Logger::mPID_len = 0;
 
 #ifdef   DDEBUG
 ELogLevel Logger::mMinLevel = ELL_DEBUG;
@@ -120,6 +125,7 @@ private:
 
 
 Logger::Logger() {
+    memset(mText, 0, sizeof(mText));
     //AppStrConverterInit();
 }
 
@@ -134,6 +140,11 @@ Logger& Logger::getInstance() {
     return it;
 }
 
+void Logger::setPID(s32 id) {
+    // std::unique_lock<std::mutex> ak(mMutex);
+    mPID = id;
+    mPID_len = snprintf(mText + G_PRE_LEN, sizeof(mText) - G_PRE_LEN, "%d", id);
+}
 
 void Logger::flush() {
     mMutex.lock();
@@ -221,8 +232,11 @@ void Logger::postLog(const ELogLevel logLevel, const s8* msg, va_list args) {
         mText[used++] = ' ';
         mText[used++] = '[';
         mText[used++] = '0' + logLevel;
+        mText[used++] = ',';
+        used += mPID_len;
         mText[used++] = ']';
         mText[used++] = ' ';
+
         used += vsnprintf(mText + used, sizeof(mText) - used, msg, args);
         if (used > sizeof(mText) - 2) {
             used = sizeof(mText) - 2;

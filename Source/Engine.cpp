@@ -100,6 +100,9 @@ void Engine::postCommand(s32 val) {
 
 
 bool Engine::init(const s8* fname, bool child) {
+    mPID = System::getPID();
+    Logger::getInstance().setPID(mPID);
+
     mMain = !child;
     AppStrConverterInit();
 #if defined(DOS_WINDOWS)
@@ -114,8 +117,6 @@ bool Engine::init(const s8* fname, bool child) {
     mAppPath.replace('\\', '/');
     mAppName = fname + mAppPath.getLen();
 
-    Logger::getInstance();
-
     if (!mConfig.load(mAppPath, G_CFGFILE, mMain)) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
@@ -129,7 +130,6 @@ bool Engine::init(const s8* fname, bool child) {
     System::createPath(mConfig.mLogPath);
     Logger::addFileReceiver();
 
-    mPID = System::getPID();
     script::ScriptManager::getInstance();
 
     bool ret = 0 == System::loadNetLib();
