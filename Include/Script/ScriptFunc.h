@@ -52,12 +52,14 @@ extern int LuaLog(lua_State* iState);
 extern int LuaColor(lua_State* iState);
 
 
-//extern luaL_Reg regGameLoader[] = {
-//    {"LoadSky", LuaLoadSky},
-//    {"LoadCube", LuaLoadCube},
-//    {"LoadMesh", LuaLoadMesh},
-//    {NULL, NULL}    //sentinel
-//};
+extern int LuaRandom(lua_State* iState);
+
+extern int LuaEngInfo(lua_State* iState);
+extern int LuaEngExit(lua_State* iState);
+
+extern int LuaOpenEngLib(lua_State* iState);
+
+extern int LuaInclude(lua_State* iState);
 
 }//namespace script
 }//namespace app

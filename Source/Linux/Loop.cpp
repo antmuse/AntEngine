@@ -701,6 +701,10 @@ void Loop::addPending(Request* it) {
 
 
 s32 Loop::postTask(const MsgHeader& task){
+    /** TODO: keep send is thread/process safe
+     *  @see Engine::postCommand
+     */
+
     return task.mSize == mSendCMD.send(&task, task.mSize) ? EE_OK : EE_ERROR;
 }
 

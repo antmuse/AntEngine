@@ -40,7 +40,7 @@ public:
 
     ~EngineConfig();
 
-    bool load(const String& runPath, const String& cfg);
+    bool load(const String& runPath, const String& cfg, bool mainProcess);
 
     bool save(const String& cfg);
 

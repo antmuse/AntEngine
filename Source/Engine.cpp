@@ -76,6 +76,10 @@ void Engine::postCommand(s32 val) {
     }
 
     for (usz i = 0; i < mChild.size(); ++i) {
+        /** TODO: keep send is thread/process safe
+         *  @see Loop::postTask
+         */
+
         if (sizeof(cmd) != mChild[i].mSocket.sendAll(&cmd, sizeof(cmd))) { //block send
             Logger::log(ELL_INFO, "Engine::postCommand>>fail post cmd = %d, pid=%d", val, mChild[i].mID);
         }
@@ -112,7 +116,7 @@ bool Engine::init(const s8* fname, bool child) {
 
     Logger::getInstance();
 
-    if (!mConfig.load(mAppPath, G_CFGFILE)) {
+    if (!mConfig.load(mAppPath, G_CFGFILE, mMain)) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
     }
@@ -181,11 +185,11 @@ bool Engine::init(const s8* fname, bool child) {
             return false;
         }
         Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+        script::ScriptManager::getInstance().loadFirstScript();
         ret = createProcess();
     }
 
     if (mMain) {
-        Logger::addPrintReceiver();
         ret = runMainProcess();
     } else {
 #if defined(DOS_WINDOWS)
@@ -207,8 +211,9 @@ bool Engine::init(const s8* fname, bool child) {
 
 
 bool Engine::uninit() {
+    Logger::log(ELL_INFO, "Engine::uninit>>pid = %d, main = %c, script=%llu",
+        mPID, mMain ? 'Y' : 'N', script::ScriptManager::getInstance().getMemory());
     script::ScriptManager::getInstance().removeAll();
-
     Logger::flush();
     mThreadPool.stop();
     clear();
@@ -243,6 +248,7 @@ bool Engine::runMainProcess() {
     } else {
         Logger::log(ELL_ERROR, "Engine::runMainProcess>> start loop fail");
     }
+
     return ret;
 }
 

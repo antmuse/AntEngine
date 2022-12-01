@@ -1,5 +1,8 @@
 #include "Script/ScriptFunc.h"
 #include "Logger.h"
+#include "Engine.h"
+#include "Script/ScriptManager.h"
+#include "Script/Script.h"
 
 namespace app {
 namespace script {
@@ -13,13 +16,13 @@ namespace script {
 int LuaLog(lua_State* iState) {
     u32 cnt = lua_gettop(iState);
     if (1 == cnt) {
-        Logger::logInfo("Script> %s", lua_tostring(iState, 1));
+        Logger::logInfo("LuaEng> %s", lua_tostring(iState, 1));
     } else if (2 == cnt) {
         cnt = static_cast<u32>(lua_tointeger(iState, 1));
         Logger::log((ELogLevel)(cnt < ELL_COUNT ? cnt : ELL_INFO),
-            "Script> %s", lua_tostring(iState, 2));
+            "LuaEng> %s", lua_tostring(iState, 2));
     } else {
-        Logger::logError("Script> invalid log param, cnt=%d", cnt);
+        Logger::logError("LuaEng> invalid log param, cnt=%d", cnt);
     }
     return 0;
 }
@@ -43,6 +46,76 @@ int LuaColor(lua_State* iState) {
     // memcpy(ret, &col, sizeof(col));
     *reinterpret_cast<u32*>(ret) = col;
     return 1;
+}
+
+
+int LuaRandom(lua_State* iState) {
+    printf("LuaRandom = call test\n");
+    lua_pushinteger(iState, rand());
+    return 1;
+}
+
+int LuaEngExit(lua_State* iState) {
+    printf("LuaEngExit = call test\n");
+    return 0;
+}
+
+int LuaEngInfo(lua_State* iState) {
+    Logger::logInfo("LuaEng> LUA = %s", LUA_RELEASE);
+    Logger::logInfo("LuaEng> LUA.size = %llu", ScriptManager::getInstance().getMemory());
+    return 0;
+}
+
+
+LUALIB_API luaL_Reg LuaEngLib[] = {
+    {"Exit", LuaEngExit},
+    {"Info", LuaEngInfo},
+    {NULL, NULL}    //sentinel
+};
+
+
+int LuaOpenEngLib(lua_State* val) {
+    luaL_newlib(val, LuaEngLib);
+    return 1;
+}
+
+int LuaInclude(lua_State* iState) {
+    ScriptManager& eng = ScriptManager::getInstance();
+    const s8* fnm;  //relative path
+
+    s32 cnt = lua_gettop(iState);
+    if (1 != cnt || !lua_isstring(iState, 1)) {
+        Logger::logError("LuaEng> LuaInclude fail=param");
+        goto GT_LUA_FAIL;
+    }
+
+    fnm = lua_tostring(iState, 1);
+    if (!fnm || '\0' == fnm[0]) {
+        Logger::logError("LuaEng> LuaInclude fail=empty");
+        goto GT_LUA_FAIL;
+    }
+
+    //load
+    if (!eng.loadScript(fnm)) {
+        Logger::logError("LuaEng> LuaInclude fail=include");
+        goto GT_LUA_FAIL;
+    }
+
+    // success
+    lua_pushnumber(iState, 1);
+    return 1;
+
+    GT_LUA_FAIL:
+    lua_pushnil(iState);
+    return 0;
+}
+
+void LuaCreateArray(lua_State* val, s8** arr, int cnt) {
+    lua_newtable(val);
+    for (ssz j = 0; j < cnt; ++j) {
+        lua_pushlstring(val, arr[j], strlen(arr[j]));
+        lua_rawseti(val, -2, j + 1);
+    }
 }
 
 }//namespace script

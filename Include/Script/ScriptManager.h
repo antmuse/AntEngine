@@ -26,7 +26,7 @@
 #define	APP_SCRIPTMANAGER_H
 
 #include "Nocopy.h"
-#include "TList.h"
+#include "TMap.h"
 #include "Script/Script.h"
 
 struct lua_State;
@@ -51,15 +51,23 @@ public:
     void popParam(s32 iSum);
 
     /**
-    *@brief execute main() function in current script file
+    * @param fileName relative filename of the file to load.
     */
-    bool execute(const String& iName, const s8* const pBuffet, usz fSize);
+    bool include(const String& fileName);
+
+    bool exec(const Script& it, const s8* func = nullptr,
+        s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
 
     /**
-    *@brief Executes the function with the given name and given arguments.
-    *@return True on success, false on failure.
+    *@brief exec script buffer with name
+    *@param func call function if not null, else run the script buf. 
     */
-    bool execute(const String& iName, const s8* const pBuffet, usz fSize, const s8* const pFunc);
+    bool exec(const String& iName, const s8* const pBuffet, usz fSize,
+        const s8* func = nullptr, s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
+
+    bool callFunc(const s8* cFuncName, s32 nResults, const s8* fmtstr = nullptr, ...);
+
+    bool callWith(const s8* cFuncName, s32 nResults, const s8* cFormat, va_list& vlist);
 
     //! Adds the given Script to the ScriptManager
     //! @param script        Pointer to the Script to add.
@@ -67,16 +75,22 @@ public:
     bool add(Script* pScript);
 
     /**
-    * Creates an script with the given name, loaded from the given file.
-    * @param fileName      Filename of the file to load.
-    * @param grab          Should the ScriptManager add the loaded script to the internal list?
-    * @return Pointer to the Script on success, NULL on failure.
+    * Create an script with the given file.
+    * @param fileName relative filename of the file to load.
+    * @return Pointer to the Script on success and must been drop(), else nullptr.
     */
-    Script* createScript(const String& fileName, bool grab = false);
+    Script* createScript(const String& fileName);
+
+    /**
+    * Create an script with the given file, and add to manager if success.
+    * @param fileName relative filename of the file to load.
+    * @return Pointer to the Script on success and must not been drop(), else nullptr.
+    */
+    Script* loadScript(const String& fileName);
 
     //! Gets the Script with the given ID.
     //! @return Pointer to the Script if found, else NULL.
-    Script* getScript(const s32 id);
+    Script* getScript(const u32 id);
 
     //! Gets the Script with the given name.
     //! @return Pointer to the Script if found, else NULL.
@@ -92,17 +106,27 @@ public:
     //! Removes the given Script with the given ID.
     //! @param id            ID of the Script to remove.
     //! @return True if removal was successful, false if removal was a failure.
-    bool remove(const s32 id);
+    bool remove(const u32 id);
 
     //! Removes the given Script with the given name.
     //! @param name          Name of the Script to remove.
     //! @return True if removal was successful, false if removal was a failure.
     bool remove(const String& name);
 
+    const String& getScriptPath() const {
+        return mScriptPath;
+    }
+
+    bool loadFirstScript();
+
+    // gc
+    usz getMemory();
+
 private:
     s32 mParamCount;
     lua_State* mLuaState;
-    TList<Script*> mAllScript;
+    TMap<String, Script*> mAllScript;
+    String mScriptPath;
 
     ScriptManager();
     virtual ~ScriptManager();

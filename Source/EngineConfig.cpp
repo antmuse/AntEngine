@@ -112,7 +112,7 @@ bool EngineConfig::save(const String& cfg) {
 }
 
 
-bool EngineConfig::load(const String& runPath, const String& cfg) {
+bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProcess) {
     mLogPath = runPath + mLogPath;
     mPidFile = runPath + mPidFile;
     mMemName = runPath + mMemName;
@@ -135,6 +135,10 @@ bool EngineConfig::load(const String& runPath, const String& cfg) {
     delete[] tmp;
     delete reder;
     if (ret) {
+        s32 print = val["Print"].asInt();
+        if ((mainProcess && 1 == print) || 2 == print) {
+            Logger::addPrintReceiver();
+        }
         mLogPath = val["LogPath"].asCString();
         mLogPath.replace('\\', '/');
         if ('/' == mLogPath.lastChar()) {

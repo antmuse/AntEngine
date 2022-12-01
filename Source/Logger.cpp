@@ -220,7 +220,7 @@ void Logger::postLog(const ELogLevel logLevel, const s8* msg, va_list args) {
         usz used = Timer::getTimeStr(mText, sizeof(mText), G_LOG_FMT);
         mText[used++] = ' ';
         mText[used++] = '[';
-        mText[used++] = '1' + logLevel;
+        mText[used++] = '0' + logLevel;
         mText[used++] = ']';
         mText[used++] = ' ';
         used += vsnprintf(mText + used, sizeof(mText) - used, msg, args);
@@ -240,10 +240,28 @@ void Logger::postLog(const ELogLevel logLevel, const s8* msg, va_list args) {
 }
 
 void Logger::addPrintReceiver() {
+    mMutex.lock();
+    static bool on = false;
+    if (on) {
+        mMutex.unlock();
+        return;
+    }
+    on = true;
+    mMutex.unlock();
+
     add(new LogPrinter());
 }
 
 void Logger::addFileReceiver() {
+    mMutex.lock();
+    static bool on = false;
+    if (on) {
+        mMutex.unlock();
+        return;
+    }
+    on = true;
+    mMutex.unlock();
+
     add(new LogFile());
 }
 

@@ -25,8 +25,8 @@
 #ifndef APP_SCRIPT_H
 #define	APP_SCRIPT_H
 
-#include "Strings.h"
 #include "RefCount.h"
+#include "Strings.h"
 
 namespace app {
 namespace script {
@@ -41,67 +41,43 @@ public:
 
     virtual ~Script();
 
-    //! Gets the name of this script.
-    //const stringc& getName() const;
-
-    //! Loads a script file and builds it.
-    //! @param fileName      Filename of the file from where the script should be retrieved.
-    //! @return True on successful loading, else false on failure.
-    bool load(bool isNew);
-
-    //! Unloads the loaded script.
-    //! @return True on success, false on failure.
-    bool unload();
     /**
-    * execute main() function in per script file
-    */
-    bool execute();
+     * @brief Loads a script file and builds it.
+     * @param reload force to reload
+     * @return true if successful loading, else false.
+     */
+    bool load(bool reload);
 
-    //! Executes the function with the given name and with the given arguments.
-    //! @return True on success, false on failure.
-    bool execute(const String& func);
+    void unload();
 
-
-    bool execute(const String& func, s8* fmtstr, ...);
-    bool execute2(const s8* cFuncName, const s8* cFormat, va_list& param, s32 nResults);
-
-
-    //! Returns the name of the node.
-    /** \return Name as character string. */
-    const s8* getName() const {
-        return mName.c_str();
+    const String& getName() const {
+        return mName;
     }
 
-    //const stringc& getName() const {
-    //    return Name;
-    //}
-
-    //! Sets the name of the node.
-    /** \param name New name of the scene node. */
     void setName(const s8* name) {
         mName = name;
     }
 
-
-    //! Sets the name of the node.
-    /** \param name New name of the scene node. */
     void setName(const String& name) {
         mName = name;
     }
 
-    /**
-    *@brief Get the id of the script node. This id can be used to identify the node.
-    *@return The id.
-    */
-    s32 getID() const {
+    u32 getID() const {
         return mID;
     }
 
+    const s8* getBuffer() const {
+        return mBuffer;
+    }
+
+    usz getBufferSize() const {
+        return mBufferSize;
+    }
 
 private:
-    s32 mID;            ///< ID of the script node.
-    s8* pFileBuffer;    ///< The buffer of script file.
-    usz fileSize;
+    u32 mID;
+    s8* mBuffer;
+    usz mBufferSize;
     String mName;
     String mPath;
 };
