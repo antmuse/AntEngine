@@ -9,6 +9,7 @@ set(PRO_BRIEF "${PRO_NAME} is a C++ lib.")
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" SRC_CORE)
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}/Net" SRC_NET)
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}/Net/HTTP" SRC_HTTP)
+aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}/Script" SRC_SCRIPT)
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}/Net/RedisClient" SRC_REDIS)
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}/${APP_OS}" SRC_OS)
 aux_source_directory("${PROJECT_SOURCE_DIR}/Depend/http_parser" SRC_HTTPARSER)
@@ -23,12 +24,16 @@ add_library(${PRO_NAME} STATIC
     ${SRC_OS}
     ${SRC_CORE}
     ${SRC_JSON}
+    ${SRC_SCRIPT}
     ${SRC_HTTPARSER}
     )
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/Depend/http_parser
     ${PROJECT_SOURCE_DIR}/Depend/jsoncpp
+    ${PROJECT_SOURCE_DIR}/Depend/lua/src
+    ${PROJECT_SOURCE_DIR}/Depend/MySQL
+    ${PROJECT_SOURCE_DIR}/Depend/MySQL/mysql
     ${PROJECT_SOURCE_DIR}/Depend/openssl/include
     ${PROJECT_SOURCE_DIR}/Include
     ${PROJECT_SOURCE_DIR}/Include/${APP_OS}

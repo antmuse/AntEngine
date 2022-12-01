@@ -318,26 +318,23 @@ u32 System::getPageSize() {
 }
 
 s32 System::createPath(const String& it) {
-    if (it.getLen() >= 260) {
+    if (0 == it.getLen() || it.getLen() >= 260) {
         return EE_ERROR;
     }
-    tchar fname[260];
-    memcpy(fname, it.c_str(), 1 + it.getLen());
-
-    for (tchar* curr = fname; *curr; ++curr) {
-        if (isPathDiv(*curr)) {
-            if (curr <= fname) {
-                continue;
-            }
-            tchar bk = *curr;
-            *curr = DSTR('\0');
-            if (0 != access(fname, F_OK)) {
-                if (0 != mkdir(fname, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
+    String path(it.getLen() + 1);
+    const s8* curr = it.c_str();
+    const s8* end = curr + it.getLen();
+    path += *curr++;
+    s32 len = 0;
+    for (; curr <= end; ++curr) {
+        if (isPathDiv(*curr) || curr == end) {
+            if (0 != access(path.c_str(), F_OK)) {
+                if (0 != mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
                     return System::getAppError();
                 }
             }
-            *curr = bk;
         }
+        path += *curr;
     }
     return EE_OK;
 }

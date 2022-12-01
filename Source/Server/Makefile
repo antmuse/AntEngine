@@ -28,7 +28,7 @@ BIN = Server.bin
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 DEPS = $(SRCS:.cpp=.d)
-LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -llua -lssl -lcrypto -lz -lpthread
+LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -llua -lssl -lcrypto -lz -lpthread -ldl
 BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
 
 OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/Server
