@@ -31,14 +31,20 @@
 #include "TVector.h"
 #include "Strings.h"
 
-
-#if defined(DDEBUG)
-#define DLOG(TYPE, FORMAT, ...)  Logger::log(TYPE, FORMAT, __VA_ARGS__)
+#if defined(DOS_WINDOWS)
+#define DBFILE(N) (strrchr(N,'\\')?strrchr(N,'\\')+1:N)
+#define DLOG(LV, FMT, ...)  Logger::log(LV, "%s:%d " FMT, DBFILE(__FILE__),__LINE__,__VA_ARGS__)
 #else
-#define DLOG(TYPE, FORMAT, ...)
+#define DLOG(LV, FMT, ...)  Logger::log(LV, "%s:%d " FMT, __BASE_FILE__,__LINE__,__VA_ARGS__)
 #endif
 
-#define DLOGG(TYPE, FORMAT, ...)  Logger::log(TYPE, "%s:%d "##FORMAT, __FILE__,__LINE__,__VA_ARGS__)
+#if defined(DDEBUG)
+#define DDLOG(LV, FMT, ...)  Logger::log(LV, FMT, __VA_ARGS__)
+#else
+#define DDLOG(LV, FMT, ...)
+#endif
+
+
 
 
 namespace app {

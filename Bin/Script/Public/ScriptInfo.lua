@@ -1,17 +1,15 @@
--- 文件名为 ScriptInfo.lua
--- 定义一个名为 ScriptInfo 的模块
+-- module: ScriptInfo
 ScriptInfo = {}
  
--- 定义一个常量
-ScriptInfo.constant = "这是一个常量"
+-- a const value
+ScriptInfo.mConstVal = "a const val"
  
--- 定义一个函数
 function ScriptInfo.init()
-    io.write("这是一个公有函数！\n")
+    print("this is a public function, const="..ScriptInfo.mConstVal)
 end
  
 local function func2()
-    print("这是一个私有函数！")
+    print("this is a private function")
 end
  
 function ScriptInfo.func()

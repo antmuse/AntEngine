@@ -32,7 +32,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/ioctl.h>
 #include <sys/sysctl.h>
 #include <sys/sysinfo.h>
 #include <sys/statfs.h>
@@ -318,16 +317,15 @@ u32 System::getPageSize() {
 }
 
 s32 System::createPath(const String& it) {
-    if (0 == it.getLen() || it.getLen() >= 260) {
+    if (0 == it.getLen()) {
         return EE_ERROR;
     }
-    String path(it.getLen() + 2);
+    String path(it.getLen());
     const s8* curr = it.c_str();
     const s8* end = curr + it.getLen();
     path += *curr++;
-    s32 len = 0;
-    for (; curr <= end; ++curr) {
-        if (isPathDiv(*curr) || curr == end) {
+    for (; curr < end; ++curr) {
+        if (isPathDiv(*curr)) {
             if (0 != access(path.c_str(), F_OK)) {
                 if (0 != mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
                     return System::getAppError();
@@ -445,6 +443,34 @@ s32 System::createProcess(usz socket, void*& handle) {
     return pid;
 }
 
+String System::getWorkingPath() {
+    usz pathSize = 128;
+    String wkpath(pathSize);
+
+#if defined(DWCHAR_SYS)
+    TString<tchar> tmpPath(pathSize);
+    while (pathSize < (1 << 16) && NULL == wgetcwd((tchar*)tmpPath.c_str(), pathSize)) {
+        pathSize <<= 1;
+        tmpPath.reserve(pathSize);
+    }
+    wkpath = tmpPath.c_str();
+    wkpath.reserve(4 * DSLEN(tmpPath.c_str()));
+    usz len = AppWcharToUTF8((tchar*)tmpPath.c_str(), (s8*)wkpath.c_str(), wkpath.getAllocated());
+    wkpath.setLen(len);
+#else
+    while (pathSize < (1 << 16) && NULL == getcwd((s8*)wkpath.c_str(), pathSize)) {
+        pathSize <<= 1;
+        wkpath.reserve(pathSize);
+    }
+    wkpath.setLen(DSLEN(wkpath.c_str()));
+#endif
+
+    // wkpath.replace('\\', '/');
+    if ('/' != wkpath.lastChar()) {
+        wkpath += '/';
+    }
+    return wkpath;
+}
 
 } //namespace app
 

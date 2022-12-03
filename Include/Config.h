@@ -213,14 +213,16 @@ using ssz = s32;
 #endif
 
 
-#if defined(DWCHAR_SYS) && defined(DOS_WINDOWS)
+#if defined(DWCHAR_SYS)
 using tchar = wchar_t;
 #define DSTR(N) L##N
+#define DSLEN(N) wcslen(N)
 
 #else
 
 using tchar = char;
 #define DSTR(N) N
+#define DSLEN(N) strlen(N)
 
 #endif
 

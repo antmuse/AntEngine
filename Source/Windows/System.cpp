@@ -511,6 +511,26 @@ s32 System::createProcess(usz socket, void*& handle) {
     return pinfo.dwProcessId;
 }
 
+String System::getWorkingPath() {
+    String wkpath(256);
+    tchar tmp[_MAX_PATH];
+#if defined(DWCHAR_SYS)
+    _wgetcwd(tmp, _MAX_PATH);
+    wkpath.reserve(4 * _tcslen(tmp));
+    usz len = AppWcharToUTF8(tmp, (s8*)wkpath.c_str(), wkpath.getAllocated());
+#else
+    _getcwd(tmp, _MAX_PATH);
+    wkpath.reserve(2 * DSLEN(tmp));
+    usz len = AppGbkToUTF8(tmp, (s8*)wkpath.c_str(), wkpath.getAllocated());
+#endif
+    wkpath.setLen(len);
+    wkpath.replace('\\', '/');
+    if ('/' != wkpath.lastChar()) {
+        wkpath += '/';
+    }
+    return wkpath;
+}
+
 } //namespace app
 
 #else

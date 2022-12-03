@@ -83,7 +83,13 @@ public:
 
     static s32 getPID();
 
-    static s32 createPath(const String& it);
+    /**
+     * @brief create a path
+     * @param val The path to create, \p val can include filename.
+     *        eg: if val="/home/my/dat/filenm.log", then create path="/home/my/dat/"
+     *            or just pass val="/home/my/dat/"
+     */
+    static s32 createPath(const String& val);
 
     static s32 removeFile(const String& it);
 
@@ -95,6 +101,8 @@ public:
 
     static s32 createProcess(usz socket, void*& handle);
     static void waitProcess(void* handle);
+
+    static String getWorkingPath();
 
 private:
     System();

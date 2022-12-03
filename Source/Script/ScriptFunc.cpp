@@ -9,21 +9,27 @@ namespace script {
 
 /**
  * @brief log a msg
- * @param 1 opt: level
- * @param 2:     msg
- * @return 0
+ * @param 1: [opt] log level, @see AppLogLevelNames
+ * @param 2: msg
+ * @return 0 none
  */
 int LuaLog(lua_State* iState) {
     u32 cnt = lua_gettop(iState);
-    if (1 == cnt) {
+
+    // Log("msg");
+    if (1 == cnt && lua_isstring(iState, 1)) {
         Logger::logInfo("LuaEng> %s", lua_tostring(iState, 1));
-    } else if (2 == cnt) {
-        cnt = static_cast<u32>(lua_tointeger(iState, 1));
-        Logger::log((ELogLevel)(cnt < ELL_COUNT ? cnt : ELL_INFO),
-            "LuaEng> %s", lua_tostring(iState, 2));
-    } else {
-        Logger::logError("LuaEng> invalid log param, cnt=%d", cnt);
+        return 0;
     }
+
+    // Log(Info, "msg");
+    if (2 == cnt && lua_isinteger(iState, 1) && lua_isstring(iState, 2)) {
+        cnt = static_cast<u32>(lua_tointeger(iState, 1));
+        Logger::log(static_cast<ELogLevel>(cnt < ELL_COUNT ? cnt : ELL_CRITICAL),
+            "LuaEng> %s", lua_tostring(iState, 2));
+        return 0;
+    }
+    Logger::logError("LuaEng> invalid log param, cnt=%u", cnt);
     return 0;
 }
 

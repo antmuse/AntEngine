@@ -96,15 +96,16 @@ usz ScriptManager::getMemory() {
     return lua_gc(mLuaState, LUA_GCCOUNT, 0) * 1024ULL;
 }
 
+
 bool ScriptManager::loadFirstScript() {
     // test
     bool ret = exec("ScriptManager", G_LOAD_INFO, strlen(G_LOAD_INFO), nullptr, 0, 1, 0);
     Logger::logInfo("ScriptManager::initialize, ret = %s", ret ? "ok" : "no");
 
     Script* nd = loadScript("init.lua");
+    callFunc("main");
+    // callFunc("main2", 0, "d", 2345);
     //exec(nd, "main");
-    callFunc("main", 0);
-    callFunc("main2", 0, "d", 2345);
     return true;
 }
 
@@ -157,9 +158,9 @@ bool ScriptManager::exec(const String& iName, const s8* const pBuffer, usz fSize
     if (!pBuffer || 0 == fSize) {
         return false;
     }
-    Logger::logInfo("ScriptManager::exec, script=%s", iName.c_str());
     if (0 != luaL_loadbuffer(mLuaState, pBuffer, fSize, iName.c_str())) {
-        printf("LuaEng> err = %s\n", lua_tostring(mLuaState, -1));
+        Logger::logError("ScriptManager::exec, load err = %s, name=%s\n",
+            lua_tostring(mLuaState, -1), iName.c_str());
         lua_pop(mLuaState, 1);  // pop lua err
         return false;
     }
@@ -174,7 +175,8 @@ bool ScriptManager::exec(const String& iName, const s8* const pBuffer, usz fSize
      * 压入结果前会弹出函数和参数*/
     s32 expr = lua_pcall(mLuaState, nargs, nresults, errfunc);
     if (expr) {
-        printf("LuaEng> err = %s\n", lua_tostring(mLuaState, -1));
+        Logger::logError("ScriptManager::exec, call err = %s, name=%s\n",
+            lua_tostring(mLuaState, -1), iName.c_str());
         lua_pop(mLuaState, 1);  // pop lua err
         return false;
     }
@@ -248,7 +250,7 @@ bool ScriptManager::callWith(const s8* cFuncName, s32 nResults, const s8* cForma
 
     s32 ret = lua_pcall(mLuaState, param_cnt, nResults, 0);
     if (ret != 0) {
-        printf("LUA_CALL_FUNC_ERROR [%s] %s\n", cFuncName, lua_tostring(mLuaState, -1));
+        Logger::logInfo("ScriptManager::callWith, [%s] %s\n", cFuncName, lua_tostring(mLuaState, -1));
         lua_pop(mLuaState, 1);  // pop lua err
         return false;
     }

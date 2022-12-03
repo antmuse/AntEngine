@@ -6,9 +6,9 @@
 namespace app {
 namespace net {
 
-static const s8* G_CA_FILE = "/ca.crt";
-static const s8* G_CERT_FILE = "/server.crt";
-static const s8* G_PRIVATE_FILE = "/server.unsecure.key";
+static const s8* G_CA_FILE = "ca.crt";
+static const s8* G_CERT_FILE = "server.crt";
+static const s8* G_PRIVATE_FILE = "server.unsecure.key";
 
 Website::Website(EngineConfig::WebsiteCfg& cfg)
     : mConfig(cfg) {

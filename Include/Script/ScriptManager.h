@@ -65,7 +65,7 @@ public:
     bool exec(const String& iName, const s8* const pBuffet, usz fSize,
         const s8* func = nullptr, s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
 
-    bool callFunc(const s8* cFuncName, s32 nResults, const s8* fmtstr = nullptr, ...);
+    bool callFunc(const s8* cFuncName, s32 nResults = 0, const s8* fmtstr = nullptr, ...);
 
     bool callWith(const s8* cFuncName, s32 nResults, const s8* cFormat, va_list& vlist);
 

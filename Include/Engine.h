@@ -119,7 +119,6 @@ public:
         static Engine it;
         return it;
     }
-
     bool init(const s8* fname, bool child = false);
     void run();
     bool step();
@@ -199,6 +198,7 @@ private:
     bool runMainProcess();
     bool runChildProcess(net::Socket& readSock, net::Socket& writeSock);
 
+    void initPath(const s8* fname);
     void initTask();
 };
 

@@ -141,8 +141,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
         }
         mLogPath = val["LogPath"].asCString();
         mLogPath.replace('\\', '/');
-        if ('/' == mLogPath.lastChar()) {
-            mLogPath.setLen(mLogPath.getLen() - 1);
+        if ('/' != mLogPath.lastChar()) {
+            mLogPath += '/';
         }
         mPidFile = val["PidFile"].asCString();
         mMemName = val["ShareMem"].asCString();
@@ -183,8 +183,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
                     }
                     nd.mPathTLS = val["Website"][i]["PathTLS"].asCString();
                     nd.mPathTLS.replace('\\', '/');
-                    if ('/' == nd.mPathTLS.lastChar()) {
-                        nd.mPathTLS.setLen(nd.mPathTLS.getLen() - 1);
+                    if ('/' != mLogPath.lastChar()) {
+                        mLogPath += '/';
                     }
                 }
                 mWebsite.pushBack(nd);

@@ -98,30 +98,46 @@ void Engine::postCommand(s32 val) {
     }
 }
 
+void Engine::initPath(const s8* fname) {
+    mAppPath.reserve(260);
+#if defined(DOS_WINDOWS)
+    usz len = AppGbkToUTF8(fname, const_cast<s8*>(mAppPath.c_str()), mAppPath.getAllocated());
+    mAppPath.setLen(len);
+    mAppPath.deleteFilename();
+    mAppPath.replace('\\', '/');
+    mAppName = fname + mAppPath.getLen();
+#elif defined(DOS_LINUX) || defined(DOS_ANDROID)
+    if ('/' == fname[0]) {
+        mAppPath = fname;
+        mAppPath.deleteFilename();
+        mAppPath.replace('\\', '/');
+        mAppName = fname + mAppPath.getLen();
+    } else {
+        mAppPath = System::getWorkingPath();  // pwd
+        mAppName = fname;
+        mAppName.deletePathFromFilename();
+    }
+#endif
+}
 
 bool Engine::init(const s8* fname, bool child) {
+    if (!fname || 0 == fname[0]) {
+        return false;
+    }
+    printf("fnm = %s\n", fname);
     mPID = System::getPID();
     Logger::getInstance().setPID(mPID);
 
     mMain = !child;
     AppStrConverterInit();
-#if defined(DOS_WINDOWS)
-    s8 tmp[260];
-    AppGbkToUTF8(fname, tmp, sizeof(tmp));
-    fname = tmp;
-#endif
-
-    MsgHeader::gSharedSN = 0;
-    mAppPath = fname;
-    mAppPath.deleteFilename();
-    mAppPath.replace('\\', '/');
-    mAppName = fname + mAppPath.getLen();
+    initPath(fname);
 
     if (!mConfig.load(mAppPath, G_CFGFILE, mMain)) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
     }
 
+    MsgHeader::gSharedSN = 0;
     Timer::getTimeZone();
     System::getCoreCount();
     System::getPageSize();
@@ -205,7 +221,6 @@ bool Engine::init(const s8* fname, bool child) {
 #endif
     }
 
-    mPID = System::getPID();
     return ret;
 }
 
@@ -280,6 +295,8 @@ bool Engine::createProcess() {
 #if defined(DOS_LINUX)
             if (0 == nd.mID) {//child
                 // pair.getSocketA().close();
+                mPID = System::getPID();
+                Logger::getInstance().setPID(mPID);
                 runChildProcess(pair.getSocketB(), pair.getSocketA());
                 mMain = false;
                 return true;
