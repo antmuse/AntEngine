@@ -487,6 +487,9 @@ bool Socket::openSeniorTCP(bool ipv6) {
     return openSenior(ipv6 ? AF_INET6 : AF_INET, SOCK_STREAM, IPPROTO_TCP, 0, 0, WSA_FLAG_OVERLAPPED);
 }
 
+bool Socket::openSeniorUDP(bool ipv6) {
+    return openSenior(ipv6 ? AF_INET6 : AF_INET, SOCK_DGRAM, IPPROTO_UDP, 0, 0, WSA_FLAG_OVERLAPPED);
+}
 
 bool Socket::openSenior(s32 domain, s32 type, s32 protocol, void* info, u32 group, u32 flag) {
     if (DINVALID_SOCKET != mSocket) {
@@ -520,6 +523,24 @@ bool Socket::receive(RequestTCP* iAction)const {
     return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
 }
 
+bool Socket::receiveFrom(RequestTCP* iAction, NetAddress& addr)const {
+    DWORD flags = 0;
+    StringView vvv = iAction->getWriteBuf();
+    WSABUF buf = {(ULONG)vvv.mLen, vvv.mData};
+    iAction->clearOverlap();
+    s32 len = addr.getAddrSize();
+    s32 ret = ::WSARecvFrom(mSocket,
+        &buf,
+        1,
+        nullptr, //&bytes,
+        &flags,
+        reinterpret_cast<sockaddr*>(addr.getAddress6()),
+        &len,
+        &(iAction->mOverlapped),
+        0);
+
+    return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
+}
 
 bool Socket::send(RequestTCP* iAction)const {
     //DWORD bytes = 0;
@@ -538,6 +559,24 @@ bool Socket::send(RequestTCP* iAction)const {
     return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
 }
 
+bool Socket::sendTo(RequestTCP* iAction, const NetAddress& addr)const {
+    //DWORD bytes = 0;
+    //DWORD flags = 0;
+    StringView vvv = iAction->getReadBuf();
+    WSABUF buf = {(ULONG)vvv.mLen, vvv.mData};
+    iAction->clearOverlap();
+    s32 ret = ::WSASendTo(mSocket,
+        &buf,
+        1,
+        nullptr,    //&bytes,
+        0,          //flags,
+        reinterpret_cast<const sockaddr*>(addr.getAddress6()),
+        addr.getAddrSize(),
+        &(iAction->mOverlapped),
+        0);
+
+    return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
+}
 
 bool Socket::connect(const NetAddress& it, RequestTCP* iAction)const {
     iAction->clearOverlap();
@@ -723,6 +762,17 @@ void* Socket::getFunctionAcceptSockAddress()const {
 
 bool Socket::openSeniorTCP(bool ipv6) {
     bool ret = openTCP(ipv6);
+    if (ret) {
+        ret = (0 == setBlock(false));
+        if (!ret) {
+            close();
+        }
+    }
+    return ret;
+}
+
+bool Socket::openSeniorUDP(bool ipv6) {
+    bool ret = openUDP(ipv6);
     if (ret) {
         ret = (0 == setBlock(false));
         if (!ret) {

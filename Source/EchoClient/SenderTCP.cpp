@@ -1,12 +1,12 @@
-#include "Connector.h"
+#include "SenderTCP.h"
 #include "Engine.h"
 #include "AppTicker.h"
 
 namespace app {
 
-u32 Connector::mSN = 0;
+u32 SenderTCP::mSN = 0;
 
-Connector::Connector() :
+SenderTCP::SenderTCP() :
     mMaxMsg(1),
     mTLS(true),
     mLoop(&Engine::getInstance().getLoop()),
@@ -14,23 +14,23 @@ Connector::Connector() :
 }
 
 
-Connector::~Connector() {
+SenderTCP::~SenderTCP() {
 }
 
 
-void Connector::setMaxMsg(s32 cnt) {
+void SenderTCP::setMaxMsg(s32 cnt) {
     mMaxMsg = cnt > 0 ? cnt : 1;
 }
 
 
-s32 Connector::open(const String& addr, bool tls) {
+s32 SenderTCP::open(const String& addr, bool tls) {
     mTLS = tls;
     if (mTLS) {
-        mTCP.setClose(EHT_TCP_CONNECT, Connector::funcOnClose, this);
-        mTCP.setTime(Connector::funcOnTime, 15 * 1000, 20 * 1000, -1);
+        mTCP.setClose(EHT_TCP_CONNECT, SenderTCP::funcOnClose, this);
+        mTCP.setTime(SenderTCP::funcOnTime, 15 * 1000, 20 * 1000, -1);
     } else {
-        mTCP.getHandleTCP().setClose(EHT_TCP_CONNECT, Connector::funcOnClose, this);
-        mTCP.getHandleTCP().setTime(Connector::funcOnTime, 15 * 1000, 20 * 1000, -1);
+        mTCP.getHandleTCP().setClose(EHT_TCP_CONNECT, SenderTCP::funcOnClose, this);
+        mTCP.getHandleTCP().setTime(SenderTCP::funcOnTime, 15 * 1000, 20 * 1000, -1);
     }
 
     net::RequestTCP* it = net::RequestTCP::newRequest(4 * 1024);
@@ -44,12 +44,12 @@ s32 Connector::open(const String& addr, bool tls) {
 }
 
 
-s32 Connector::onTimeout(HandleTime& it) {
+s32 SenderTCP::onTimeout(HandleTime& it) {
     DASSERT(mTCP.getGrabCount() > 0);
 
     net::RequestTCP* tick = net::RequestTCP::newRequest(sizeof(net::PackActive));
     tick->mUser = this;
-    tick->mCall = Connector::funcOnWrite;
+    tick->mCall = SenderTCP::funcOnWrite;
     net::PackActive* head = (net::PackActive*)(tick->getWriteBuf().mData);
     head->pack(++mSN);
     tick->mUsed = head->mSize;
@@ -63,17 +63,17 @@ s32 Connector::onTimeout(HandleTime& it) {
 }
 
 
-void Connector::onClose(Handle* it) {
+void SenderTCP::onClose(Handle* it) {
     if (mTLS) {
-        DASSERT(&mTCP == it && "Connector::onClose tls handle?");
+        DASSERT(&mTCP == it && "SenderTCP::onClose tls handle?");
     } else {
-        DASSERT(&mTCP.getHandleTCP() == it && "Connector::onClose tcp handle?");
+        DASSERT(&mTCP.getHandleTCP() == it && "SenderTCP::onClose tcp handle?");
     }
     //delete this;
 }
 
 
-void Connector::onWrite(net::RequestTCP* it) {
+void SenderTCP::onWrite(net::RequestTCP* it) {
     if (0 == it->mError) {
         StringView dat = it->getReadBuf();
         MsgHeader* head = (MsgHeader*)dat.mData;
@@ -88,9 +88,9 @@ void Connector::onWrite(net::RequestTCP* it) {
             ++AppTicker::gTotalPacketOut;
             break;
         }
-        //printf("Connector::onWrite>>success = %u\n", it->mUsed);
+        //printf("SenderTCP::onWrite>>success = %u\n", it->mUsed);
     } else {
-        Logger::log(ELL_ERROR, "Connector::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
+        Logger::log(ELL_ERROR, "SenderTCP::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
     net::RequestTCP::delRequest(it);
     //mTCP.getSock().closeSend();
@@ -98,7 +98,7 @@ void Connector::onWrite(net::RequestTCP* it) {
 }
 
 
-void Connector::onRead(net::RequestTCP* it) {
+void SenderTCP::onRead(net::RequestTCP* it) {
     if (it->mUsed > 0) {
         StringView dat = it->getReadBuf();
         usz got = mPack.write(dat.mData, dat.mLen);
@@ -123,7 +123,7 @@ void Connector::onRead(net::RequestTCP* it) {
                     --mMaxMsg;
                     net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
                     out->mUser = this;
-                    out->mCall = Connector::funcOnWrite;
+                    out->mCall = SenderTCP::funcOnWrite;
                     dat = out->getWriteBuf();
                     memcpy(dat.mData, head, head->mSize);
                     ((MsgHeader*)dat.mData)->mSN = ++mSN;
@@ -143,20 +143,20 @@ void Connector::onRead(net::RequestTCP* it) {
             head = (MsgHeader*)((s8*)head + head->mSize);
         }//while
         mPack.clear(mPack.size() - got);
-        //printf("Connector::onRead>>%.*s\n", (s32)dat.mLen, dat.mData);
+        //printf("SenderTCP::onRead>>%.*s\n", (s32)dat.mLen, dat.mData);
         return;
     } else {
         //stop read
-        Logger::log(ELL_INFO, "Connector::onRead>>read 0, ecode=%d", it->mError);
+        Logger::log(ELL_INFO, "SenderTCP::onRead>>read 0, ecode=%d", it->mError);
         net::RequestTCP::delRequest(it);
     }
 }
 
 
-void Connector::onConnect(net::RequestTCP* it) {
+void SenderTCP::onConnect(net::RequestTCP* it) {
     if (0 == it->mError) {
-        //printf("Connector::onConnect>>success\n");
-        it->mCall = Connector::funcOnRead;
+        //printf("SenderTCP::onConnect>>success\n");
+        it->mCall = SenderTCP::funcOnRead;
         if (0 != readIF(it)) {
             net::RequestTCP::delRequest(it);
             return;
@@ -165,7 +165,7 @@ void Connector::onConnect(net::RequestTCP* it) {
         /*for (s32 i = 0; i < 2; ++i) {
             net::RequestTCP* read = net::RequestTCP::newRequest(4*1024);
             read->mUser = this;
-            read->mCall = Connector::funcOnRead;
+            read->mCall = SenderTCP::funcOnRead;
             if (0 != readIF(read)) {
                 net::RequestTCP::delRequest(read);
                 return;
@@ -186,7 +186,7 @@ void Connector::onConnect(net::RequestTCP* it) {
             head.mSize = 1024; //just for test
 
             out->mUsed = head.mSize;
-            out->mCall = Connector::funcOnWrite;
+            out->mCall = SenderTCP::funcOnWrite;
             if (0 == writeIF(out)) {
                 --mMaxMsg;
             } else {
@@ -195,7 +195,7 @@ void Connector::onConnect(net::RequestTCP* it) {
             }
         }
     } else {
-        Logger::log(ELL_ERROR, "Connector::onConnect>>ecode=%d", it->mError);
+        Logger::log(ELL_ERROR, "SenderTCP::onConnect>>ecode=%d", it->mError);
         net::RequestTCP::delRequest(it);
     }
 }

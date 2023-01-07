@@ -19,39 +19,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\Test\App.cpp" />
-    <ClCompile Include="..\..\Source\Test\AppTicker.cpp" />
-    <ClCompile Include="..\..\Source\Test\AsyncFile.cpp" />
-    <ClCompile Include="..\..\Source\Test\NetServer.cpp" />
-    <ClCompile Include="..\..\Source\Test\HttpsClient.cpp" />
-    <ClCompile Include="..\..\Source\Test\NetAddr.cpp" />
-    <ClCompile Include="..\..\Source\Test\StrConv.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestDataBase.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestDict.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestGbkUtf8.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestHttpsClient.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestRedis.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestThreadPool.cpp" />
-    <ClCompile Include="..\..\Source\Test\TlsConnector.cpp" />
-    <ClCompile Include="..\..\Source\Test\Tree2.cpp" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClInclude Include="..\..\Source\EchoServer\AppTicker.h" />
+    <ClInclude Include="..\..\Source\EchoServer\LinkerTCP.h" />
+    <ClInclude Include="..\..\Source\EchoServer\LinkerUDP.h" />
+    <ClInclude Include="..\..\Source\Test\Acceptor.h" />
     <ClInclude Include="..\..\Source\Test\AppTicker.h" />
-    <ClInclude Include="..\..\Source\Test\AsyncFile.h" />
-    <ClInclude Include="..\..\Source\Test\Connector.h" />
-    <ClInclude Include="..\..\Source\Test\HttpsClient.h" />
     <ClInclude Include="..\..\Source\Test\Linker.h" />
-    <ClInclude Include="..\..\Source\Test\TlsConnector.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Source\Test\CMakeLists.txt" />
+    <ClCompile Include="..\..\Source\EchoServer\AppTicker.cpp" />
+    <ClCompile Include="..\..\Source\EchoServer\EchoServer.cpp" />
+    <ClCompile Include="..\..\Source\EchoServer\LinkerTCP.cpp" />
+    <ClCompile Include="..\..\Source\EchoServer\LinkerUDP.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Source\Test\Makefile" />
+    <None Include="..\..\Source\EchoServer\Makefile" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{01E78698-FBC7-4FD4-99ED-8B0BB53410C0}</ProjectGuid>
+    <ProjectGuid>{04891425-81C4-4A16-834E-E36130E92817}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>AntTest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -131,15 +117,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/MySQL</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcrypto.lib;libssl.lib;zlib.lib;libmysql.lib;Lua.lib;AntEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -150,15 +135,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>AntEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -171,17 +155,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>AntEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -194,9 +177,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/MySQL</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -204,7 +186,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcrypto.lib;libssl.lib;zlib.lib;libmysql.lib;Lua.lib;AntEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

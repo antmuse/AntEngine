@@ -44,6 +44,7 @@
     <ClCompile Include="..\..\Source\MemoryHub.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\HandleUDP.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileRead.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp" />
@@ -82,6 +83,7 @@
     <ClCompile Include="..\..\Source\Net\TcpProxy.cpp" />
     <ClCompile Include="..\..\Source\Packet.cpp" />
     <ClCompile Include="..\..\Source\RingBuffer.cpp" />
+    <ClCompile Include="..\..\Source\Script\ScriptFileHandle.cpp" />
     <ClCompile Include="..\..\Source\Script\ScriptFunc.cpp" />
     <ClCompile Include="..\..\Source\Script\Script.cpp" />
     <ClCompile Include="..\..\Source\Script\ScriptManager.cpp" />
@@ -152,6 +154,7 @@
     <ClInclude Include="..\..\Include\Net\EventPoller.h" />
     <ClInclude Include="..\..\Include\Net\HandleTCP.h" />
     <ClInclude Include="..\..\Include\Net\HandleTLS.h" />
+    <ClInclude Include="..\..\Include\Net\HandleUDP.h" />
     <ClInclude Include="..\..\Include\Net\Hostcheck.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h" />
@@ -182,6 +185,7 @@
     <ClInclude Include="..\..\Include\Queue.h" />
     <ClInclude Include="..\..\Include\RefCount.h" />
     <ClInclude Include="..\..\Include\RingBuffer.h" />
+    <ClInclude Include="..\..\Include\Script\ScriptFileHandle.h" />
     <ClInclude Include="..\..\Include\Script\ScriptFunc.h" />
     <ClInclude Include="..\..\Include\Script\Script.h" />
     <ClInclude Include="..\..\Include\Script\ScriptManager.h" />

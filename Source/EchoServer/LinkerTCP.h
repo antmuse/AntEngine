@@ -1,5 +1,5 @@
-#ifndef APP_LINKER_H
-#define	APP_LINKER_H
+#ifndef APP_LINKERTCP_H
+#define	APP_LINKERTCP_H
 
 #include "Loop.h"
 #include "Packet.h"
@@ -9,14 +9,14 @@
 namespace app {
 namespace net {
 
-class NetServer;
-class Linker :public RefCount {
+class NetServerTCP;
+class LinkerTCP :public RefCount {
 public:
-    Linker();
+    LinkerTCP();
 
-    virtual ~Linker();
+    virtual ~LinkerTCP();
 
-    bool onLink(NetServer* sev, net::RequestTCP* it);
+    bool onLink(NetServerTCP* sev, net::RequestTCP* it);
 
 private:
 
@@ -38,40 +38,40 @@ private:
     }
 
     static s32 funcOnTime(HandleTime* it) {
-        Linker& nd = *(Linker*)it->getUser();
+        LinkerTCP& nd = *(LinkerTCP*)it->getUser();
         return nd.onTimeout(*it);
     }
 
     static void funcOnWrite(net::RequestTCP* it) {
-        Linker& nd = *(Linker*)it->mUser;
+        LinkerTCP& nd = *(LinkerTCP*)it->mUser;
         nd.onWrite(it);
     }
 
     static void funcOnRead(net::RequestTCP* it) {
-        Linker& nd = *(Linker*)it->mUser;
+        LinkerTCP& nd = *(LinkerTCP*)it->mUser;
         nd.onRead(it);
     }
 
     static void funcOnClose(Handle* it) {
-        Linker& nd = *(Linker*)it->getUser();
+        LinkerTCP& nd = *(LinkerTCP*)it->getUser();
         nd.onClose(it);
     }
 
     bool mTLS;
-    NetServer* mServer;
+    NetServerTCP* mServer;
     net::HandleTLS mTCP;
     Packet mPack;
 };
 
-class NetServer :public RefCount {
+class NetServerTCP :public RefCount {
 public:
-    NetServer(bool tls) :mTLS(tls) { }
-    virtual ~NetServer() { }
+    NetServerTCP(bool tls) :mTLS(tls) { }
+    virtual ~NetServerTCP() { }
 
     static void funcOnLink(net::RequestTCP* it) {
         DASSERT(it && it->mUser);
         net::Acceptor* accp = reinterpret_cast<net::Acceptor*>(it->mUser);
-        NetServer* web = reinterpret_cast<NetServer*>(accp->getUser());
+        NetServerTCP* web = reinterpret_cast<NetServerTCP*>(accp->getUser());
         web->onLink(it);
     }
 
@@ -79,21 +79,19 @@ public:
         return mTLS;
     }
 
-    void bind(net::Linker* it) {
+    void bind(net::LinkerTCP* it) {
         grab();
         it->grab();
     }
 
-    void unbind(net::Linker* it) {
+    void unbind(net::LinkerTCP* it) {
         drop();
         it->drop();
     }
 
 private:
-    //friend class HttpLayer;
-
     void onLink(net::RequestTCP* it) {
-        net::Linker* con = new net::Linker();
+        net::LinkerTCP* con = new net::LinkerTCP();
         con->onLink(this, it);
         con->drop();
     }
@@ -106,4 +104,4 @@ private:
 } //namespace app
 
 
-#endif //APP_LINKER_H
+#endif //APP_LINKERTCP_H

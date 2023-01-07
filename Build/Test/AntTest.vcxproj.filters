@@ -42,12 +42,6 @@
     <ClCompile Include="..\..\Source\Test\AppTicker.cpp">
       <Filter>源文件\Test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Test\Connector.cpp">
-      <Filter>源文件\Test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Test\Linker.cpp">
-      <Filter>源文件\Test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Test\TestRedis.cpp">
       <Filter>源文件\Test</Filter>
     </ClCompile>
@@ -58,9 +52,6 @@
       <Filter>源文件\Test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Test\TlsConnector.cpp">
-      <Filter>源文件\Test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Test\NetClient.cpp">
       <Filter>源文件\Test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Test\NetServer.cpp">

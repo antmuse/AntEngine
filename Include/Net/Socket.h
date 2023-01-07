@@ -298,6 +298,8 @@ public:
 
     bool isAlive();
 
+    bool openSeniorUDP(bool ipv6 = false);
+
     bool openSeniorTCP(bool ipv6 = false);
 
 #if defined(DOS_WINDOWS)
@@ -333,8 +335,11 @@ public:
 
     bool receive(RequestTCP* iAction)const;
 
+    bool receiveFrom(RequestTCP* iAction, NetAddress& addr)const;
 
     bool send(RequestTCP* iAction)const;
+
+    bool sendTo(RequestTCP* iAction, const NetAddress& addr)const;
 
 
     void* getFunctionDisconnect()const;

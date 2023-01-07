@@ -29,6 +29,7 @@
 #include "Logger.h"
 #include "HandleFile.h"
 #include "Net/HandleTCP.h"
+#include "Net/HandleUDP.h"
 #include "Engine.h"
 
 namespace app {
@@ -400,6 +401,15 @@ s32 Loop::closeHandle(Handle* it) {
         }
         break;
     }
+    case EHT_UDP:
+    {
+        net::HandleUDP* nd = reinterpret_cast<net::HandleUDP*>(it);
+        ret = nd->close();
+        if (nd->mCallTime) {
+            mTimeHub.remove(&nd->mLink);
+        }
+        break;
+    }
     case EHT_TIME:
     {
         HandleTime* nd = reinterpret_cast<HandleTime*>(it);
@@ -535,6 +545,22 @@ s32 Loop::openHandle(Handle* it) {
             ret = System::getAppError();
             Logger::log(ELL_ERROR, "Loop::openHandle>>file=%s, ecode=%d", nd->getFileName().c_str(), ret);
             nd->close();
+        } else {
+            nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
+            if (nd->mCallTime) {
+                nd->mTimeout += Timer::getRelativeTime();
+                mTimeHub.insert(&nd->mLink);
+            }
+        }
+        break;
+    }
+    case EHT_UDP:
+    {
+        net::HandleUDP* nd = reinterpret_cast<net::HandleUDP*>(it);
+        if (!mPoller.add(nd->getSock(), nd)) {
+            ret = System::getAppError();
+            Logger::log(ELL_ERROR, "Loop::openHandle>>add_UDP, addr=%s, ecode=%d", nd->mLocal.getStr(), ret);
+            nd->getSock().close();
         } else {
             nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
             if (nd->mCallTime) {

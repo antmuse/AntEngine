@@ -1,5 +1,5 @@
-#ifndef APP_CONNECTOR_H
-#define	APP_CONNECTOR_H
+#ifndef APP_SENDERTCP_H
+#define	APP_SENDERTCP_H
 
 #include "Engine.h"
 #include "Packet.h"
@@ -8,11 +8,11 @@
 namespace app {
 
 
-class Connector {
+class SenderTCP {
 public:
-    Connector();
+    SenderTCP();
 
-    ~Connector();
+    ~SenderTCP();
 
     //@param cnt ·¢ËÍ´ÎÊý
     void setMaxMsg(s32 cnt);
@@ -36,27 +36,27 @@ private:
     //}
 
     static s32 funcOnTime(HandleTime* it) {
-        Connector& nd = *(Connector*)it->getUser();
+        SenderTCP& nd = *(SenderTCP*)it->getUser();
         return nd.onTimeout(*it);
     }
 
     static void funcOnWrite(net::RequestTCP* it) {
-        Connector& nd = *(Connector*)it->mUser;
+        SenderTCP& nd = *(SenderTCP*)it->mUser;
         nd.onWrite(it);
     }
 
     static void funcOnRead(net::RequestTCP* it) {
-        Connector& nd = *(Connector*)it->mUser;
+        SenderTCP& nd = *(SenderTCP*)it->mUser;
         nd.onRead(it);
     }
 
     static void funcOnConnect(net::RequestTCP* it) {
-        Connector& nd = *(Connector*)it->mUser;
+        SenderTCP& nd = *(SenderTCP*)it->mUser;
         nd.onConnect(it);
     }
 
     static void funcOnClose(Handle* it) {
-        Connector& nd = *(Connector*)it->getUser();
+        SenderTCP& nd = *(SenderTCP*)it->getUser();
         nd.onClose(it);
     }
 
@@ -80,4 +80,4 @@ private:
 } //namespace app
 
 
-#endif //APP_CONNECTOR_H
+#endif //APP_SENDERTCP_H

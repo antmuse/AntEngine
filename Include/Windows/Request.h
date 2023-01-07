@@ -115,7 +115,7 @@ public:
     }
 
     static void delRequest(net::RequestTCP* it) {
-        delete it;
+        delete[] reinterpret_cast<s8*>(it);
     }
 
     RequestTCP() {

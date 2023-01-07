@@ -1,32 +1,32 @@
-#include "Linker.h"
+#include "LinkerTCP.h"
 #include "Net/Acceptor.h"
 #include "AppTicker.h"
 
 namespace app {
 namespace net {
 
-Linker::Linker() :
+LinkerTCP::LinkerTCP() :
     mTLS(false),
     mServer(nullptr),
     mPack(1024) {
 }
 
 
-Linker::~Linker() {
+LinkerTCP::~LinkerTCP() {
 }
 
-s32 Linker::onTimeout(HandleTime& it) {
-    printf("Linker::onTimeout>>closed handle's flag = 0x%X\n", it.getFlag());
+s32 LinkerTCP::onTimeout(HandleTime& it) {
+    printf("LinkerTCP::onTimeout>>closed handle's flag = 0x%X\n", it.getFlag());
     return EE_ERROR;
 }
 
 
-void Linker::onClose(Handle* it) {
-    printf("Linker::onClose>>closed handle = %p\n", it);
+void LinkerTCP::onClose(Handle* it) {
+    printf("LinkerTCP::onClose>>closed handle = %p\n", it);
     if (mTLS) {
-        DASSERT(&mTCP == it && "Linker::onClose tls handle?");
+        DASSERT(&mTCP == it && "LinkerTCP::onClose tls handle?");
     } else {
-        DASSERT(&mTCP.getHandleTCP() == it && "Linker::onClose tcp handle?");
+        DASSERT(&mTCP.getHandleTCP() == it && "LinkerTCP::onClose tcp handle?");
     }
     if (mServer) {
         mServer->unbind(this);
@@ -37,37 +37,37 @@ void Linker::onClose(Handle* it) {
 }
 
 
-bool Linker::onLink(NetServer* sev, net::RequestTCP* it) {
+bool LinkerTCP::onLink(NetServerTCP* sev, net::RequestTCP* it) {
     DASSERT(sev);
     mServer = sev;
     mTLS = sev->isTLS();
 
     if (mTLS) {
-        mTCP.setClose(EHT_TCP_LINK, Linker::funcOnClose, this);
-        mTCP.setTime(Linker::funcOnTime, 15 * 1000, 30 * 1000, -1);
+        mTCP.setClose(EHT_TCP_LINK, LinkerTCP::funcOnClose, this);
+        mTCP.setTime(LinkerTCP::funcOnTime, 15 * 1000, 30 * 1000, -1);
     } else {
-        mTCP.getHandleTCP().setClose(EHT_TCP_LINK, Linker::funcOnClose, this);
-        mTCP.getHandleTCP().setTime(Linker::funcOnTime, 15 * 1000, 30 * 1000, -1);
+        mTCP.getHandleTCP().setClose(EHT_TCP_LINK, LinkerTCP::funcOnClose, this);
+        mTCP.getHandleTCP().setTime(LinkerTCP::funcOnTime, 15 * 1000, 30 * 1000, -1);
     }
 
     net::RequestTCP* read = net::RequestTCP::newRequest(4 * 1024);
     read->mUser = this;
-    read->mCall = Linker::funcOnRead;
+    read->mCall = LinkerTCP::funcOnRead;
     s32 ret = mTLS ? mTCP.open(*(net::RequestAccept*)it, read)
         : mTCP.getHandleTCP().open(*(net::RequestAccept*)it, read);
     if (0 == ret) {
         mServer->bind(this);
-        Logger::log(ELL_INFO, "Linker::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
+        Logger::log(ELL_INFO, "LinkerTCP::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
         mServer = nullptr;
         net::RequestTCP::delRequest(read);
-        Logger::log(ELL_INFO, "Linker::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(), mTCP.getLocal().getStr(), ret);
+        Logger::log(ELL_INFO, "LinkerTCP::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(), mTCP.getLocal().getStr(), ret);
     }
     return 0 == ret;
 }
 
 
-void Linker::onWrite(net::RequestTCP* it) {
+void LinkerTCP::onWrite(net::RequestTCP* it) {
     if (0 == it->mError) {
         StringView dat = it->getReadBuf();
         MsgHeader* head = (MsgHeader*)dat.mData;
@@ -80,13 +80,13 @@ void Linker::onWrite(net::RequestTCP* it) {
             break;
         }
     } else {
-        Logger::log(ELL_ERROR, "Linker::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
+        Logger::log(ELL_ERROR, "LinkerTCP::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
     net::RequestTCP::delRequest(it);
 }
 
 
-void Linker::onRead(net::RequestTCP* it) {
+void LinkerTCP::onRead(net::RequestTCP* it) {
     if (it->mUsed > 0) {
         StringView dat = it->getReadBuf();
         usz got = mPack.write(dat.mData, dat.mLen);
@@ -103,7 +103,7 @@ void Linker::onRead(net::RequestTCP* it) {
                 ++AppTicker::gTotalActive;
                 net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
                 out->mUser = this;
-                out->mCall = Linker::funcOnWrite;
+                out->mCall = LinkerTCP::funcOnWrite;
                 dat = out->getWriteBuf();
                 head->mType = net::EPT_ACTIVE_RESP;
                 memcpy(dat.mData, head, head->mSize);
@@ -119,7 +119,7 @@ void Linker::onRead(net::RequestTCP* it) {
                 AppTicker::gTotalSizeIn += head->mSize;
                 net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
                 out->mUser = this;
-                out->mCall = Linker::funcOnWrite;
+                out->mCall = LinkerTCP::funcOnWrite;
                 dat = out->getWriteBuf();
                 memcpy(dat.mData, head, head->mSize);
                 out->mUsed = head->mSize;
@@ -137,12 +137,12 @@ void Linker::onRead(net::RequestTCP* it) {
             head = (MsgHeader*)((s8*)head + head->mSize);
         }//while
         mPack.clear(mPack.size() - got);
-        //printf("Linker::onRead>>%.*s\n", (s32)dat.mLen, dat.mData);
+        //printf("LinkerTCP::onRead>>%.*s\n", (s32)dat.mLen, dat.mData);
         return;
     }
 
     //stop read
-    printf("Linker::onRead>>read 0 bytes, ecode=%d\n", it->mError);
+    printf("LinkerTCP::onRead>>read 0 bytes, ecode=%d\n", it->mError);
     net::RequestTCP::delRequest(it);
 }
 

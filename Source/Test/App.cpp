@@ -3,7 +3,6 @@
 #include <thread>
 #include <chrono>
 #include "Engine.h"
-#include "Connector.h"
 #include "AppTicker.h"
 #include "Timer.h"
 #include "Converter.h"
@@ -39,8 +38,6 @@ void AppTestRBTreeMap();
 s32 AppTestThreadPool(s32 argc, s8** argv);
 s32 AppTestStrConvGBKU8(s32 argc, s8** argv);
 s32 AppTestSystem(s32 argc, s8** argv);
-s32 AppTestNetServer(s32 argc, s8** argv);
-s32 AppTestNetClient(s32 argc, s8** argv);
 s32 AppTestRedis(s32 argc, s8** argv);
 s32 AppTestDefault(s32 argc, s8** argv);
 s32 AppTestHttpsClient(s32 argc, s8** argv);
@@ -73,11 +70,9 @@ int main(int argc, char** argv) {
     switch (cmd) {
     case 0:
         //exe 0 0.0.0.0:9981 tls/tcp
-        ret = 4 == argc ? AppTestNetServer(argc, argv) : argc;
         break;
     case 1:
         //exe 1 0.0.0.0:9981 tls/tcp 10 5000
-        ret = 6 == argc ? AppTestNetClient(argc, argv) : argc;
         break;
     case 2:
         //exe 2
@@ -109,7 +104,7 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-
+            AppTestSystem(argc, argv);
         } else {
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);

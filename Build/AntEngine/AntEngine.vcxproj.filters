@@ -302,6 +302,12 @@
     <ClCompile Include="..\..\Source\Script\ScriptManager.cpp">
       <Filter>Source\Script</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Script\ScriptFileHandle.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HandleUDP.cpp">
+      <Filter>Source\Net</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -603,6 +609,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Script\ScriptFunc.h">
       <Filter>Include\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\ScriptFileHandle.h">
+      <Filter>Include\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HandleUDP.h">
+      <Filter>Include\Net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

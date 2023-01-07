@@ -19,3 +19,18 @@ function main()
     show()
     ScriptInfo.init()
 end
+
+
+
+local filend = HandleFile.new()
+filend:open("Script/init.lua_null", 1)
+ 
+print(filend)
+print("file= " .. filend:getFileName())
+--class::__tostring()
+ 
+--let it been gc
+filend = nil
+ 
+--force gc
+--collectgarbage("collect")

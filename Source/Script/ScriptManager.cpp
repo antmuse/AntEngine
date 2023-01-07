@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "Engine.h"
 #include "Script/ScriptFunc.h"
+#include "Script/ScriptFileHandle.h"
 
 namespace app {
 namespace script {
@@ -69,7 +70,8 @@ void ScriptManager::initialize() {
     //lua_newtable(mLuaState); // same as lua_createtable(L, 0, 0);
 
     //lib Eng
-    luaL_requiref(mLuaState, "Eng", LuaOpenEngLib, 1);  // 1=global
+    luaL_requiref(mLuaState, "Eng", LuaOpenEngLib, 1);          // 1=global
+    luaL_requiref(mLuaState, "HandleFile", LuaOpenLibFile, 1);
 
     //base data struct
     lua_register(mLuaState, "Color", LuaColor);
@@ -79,7 +81,6 @@ void ScriptManager::initialize() {
     lua_register(mLuaState, "Include", LuaInclude);
 
     //global val
-    // lua_pushnumber(mLuaState, 101.0);
     lua_pushinteger(mLuaState, 1000ULL);
     lua_setglobal(mLuaState, "GVersion");
     lua_pushstring(mLuaState, "1.0.0.0");

@@ -201,7 +201,6 @@ bool Engine::init(const s8* fname, bool child) {
             return false;
         }
         Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
-        script::ScriptManager::getInstance().loadFirstScript();
         ret = createProcess();
     }
 
@@ -221,6 +220,9 @@ bool Engine::init(const s8* fname, bool child) {
 #endif
     }
 
+    if (ret) {
+        script::ScriptManager::getInstance().loadFirstScript();
+    }
     return ret;
 }
 
