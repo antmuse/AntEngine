@@ -548,7 +548,7 @@ s32 Loop::closeHandle(Handle* it) {
         if (mPoller.remove(nd->getSock())) {
             //TODO>> CLEAR ALL requests
         } else {
-            Logger::log(ELL_ERROR, "Loop::closeHandle>>remove=%d, ecode=%d", nd->getSock().getValue(), System::getError());
+            Logger::log(ELL_ERROR, "Loop::closeHandle>>remove tcp=%d, ecode=%d", nd->getSock().getValue(), System::getError());
         }
         nd->close();
         addPendingAll(nd->mReadQueue);
@@ -560,10 +560,17 @@ s32 Loop::closeHandle(Handle* it) {
     case EHT_UDP:
     {
         net::HandleUDP* nd = reinterpret_cast<net::HandleUDP*>(it);
-        ret = nd->close();
         if (nd->mCallTime) {
             mTimeHub.remove(&nd->mLink);
         }
+        if (!mPoller.remove(nd->getSock())) {
+            Logger::log(ELL_ERROR, "Loop::closeHandle>>remove udp=%d, ecode=%d", nd->getSock().getValue(), System::getError());
+        }
+        nd->close();
+        addPendingAll(nd->mReadQueue);
+        nd->mReadQueue = nullptr;
+        addPendingAll(nd->mWriteQueue);
+        nd->mWriteQueue = nullptr;
         break;
     }
     case EHT_TIME:
