@@ -46,6 +46,7 @@ s32 LinkerUDP::onTimeout(HandleTime& it) {
 void LinkerUDP::onClose(Handle* it) {
     DASSERT(&mUDP == it && "LinkerUDP::onClose handle");
     //sev.unbind(this);
+    Logger::log(ELL_INFO, "LinkerUDP::onClose>>grab cnt=%d", it->getGrabCount());
     drop();
 }
 
@@ -90,9 +91,11 @@ s32 LinkerUDP::sendMsgs(s32 max) {
 s32 LinkerUDP::sendMsgs(net::RequestUDP* out) {
     DASSERT(out);
     StringView buf = out->getWriteBuf();
+    usz sockid = mUDP.getSock().getValue();
     out->mUsed = static_cast<u32>(Timer::getTimeStr(buf.mData, buf.mLen));
     out->mUsed += 1 + snprintf(buf.mData + out->mUsed, buf.mLen - out->mUsed,
-        ", LinkerUDP msgID=%d, ip=[%s->%s]", ++mSN, mUDP.getLocal().getStr(), mUDP.getRemote().getStr());
+        ", Server, sock=%llu, msgID=%d, ip=[%s->%s]", sockid, ++mSN, 
+        mUDP.getLocal().getStr(), mUDP.getRemote().getStr());
     out->mCall = LinkerUDP::funcOnWrite;
     return mUDP.write(out);
 }
@@ -140,6 +143,7 @@ s32 NetServerUDP::onTimeout(HandleTime& it) {
 
 void NetServerUDP::onClose(Handle* it) {
     DASSERT(&mUDP == it && "NetServerUDP::onClose handle");
+    Logger::log(ELL_INFO, "NetServerUDP::onClose>>grab cnt=%d", it->getGrabCount());
     drop();
 }
 

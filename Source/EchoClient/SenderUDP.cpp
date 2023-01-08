@@ -48,6 +48,7 @@ s32 SenderUDP::onTimeout(HandleTime& it) {
 
 void SenderUDP::onClose(Handle* it) {
     DASSERT(&mUDP == it && "SenderUDP::onClose handle");
+    Logger::log(ELL_INFO, "SenderUDP::onClose>>grab cnt=%d", it->getGrabCount());
     //delete this;
 }
 
@@ -91,10 +92,11 @@ s32 SenderUDP::sendMsgs(s32 max) {
 
 s32 SenderUDP::sendMsgs(net::RequestUDP* out) {
     DASSERT(out);
+    usz sockid = mUDP.getSock().getValue();
     StringView buf = out->getWriteBuf();
     out->mUsed = static_cast<u32>(Timer::getTimeStr(buf.mData, buf.mLen));
     out->mUsed += 1 + snprintf(buf.mData + out->mUsed, buf.mLen - out->mUsed,
-        ", msgID=%d, ip=[%s->%s]", ++mSN, mUDP.getLocal().getStr(), mUDP.getRemote().getStr());
+        ", Client, sock=%llu, msgID=%d, ip=[%s->%s]", sockid, ++mSN, mUDP.getLocal().getStr(), mUDP.getRemote().getStr());
     out->mCall = SenderUDP::funcOnWrite;
     return mUDP.write(out);
 }

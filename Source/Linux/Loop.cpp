@@ -24,13 +24,14 @@
 
 
 #include "Loop.h"
+#include <sys/epoll.h>
 #include "Timer.h"
 #include "System.h"
 #include "Engine.h"
 #include "Logger.h"
 #include "HandleFile.h"
 #include "Net/HandleTCP.h"
-#include <sys/epoll.h>
+#include "Net/HandleUDP.h"
 
 
 namespace app {
@@ -556,6 +557,15 @@ s32 Loop::closeHandle(Handle* it) {
         nd->mWriteQueue = nullptr;
         break;
     }
+    case EHT_UDP:
+    {
+        net::HandleUDP* nd = reinterpret_cast<net::HandleUDP*>(it);
+        ret = nd->close();
+        if (nd->mCallTime) {
+            mTimeHub.remove(&nd->mLink);
+        }
+        break;
+    }
     case EHT_TIME:
     {
         HandleTime* nd = reinterpret_cast<HandleTime*>(it);
@@ -687,6 +697,25 @@ s32 Loop::openHandle(Handle* it) {
         if (nd->mCallTime) {
             nd->mTimeout += Timer::getRelativeTime();
             mTimeHub.insert(&nd->mLink);
+        }
+        break;
+    }
+    case EHT_UDP:
+    {
+        net::HandleUDP* nd = reinterpret_cast<net::HandleUDP*>(it);
+        EventPoller::SEvent evt;
+        evt.mEvent = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR | EPOLLHUP;
+        evt.mData.mPointer = nd;
+        if (mPoller.add(nd->getSock(), evt)) {
+            nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
+            if (nd->mCallTime) {
+                nd->mTimeout += Timer::getRelativeTime();
+                mTimeHub.insert(&nd->mLink);
+            }
+        } else {
+            ret = System::getAppError();
+            Logger::log(ELL_ERROR, "Loop::openHandle>>addr=%s,udp add, sock=%d, ecode=%d", nd->mRemote.getStr(), nd->getSock().getValue(), ret);
+            nd->getSock().close();
         }
         break;
     }
