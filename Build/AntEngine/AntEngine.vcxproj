@@ -44,7 +44,6 @@
     <ClCompile Include="..\..\Source\MemoryHub.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
-    <ClCompile Include="..\..\Source\Net\HandleUDP.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileRead.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp" />
@@ -99,6 +98,7 @@
     <ClCompile Include="..\..\Source\Windows\Loop.cpp" />
     <ClCompile Include="..\..\Source\Windows\MapFile.cpp" />
     <ClCompile Include="..\..\Source\Windows\System.cpp" />
+    <ClCompile Include="..\..\Source\Windows\HandleUDP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h" />

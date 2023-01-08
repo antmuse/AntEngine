@@ -140,6 +140,9 @@
     <ClCompile Include="..\..\Source\Windows\MapFile.cpp">
       <Filter>Source\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\HandleUDP.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\EngineConfig.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -304,9 +307,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Script\ScriptFileHandle.cpp">
       <Filter>Source\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HandleUDP.cpp">
-      <Filter>Source\Net</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

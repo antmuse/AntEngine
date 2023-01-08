@@ -32,7 +32,7 @@
 
 namespace app {
 namespace net {
-class RequestTCP;
+class RequestUDP;
 class RequestAccept;
 
 class HandleUDP : public HandleTCP {
@@ -43,13 +43,13 @@ public:
 
     ~HandleUDP() { }
 
-    s32 write(RequestTCP* it);
+    s32 write(RequestUDP* it);
 
-    s32 writeTo(RequestTCP* it, const NetAddress& addr);
+    s32 writeTo(RequestUDP* it);
 
-    s32 read(RequestTCP* it);
+    s32 read(RequestUDP* it);
 
-    s32 readFrom(RequestTCP* it, NetAddress& addr);
+    s32 readFrom(RequestUDP* it);
 
     s32 close();
 
@@ -61,7 +61,7 @@ public:
     * @param flag [1=reuse ip:port, 2=connect it]
     * @return 0 if success, else failed.
     */
-    s32 open(RequestTCP* it, const s8* remote, const s8* local = nullptr, s32 flag = 0);
+    s32 open(RequestUDP* it, const s8* remote, const s8* local = nullptr, s32 flag = 0);
     
     /**
     * @brief open UDP handle, must provide the remote address if connect flag on.
@@ -71,10 +71,13 @@ public:
     * @param flag [1=reuse ip:port, 2=connect it]
     * @return 0 if success, else failed.
     */
-    s32 open(RequestTCP* it, NetAddress* remote, const NetAddress* local = nullptr, s32 flag = 0);
+    s32 open(RequestUDP* it, NetAddress* remote, const NetAddress* local = nullptr, s32 flag = 0);
 
 private:
     s32 mFlags;  //1=reused ip:port, 2=connected
+
+    s32 read(RequestUDP* it, s32 flag);
+    s32 write(RequestUDP* it, s32 flag);
 };
 
 

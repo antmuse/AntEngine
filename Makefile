@@ -8,6 +8,8 @@ export BUILD_DIR = $(shell pwd)
 MK_DIRS = $(BUILD_DIR)/Source \
 		  $(BUILD_DIR)/Source/Test \
 		  $(BUILD_DIR)/Source/HttpClient \
+		  $(BUILD_DIR)/Source/EchoServer \
+		  $(BUILD_DIR)/Source/EchoClient \
 		  $(BUILD_DIR)/Source/Server
 
 

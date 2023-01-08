@@ -322,7 +322,7 @@ bool Socket::getTcpInfo(STCP_Info* info) const {
 }
 
 
-s32 Socket::sendto(const void* iBuffer, s32 iSize, const NetAddress& address) {
+s32 Socket::sendTo(const void* iBuffer, s32 iSize, const NetAddress& address) {
 #if defined(DOS_WINDOWS)
     return ::sendto(mSocket, (const s8*)iBuffer, iSize, 0,
         (sockaddr*)address.getAddress6(), address.getAddrSize());
@@ -333,7 +333,7 @@ s32 Socket::sendto(const void* iBuffer, s32 iSize, const NetAddress& address) {
 }
 
 
-s32 Socket::receiveFrom(void* iBuffer, s32 iSize, const NetAddress& address) {
+s32 Socket::receiveFrom(void* iBuffer, s32 iSize, NetAddress& address) {
 #if defined(DOS_WINDOWS)
     socklen_t size = address.getAddrSize();
     return ::recvfrom(mSocket, (s8*)iBuffer, iSize, 0, (sockaddr*)address.getAddress6(), &size);

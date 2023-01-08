@@ -35,9 +35,11 @@ public:
 
     ~Request() { }
 
+    void* getUser() const {
+        return mUser;
+    }
 
-    // @return 此次读写字节数.
-    u32 getStepSize()const {
+    u32 getStepSize() const {
         return mStepSize;
     }
 
@@ -66,15 +68,15 @@ public:
     ~RequestTCP() { }
 
     static RequestTCP* newRequest(u32 cache_size) {
-        RequestTCP* it = (RequestTCP*)(new s8[sizeof(RequestTCP) + cache_size]);
+        RequestTCP* it = reinterpret_cast<RequestTCP*>(new s8[sizeof(RequestTCP) + cache_size]);
         new ((void*)it) RequestTCP();
         it->mAllocated = cache_size;
-        it->mData = (s8*)(it + 1);
+        it->mData = reinterpret_cast<s8*>(it + 1);
         return it;
     }
 
     static void delRequest(net::RequestTCP* it) {
-        delete it;
+        delete[] reinterpret_cast<s8*>(it);
     }
 
     void clear() {
@@ -95,7 +97,6 @@ public:
         return ret;
     }
 
-    //@return 返回剩余可写空间大小
     u32 getWriteSize()const {
         return mAllocated - mUsed;
     }
@@ -113,6 +114,32 @@ public:
     s8* mData;
     u32 mAllocated;
     u32 mUsed;          //data size
+};
+
+
+class RequestUDP : public net::RequestTCP {
+public:
+    u32 mFlags;   //bits: [1=had connected, ...]
+    net::NetAddress mRemote;
+
+    static RequestUDP* newRequest(u32 cache_size) {
+        RequestUDP* it = reinterpret_cast<RequestUDP*>(new s8[sizeof(RequestUDP) + cache_size]);
+        new ((void*)it) RequestUDP();
+        it->mAllocated = cache_size;
+        it->mData = reinterpret_cast<s8*>(it + 1);
+        return it;
+    }
+
+    static void delRequest(net::RequestUDP* it) {
+        delete[] reinterpret_cast<s8*>(it);
+    }
+
+    RequestUDP(){
+        memset(this, 0, sizeof(*this));
+    }
+
+    ~RequestUDP() {
+    }
 };
 
 
@@ -136,6 +163,7 @@ public:
         mSocket.close();
     }
 };
+
 } //namespace net
 
 } //namespace app

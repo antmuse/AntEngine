@@ -197,7 +197,17 @@ void Loop::updatePending() {
             while (nd) {
                 if (EHF_READABLE & hnd->mFlag) {
                     buf = nd->getWriteBuf();
-                    s32 rdsz = hnd->mSock.receive(buf.mData, (s32)buf.mLen);
+                    s32 rdsz;
+                    if (EHT_UDP == hnd->mType) {
+                        net::RequestUDP* ndu = (net::RequestUDP*)req;
+                        if ((1 & ndu->mFlags) > 0) {
+                            rdsz = hnd->mSock.receive(buf.mData, (s32)buf.mLen);
+                        } else {
+                            rdsz = hnd->mSock.receiveFrom(buf.mData, (s32)buf.mLen, ndu->mRemote);
+                        }
+                    } else { // TCP currently
+                        rdsz = hnd->mSock.receive(buf.mData, (s32)buf.mLen);
+                    }
                     if (rdsz > 0) {
                         nd->mError = 0;
                         nd->mUsed += rdsz;
@@ -255,7 +265,17 @@ void Loop::updatePending() {
                     buf = nd->getReadBuf();
                     buf.mData += nd->mStepSize;
                     buf.mLen -= nd->mStepSize;
-                    s32 wdsz = hnd->mSock.send(buf.mData, (s32)buf.mLen);
+                    s32 wdsz;
+                    if (EHT_UDP == hnd->mType) {
+                        net::RequestUDP* ndu = (net::RequestUDP*)req;
+                        if ((1 & ndu->mFlags) > 0) {
+                            wdsz = hnd->mSock.send(buf.mData, (s32)buf.mLen);
+                        } else {
+                            wdsz = hnd->mSock.sendTo(buf.mData, (s32)buf.mLen, ndu->mRemote);
+                        }
+                    } else { // TCP currently
+                        wdsz = hnd->mSock.send(buf.mData, (s32)buf.mLen);
+                    }
                     if (wdsz > 0) {
                         nd->mError = 0;
                         nd->mStepSize += wdsz;

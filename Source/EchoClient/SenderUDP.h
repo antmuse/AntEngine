@@ -14,22 +14,21 @@ public:
 
     ~SenderUDP();
 
-    //@param cnt ·¢ËÍ´ÎÊý
     void setMaxMsg(s32 cnt);
 
     s32 open(const String& addr);
 
 private:
     s32 sendMsgs(s32 max);
-    s32 sendMsgs(net::RequestTCP* it);
+    s32 sendMsgs(net::RequestUDP* it);
 
     s32 onTimeout(HandleTime& it);
 
     void onClose(Handle* it);
 
-    void onWrite(net::RequestTCP* it);
+    void onWrite(net::RequestUDP* it);
 
-    void onRead(net::RequestTCP* it);
+    void onRead(net::RequestUDP* it);
 
 
     static s32 funcOnTime(HandleTime* it) {
@@ -39,12 +38,12 @@ private:
 
     static void funcOnWrite(net::RequestTCP* it) {
         SenderUDP& nd = *(SenderUDP*)it->mUser;
-        nd.onWrite(it);
+        nd.onWrite(reinterpret_cast<net::RequestUDP*>(it));
     }
 
     static void funcOnRead(net::RequestTCP* it) {
         SenderUDP& nd = *(SenderUDP*)it->mUser;
-        nd.onRead(it);
+        nd.onRead(reinterpret_cast<net::RequestUDP*>(it));
     }
 
     static void funcOnClose(Handle* it) {

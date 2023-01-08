@@ -36,7 +36,7 @@
 namespace app {
 namespace net {
 
-s32 HandleUDP::open(RequestTCP* it, NetAddress* remote, const NetAddress* local, s32 flag) {
+s32 HandleUDP::open(RequestUDP* it, NetAddress* remote, const NetAddress* local, s32 flag) {
     if (!it || (!remote && !local)) {
         return EE_INVALID_PARAM;
     }
@@ -99,7 +99,7 @@ s32 HandleUDP::open(RequestTCP* it, NetAddress* remote, const NetAddress* local,
 }
 
 
-s32 HandleUDP::open(RequestTCP* it, const s8* remote, const s8* local, s32 flag) {
+s32 HandleUDP::open(RequestUDP* it, const s8* remote, const s8* local, s32 flag) {
     bool val1 = remote && 0 != remote[0];
     bool val2 = local && 0 != local[0];
     DASSERT(it && (val1 || val2));
@@ -121,7 +121,7 @@ s32 HandleUDP::close() {
     return EE_OK;
 }
 
-s32 HandleUDP::read(RequestTCP* it) {
+s32 HandleUDP::read(RequestUDP* it) {
     DASSERT(it);
     if (0 == (EHF_READABLE & mFlag)) {
         return EE_NO_READABLE;
@@ -129,6 +129,7 @@ s32 HandleUDP::read(RequestTCP* it) {
     it->mType = ERT_READ;
     it->mError = 0;
     it->mHandle = this;
+    it->mFlags |= 1;
     if (!mSock.receive(it)) {
         it->mError = System::getAppError();
         Logger::log(ELL_ERROR, "HandleUDP::read>>addr=%s, ecode=%d", mRemote.getStr(), it->mError);
@@ -140,25 +141,7 @@ s32 HandleUDP::read(RequestTCP* it) {
 }
 
 
-s32 HandleUDP::readFrom(RequestTCP* it, NetAddress& addr) {
-    DASSERT(it);
-    if (0 == (EHF_READABLE & mFlag)) {
-        return EE_NO_READABLE;
-    }
-    it->mType = ERT_READ;
-    it->mError = 0;
-    it->mHandle = this;
-    if (!mSock.receiveFrom(it, addr)) {
-        it->mError = System::getAppError();
-        Logger::log(ELL_ERROR, "HandleUDP::read>>addr=%s, ecode=%d", addr.getStr(), it->mError);
-        mLoop->closeHandle(this);
-        return it->mError;
-    }
-    mLoop->bindFly(this);
-    return EE_OK;
-}
-
-s32 HandleUDP::writeTo(RequestTCP* it, const NetAddress& addr) {
+s32 HandleUDP::write(RequestUDP* it) {
     DASSERT(it);
     if (0 == (EHF_WRITEABLE & mFlag)) {
         return EE_NO_WRITEABLE;
@@ -166,24 +149,7 @@ s32 HandleUDP::writeTo(RequestTCP* it, const NetAddress& addr) {
     it->mType = ERT_WRITE;
     it->mError = 0;
     it->mHandle = this;
-    if (!mSock.sendTo(it, addr)) {
-        it->mError = System::getAppError();
-        Logger::log(ELL_ERROR, "HandleUDP::write>>addr=%s, ecode=%d", addr.getStr(), it->mError);
-        mLoop->closeHandle(this);
-        return it->mError;
-    }
-    mLoop->bindFly(this);
-    return EE_OK;
-}
-
-s32 HandleUDP::write(RequestTCP* it) {
-    DASSERT(it);
-    if (0 == (EHF_WRITEABLE & mFlag)) {
-        return EE_NO_WRITEABLE;
-    }
-    it->mType = ERT_WRITE;
-    it->mError = 0;
-    it->mHandle = this;
+    it->mFlags |= 1;
     if (!mSock.send(it)) {
         it->mError = System::getAppError();
         Logger::log(ELL_ERROR, "HandleUDP::write>>addr=%s, ecode=%d", mRemote.getStr(), it->mError);
@@ -193,6 +159,47 @@ s32 HandleUDP::write(RequestTCP* it) {
     mLoop->bindFly(this);
     return EE_OK;
 }
+
+
+s32 HandleUDP::readFrom(RequestUDP* it) {
+    DASSERT(it);
+    if (0 == (EHF_READABLE & mFlag)) {
+        return EE_NO_READABLE;
+    }
+    it->mType = ERT_READ;
+    it->mError = 0;
+    it->mHandle = this;
+    it->mFlags = 0;
+    if (!mSock.receiveFrom(it, it->mRemote)) {
+        it->mError = System::getAppError();
+        Logger::log(ELL_ERROR, "HandleUDP::read>>addr=%s, ecode=%d", it->mRemote.getStr(), it->mError);
+        mLoop->closeHandle(this);
+        return it->mError;
+    }
+    mLoop->bindFly(this);
+    return EE_OK;
+}
+
+
+s32 HandleUDP::writeTo(RequestUDP* it) {
+    DASSERT(it);
+    if (0 == (EHF_WRITEABLE & mFlag)) {
+        return EE_NO_WRITEABLE;
+    }
+    it->mType = ERT_WRITE;
+    it->mError = 0;
+    it->mHandle = this;
+    it->mFlags = 0;
+    if (!mSock.sendTo(it, it->mRemote)) {
+        it->mError = System::getAppError();
+        Logger::log(ELL_ERROR, "HandleUDP::write>>addr=%s, ecode=%d", it->mRemote.getStr(), it->mError);
+        mLoop->closeHandle(this);
+        return it->mError;
+    }
+    mLoop->bindFly(this);
+    return EE_OK;
+}
+
 
 } //namespace net
 } //namespace app

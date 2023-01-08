@@ -245,9 +245,9 @@ public:
     bool open(s32 domain, s32 type, s32 protocol);
 
 
-    s32 sendto(const void* iBuffer, s32 iSize, const NetAddress& address);
+    s32 sendTo(const void* iBuffer, s32 iSize, const NetAddress& address);
 
-    s32 receiveFrom(void* iBuffer, s32 iSize, const NetAddress& address);
+    s32 receiveFrom(void* iBuffer, s32 iSize, NetAddress& address);
 
 
     s32 send(const void* iBuffer, s32 iSize);

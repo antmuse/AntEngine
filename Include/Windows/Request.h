@@ -80,7 +80,6 @@ public:
         memset(&mOverlapped, 0, sizeof(mOverlapped));
     }
 
-    // @return 此次读写字节数.
     u32 getStepSize()const {
         return ((u32)mOverlapped.InternalHigh);
     }
@@ -90,7 +89,7 @@ public:
     }
 #else
     u32 mStepSize;
-    // @return 此次读写字节数.
+
     u32 getStepSize()const {
         return mStepSize;
     }
@@ -142,7 +141,6 @@ public:
         return ret;
     }
 
-    //@return 返回剩余可写空间大小
     u32 getWriteSize()const {
         return mAllocated - mUsed;
     }
@@ -161,6 +159,33 @@ public:
     u32 mAllocated;
     u32 mUsed;          //data size
 };
+
+
+class RequestUDP : public net::RequestTCP {
+public:
+    u32 mFlags;   //bits: [1=had connected, ...]
+    net::NetAddress mRemote;
+
+    static RequestUDP* newRequest(u32 cache_size) {
+        RequestUDP* it = reinterpret_cast<RequestUDP*>(new s8[sizeof(RequestUDP) + cache_size]);
+        new ((void*)it) RequestUDP();
+        it->mAllocated = cache_size;
+        it->mData = reinterpret_cast<s8*>(it + 1);
+        return it;
+    }
+
+    static void delRequest(net::RequestUDP* it) {
+        delete[] reinterpret_cast<s8*>(it);
+    }
+
+    RequestUDP(){
+        memset(this, 0, sizeof(*this));
+    }
+
+    ~RequestUDP() {
+    }
+};
+
 
 class RequestAccept : public net::RequestTCP {
 public:
