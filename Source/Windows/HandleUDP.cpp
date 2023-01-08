@@ -75,6 +75,7 @@ s32 HandleUDP::open(RequestUDP* it, NetAddress* remote, const NetAddress* local,
 
     if (EE_OK == ret && remote && (flag & 2) > 0) {
         mRemote = *remote;
+        it->mRemote = *remote;
         mFlags |= 2;
         if (0 != mSock.connect(mRemote)) {
             ret = System::getAppError();
@@ -95,7 +96,7 @@ s32 HandleUDP::open(RequestUDP* it, NetAddress* remote, const NetAddress* local,
     if (EE_OK != mLoop->openHandle(this)) {
         return EE_ERROR;
     }
-    return (mFlags & 2) > 0 ? read(it) : readFrom(it, *remote);
+    return (mFlags & 2) > 0 ? read(it) : readFrom(it);
 }
 
 
