@@ -92,7 +92,7 @@ s32 AppTicker::onTimeout(HandleTime* it) {
     if (!_kbhit() || (ch = _getch()) != 27)
 #endif
     {
-        printf("Handle=%d, Fly=%d, In=%llu/%llu, Out=%llu/%llu, Active=%llu/%llu\n", estat.mTotalHandles.load(),
+        printf("Handle=%lld, Fly=%lld, In=%lld/%lld, Out=%lld/%lld, Active=%lld/%lld\n", estat.mTotalHandles.load(),
             estat.mFlyRequests.load(), estat.mInPackets.load(), estat.mInBytes.load(), estat.mOutPackets.load(),
             estat.mOutBytes.load(), estat.mHeartbeat.load(), estat.mHeartbeatResp.load());
         if (++G_LOG_FLUSH_CNT >= 20) {
