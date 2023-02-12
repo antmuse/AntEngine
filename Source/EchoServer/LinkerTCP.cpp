@@ -73,6 +73,7 @@ void LinkerTCP::onWrite(net::RequestTCP* it) {
         MsgHeader* head = (MsgHeader*)dat.mData;
         switch (head->mType) {
         case net::EPT_ACTIVE_RESP:
+            ++AppTicker::gTotalActiveResp;
             break;
         case net::EPT_SUBMIT:
             AppTicker::gTotalSizeOut += it->mUsed;

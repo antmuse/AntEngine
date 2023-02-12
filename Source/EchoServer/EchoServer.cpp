@@ -32,11 +32,16 @@ using namespace app;
 /**
  * usage:
  *    ./exe tcp 127.0.0.1:5000
+ *    ./exe TCP 127.0.0.1:5000
  *    ./exe udp 127.0.0.1:5000
  */
 int main(int argc, char** argv) {
     printf("main>>argc=%d,argv[0]=%s\n", argc, argv[0]);
     if (argc < 3) {
+        printf("* usage:\n");
+        printf("*    ./exe tcp 127.0.0.1:5000 \t//raw-tcp server\n");
+        printf("*    ./exe TCP 127.0.0.1:5000 \t//TLS-tcp server\n");
+        printf("*    ./exe udp 127.0.0.1:5000 \t//udp server\n");
         return 0;
     }
     Engine& eng = Engine::getInstance();

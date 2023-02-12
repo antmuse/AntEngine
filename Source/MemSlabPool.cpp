@@ -56,6 +56,8 @@ static usz G_ExactSlabSizeShift = 0;
 static usz G_PageSize = System::getPageSize();
 static usz G_PageSizeShift = 0;
 
+
+
 MemSlabPool::MemSlabPool(usz msz) {
     mTotalSize = msz;
     mEndPos = (u8*)this + msz;
@@ -143,6 +145,9 @@ void MemSlabPool::initSlab() {
     this->mLogNoMem = 1;
 }
 
+u32 MemSlabPool::getStateCount() {
+    return G_PageSizeShift - mMinShift;
+}
 
 usz MemSlabPool::getPageAddr(MemPage* page) {
     return ((((page)-mPages) << G_PageSizeShift) + (usz)mStartPos);

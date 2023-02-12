@@ -45,6 +45,7 @@ Engine::Engine() :
     mPPID(0),
     mPID(0),
     mChild(32),
+    mEngStats(nullptr),
     mMain(true) {
 }
 
@@ -157,42 +158,39 @@ bool Engine::init(const s8* fname, bool child) {
     net::AppInitTlsLib();
     mTlsENG.init();
 
-    if (mConfig.mMaxProcess > 0) {
-        if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
-            if (mMain) {
-                if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true)) {
-                    Logger::log(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
-                    return false;
-                }
-            } else {
-                if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
-                    Logger::log(ELL_INFO, "Engine::init>>child openMem GMEM fail = %s", mConfig.mMemName.c_str());
-                    return false;
-                }
+    if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
+        if (mMain) {
+            if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true)) {
+                Logger::log(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
+                return false;
             }
         } else {
-            if (mMain) {
-                if (!mMapfile.createMapfile(mConfig.mMemSize, mConfig.mMemName.c_str(), false, false, true)) {
-                    Logger::log(ELL_INFO, "Engine::init>>createMapfile fail = %s", mConfig.mMemName.c_str());
-                    return false;
-                }
-            } else {
-                if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
-                    Logger::log(ELL_INFO, "Engine::init>>child openMem GMAP fail = %s", mConfig.mMemName.c_str());
-                    return false;
-                }
+            if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
+                Logger::log(ELL_INFO, "Engine::init>>child openMem GMEM fail = %s", mConfig.mMemName.c_str());
+                return false;
             }
         }
-
-        MemSlabPool& mpool = getMemSlabPool();
+    } else {
         if (mMain) {
-            new (&mpool)MemSlabPool(mConfig.mMemSize);
+            if (!mMapfile.createMapfile(mConfig.mMemSize, mConfig.mMemName.c_str(), false, false, true)) {
+                Logger::log(ELL_INFO, "Engine::init>>createMapfile fail = %s", mConfig.mMemName.c_str());
+                return false;
+            }
         } else {
-            mpool.initSlabSize();
+            if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
+                Logger::log(ELL_INFO, "Engine::init>>child openMem GMAP fail = %s", mConfig.mMemName.c_str());
+                return false;
+            }
         }
     }
 
     if (mMain) {
+        MemSlabPool& mpool = getMemSlabPool();
+        new (&mpool) MemSlabPool(mConfig.mMemSize); // mpool.initSlabSize();
+        // mpool.mLock.tryUnlock();  TODO clear lock when ...
+        mEngStats = reinterpret_cast<EngineStats*>(mpool.allocMem(sizeof(*mEngStats)));
+        mEngStats->clear();
+
         FileWriter file;
         if (file.openFile(mConfig.mPidFile, false)) {
             file.writeParams("%d", mPID);
@@ -204,7 +202,7 @@ bool Engine::init(const s8* fname, bool child) {
         ret = createProcess();
     }
 
-    if (mMain) {
+    if (mMain) { // check again after fork()
         ret = runMainProcess();
     } else {
 #if defined(DOS_WINDOWS)
@@ -226,8 +224,23 @@ bool Engine::init(const s8* fname, bool child) {
     return ret;
 }
 
-
 bool Engine::uninit() {
+    if (mMain) {
+        MemSlabPool& mpool = getMemSlabPool();
+
+        Logger::log(ELL_INFO, "Engine::uninit>>share stats[total=%ld, closed=%ld, in=%lu, out=%lu]",
+            mEngStats->mTotalHandles.load(), mEngStats->mClosedHandles.load(), mEngStats->mInBytes.load(),
+            mEngStats->mOutBytes.load());
+
+        mpool.freeMem(mEngStats);  // mEngStats = nullptr;
+
+        u32 cnt = mpool.getStateCount();
+        for (u32 i = 0; i < cnt; i++) {
+            MemStat& mstat = *(mpool.mStats + i);
+            Logger::log(ELL_INFO, "Engine::uninit>>share mem[%u][used/total=%lu/%lu, req=%lu, fail=%lu]", i,
+                mstat.mUsed, mstat.mTotal, mstat.mRequests, mstat.mFails);
+        }
+    }
     Logger::log(ELL_INFO, "Engine::uninit>>pid = %d, main = %c, script=%llu",
         mPID, mMain ? 'Y' : 'N', script::ScriptManager::getInstance().getMemory());
     script::ScriptManager::getInstance().removeAll();

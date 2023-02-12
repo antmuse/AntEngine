@@ -41,14 +41,18 @@ Loop::Loop() :
     mRequest(nullptr),
     mTime(Timer::getRelativeTime()),
     mStop(0),
+    mMaxEvents(128),
     mPackCMD(1024),
     mFlyRequest(0),
     mGrabCount(0) {
+    mEvents = new EventPoller::SEvent[mMaxEvents];
 }
 
 Loop::~Loop() {
     DASSERT(0 == mGrabCount && 0 == mFlyRequest);
     //mPoller.close();
+    delete[] mEvents;
+    mEvents = nullptr;
 }
 
 
@@ -110,19 +114,17 @@ void Loop::onRead(net::RequestTCP* it) {
 
 
 bool Loop::run() {
-    const s32 pmax = 128;
-    EventPoller::SEvent evts[pmax];
     s32 ecode = 0;
     u32 timeout = getWaitTime();
-    s32 max = mPoller.getEvents(evts, pmax, timeout);
+    s32 max = mPoller.getEvents(mEvents, mMaxEvents, timeout);
     if (max > 0) {
         for (s32 i = 0; i < max; ++i) {
-            u32 eflag = evts[i].mEvent;
+            u32 eflag = mEvents[i].mEvent;
             if (eflag & (EPOLLERR | EPOLLHUP)) {
                 eflag |= (EPOLLIN | EPOLLOUT);
             }
-            if (evts[i].mData.mPointer) {
-                net::HandleTCP& han = *(net::HandleTCP*)(evts[i].mData.mPointer);
+            if (mEvents[i].mData.mPointer) {
+                net::HandleTCP& han = *(net::HandleTCP*)(mEvents[i].mData.mPointer);
                 Request* req;
                 if (EPOLLIN & eflag) {
                     req = han.popReadReq();

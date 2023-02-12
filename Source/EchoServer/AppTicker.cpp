@@ -41,20 +41,60 @@ s32 AppTicker::start() {
 void AppTicker::onClose(Handle* it) {
     s32 grab = it->getGrabCount();
     DASSERT(0 == grab);
-    Logger::log(ELL_INFO, "AppTicker::onClose>>=%p, grab=%d", it, grab);
+    Logger::log(ELL_INFO, "AppTicker::onClose>>=%p, grab=%d, pid=%d", it, grab, Engine::getInstance().getPID());
 }
 
 
 s32 AppTicker::onTimeout(HandleTime* it) {
+    static ssz hcntLast = 0;   //handle count
+    static ssz fcntLast = 0;   //fly count
+    static ssz icntLast = 0;   //in count
+    static ssz ocntLast = 0;   //out count
+    static ssz ipackLast = 0;   //in packets count
+    static ssz opackLast = 0;   //out packets count
+    static ssz tickLast = 0;    //heatbeat count
+    static ssz tickRespLast = 0;   //heatbeat count
+
+    ssz hcnt = mLoop.getHandleCount() - hcntLast;
+    hcntLast = mLoop.getHandleCount();
+    ssz fcnt = mLoop.getFlyRequest() - fcntLast;
+    fcntLast = mLoop.getFlyRequest();
+    ssz icnt = gTotalSizeIn - icntLast;
+    icntLast = gTotalSizeIn;
+    ssz ocnt = gTotalSizeOut - ocntLast;
+    ocntLast = gTotalSizeOut;
+    ssz ipack = gTotalPacketIn - ipackLast;
+    ipackLast = gTotalPacketIn;
+    ssz opack = gTotalPacketOut - opackLast;
+    opackLast = gTotalPacketOut;
+    ssz tick = gTotalActive - tickLast;
+    tickLast = gTotalActive;
+    ssz tickResp = gTotalActiveResp - tickRespLast;
+    tickRespLast = gTotalActiveResp;
+
+    EngineStats& estat = Engine::getInstance().getEngineStats();
+    estat.mTotalHandles.fetch_add(hcnt);
+    estat.mFlyRequests.fetch_add(fcnt);
+    estat.mInBytes.fetch_add(icnt);
+    estat.mOutBytes.fetch_add(ocnt);
+    estat.mInPackets.fetch_add(ipack);
+    estat.mOutPackets.fetch_add(opack);
+    estat.mHeartbeat.fetch_add(tick);
+    estat.mHeartbeatResp.fetch_add(tickResp);
+
+    if (!Engine::getInstance().isMainProcess()) {
+        return EE_OK;
+    }
+
     s8 ch = 0;
 #ifdef DOS_WINDOWS
     //32=blank,27=esc
     if (!_kbhit() || (ch = _getch()) != 27)
 #endif
     {
-        printf("Handle=%d, Fly=%d, In=%llu/%llu, Out=%llu/%llu, Active=%llu/%llu\n",
-            mLoop.getHandleCount(), mLoop.getFlyRequest(),
-            gTotalPacketIn, gTotalSizeIn, gTotalPacketOut, gTotalSizeOut, gTotalActive, gTotalActiveResp);
+        printf("Handle=%d, Fly=%d, In=%llu/%llu, Out=%llu/%llu, Active=%llu/%llu\n", estat.mTotalHandles.load(),
+            estat.mFlyRequests.load(), estat.mInPackets.load(), estat.mInBytes.load(), estat.mOutPackets.load(),
+            estat.mOutBytes.load(), estat.mHeartbeat.load(), estat.mHeartbeatResp.load());
         if (++G_LOG_FLUSH_CNT >= 20) {
             G_LOG_FLUSH_CNT = 0;
             Logger::flush();

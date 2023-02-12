@@ -26,6 +26,7 @@
 #include "Net/EventPoller.h"
 #include "System.h"
 #include "Net/Socket.h"
+#include "Logger.h"
 
 #if defined(DOS_WINDOWS)
 #include <Windows.h>
@@ -170,6 +171,21 @@ EventPoller::~EventPoller() {
 }
 
 bool EventPoller::open() {
+    if (sizeof(SEvent) != sizeof(epoll_event)) {
+        Logger::log(ELL_ERROR, "EventPoller::open>>failed sizeof %lu-%lu", sizeof(SEvent), sizeof(epoll_event));
+        return false;
+    }
+    if (DOFFSET(SEvent, mEvent) != DOFFSET(epoll_event, events)) {
+        Logger::log(
+            ELL_ERROR, "EventPoller::open>>failed evt %lu-%lu", DOFFSET(SEvent, mEvent), DOFFSET(epoll_event, events));
+        return false;
+    }
+    if (DOFFSET(SEvent, mData) != DOFFSET(epoll_event, data)) {
+        Logger::log(
+            ELL_ERROR, "EventPoller::open>>failed dat %lu-%lu", DOFFSET(SEvent, mData), DOFFSET(epoll_event, data));
+        return false;
+    }
+
     mEpollFD = ::epoll_create(0x7ffffff);
     return 0 != mEpollFD;
 }

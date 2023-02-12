@@ -26,6 +26,7 @@
 #ifndef APP_LOOP_H
 #define	APP_LOOP_H
 
+#include "Nocopy.h"
 #include "Strings.h"
 #include "MsgHeader.h"
 #include "BinaryHeap.h"
@@ -42,7 +43,7 @@
 
 namespace app {
 
-class Loop {
+class Loop : public Nocopy {
 public:
     Loop();
 
@@ -154,12 +155,14 @@ private:
     s64 mTime;
     mutable s32 mFlyRequest;
     mutable s32 mGrabCount; //=HandleCount
+    s32 mMaxEvents;
     s32 mStop;
     BinaryHeap mTimeHub;    //最小堆用于管理超时事件
     Node2 mHandleActive;
     Node2 mHandleClose;
     Request* mRequest;
     EventPoller mPoller;
+    EventPoller::SEvent* mEvents;
 
     net::HandleTCP mCMD;
     Packet mPackCMD;

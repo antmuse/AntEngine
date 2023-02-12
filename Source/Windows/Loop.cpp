@@ -39,13 +39,17 @@ Loop::Loop() :
     mRequest(nullptr),
     mTime(Timer::getRelativeTime()),
     mStop(0),
+    mMaxEvents(128),
     mPackCMD(1024),
     mFlyRequest(0),
     mGrabCount(0) {
+    mEvents = new EventPoller::SEvent[mMaxEvents];
 }
 
 Loop::~Loop() {
     DASSERT(0 == mGrabCount && 0 == mFlyRequest);
+    delete[] mEvents;
+    mEvents = nullptr;
 }
 
 s32 Loop::onTimeout(HandleTime& it) {
@@ -105,15 +109,13 @@ void Loop::onRead(net::RequestTCP* it) {
 }
 
 bool Loop::run() {
-    const s32 pmax = 128;
     u32 timeout = getWaitTime();
-    EventPoller::SEvent evts[pmax];
-    s32 max = mPoller.getEvents(evts, pmax, timeout);
+    s32 max = mPoller.getEvents(mEvents, mMaxEvents, timeout);
     if (max > 0) {
         Request* req;
         for (s32 i = 0; i < max; ++i) {
-            if (evts[i].mPointer) {
-                req = DGET_HOLDER(evts[i].mPointer, Request, mOverlapped);
+            if (mEvents[i].mPointer) {
+                req = DGET_HOLDER(mEvents[i].mPointer, Request, mOverlapped);
                 if (req->mHandle) {
                     addPending(req);
                 } else {

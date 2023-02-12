@@ -26,6 +26,7 @@
 #ifndef APP_ENGINE_H
 #define	APP_ENGINE_H
 
+#include <atomic>
 #include "Strings.h"
 #include "TVector.h"
 #include "EngineConfig.h"
@@ -113,6 +114,22 @@ struct Process {
     net::Socket mSocket; //write socket of pair
 };
 
+
+struct EngineStats {
+    std::atomic<ssz> mTotalHandles;
+    std::atomic<ssz> mClosedHandles;
+    std::atomic<ssz> mFlyRequests;
+    std::atomic<ssz> mInBytes;
+    std::atomic<ssz> mOutBytes;
+    std::atomic<ssz> mInPackets;
+    std::atomic<ssz> mOutPackets;
+    std::atomic<ssz> mHeartbeat;
+    std::atomic<ssz> mHeartbeatResp;
+    void clear() {
+        memset(this, 0, sizeof(*this));
+    }
+};
+
 class Engine {
 public:
     static Engine& getInstance() {
@@ -173,6 +190,14 @@ public:
         return mPID;
     }
 
+    bool isMainProcess() const {
+        return mMain;
+    }
+
+    EngineStats& getEngineStats() const {
+        return *mEngStats;
+    }
+
 protected:
     Engine();
     ~Engine();
@@ -186,6 +211,7 @@ private:
     String mAppName;
     Loop mLoop;
     MapFile mMapfile;
+    EngineStats* mEngStats;  // Engine's statistics datas in shared mem \p mMapfile.
     ThreadPool mThreadPool;
     s32 mPPID;
     s32 mPID;

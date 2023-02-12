@@ -37,6 +37,10 @@ using namespace app;
 int main(int argc, char** argv) {
     printf("main>>argc=%d,argv[0]=%s\n", argc, argv[0]);
     if (argc < 5) {
+        printf("* usage:\n");
+        printf("*   ./exe tcp 127.0.0.1:5000 1 30 \t//1 raw tcp client, it send 30 packets\n");
+        printf("*   ./exe TCP 127.0.0.1:5000 10 30 \t//10 TLS-tcp client, each send 30 packets\n");
+        printf("*   ./exe udp 127.0.0.1:5000 100 30 \t//100 udp client, each send 30 packets\n");
         return 0;
     }
     Engine& eng = Engine::getInstance();

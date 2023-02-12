@@ -1,6 +1,7 @@
 #ifndef APP_MEMSLAB_H
 #define APP_MEMSLAB_H
 
+#include "Nocopy.h"
 #include "Spinlock.h"
 
 namespace app {
@@ -20,13 +21,15 @@ struct MemStat {
 };
 
 //原始内存首地址=this
-class MemSlabPool {
+class MemSlabPool : public Nocopy {
 public:
     MemSlabPool() = delete;
     MemSlabPool(usz msz);
     ~MemSlabPool() { }
 
     void initSlabSize();
+
+    u32 getStateCount();
 
     void* allocMem(usz size);
     void* allocMemNolock(usz size);
