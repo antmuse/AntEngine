@@ -29,8 +29,9 @@ void LinkerTCP::onClose(Handle* it) {
         DASSERT(&mTCP.getHandleTCP() == it && "LinkerTCP::onClose tcp handle?");
     }
     if (mServer) {
-        mServer->unbind(this);
+        NetServerTCP* sev = mServer;
         mServer = nullptr;
+        sev->unbind(this);
     } else {
         drop();
     }
