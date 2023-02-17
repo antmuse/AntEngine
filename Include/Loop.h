@@ -112,6 +112,8 @@ public:
 
     s32 postTask(const MsgHeader& task);
 
+    void addPending(Request* it);
+
     void bindFly(Handle* it);
     void unbindFly(Handle* it);
 
@@ -122,7 +124,6 @@ protected:
     u32 getWaitTime();
     void addClose(Handle* it);
     void relinkTime(HandleTime* it);
-    void addPending(Request* it);
 
     void bindHandle(Handle* it);
     void unbindHandle(Handle* it);
