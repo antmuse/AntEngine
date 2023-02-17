@@ -106,30 +106,14 @@ public:
 
     s32 closeHandle(Handle* it);
 
-    void addPending(Request* it);
-
-    void bindHandle(Handle* it) {
-        it->grab();
-        grab();
-    }
-
-    void bindFly(Handle* it) {
-        it->grabFlyReq();
-        grabFlyReq();
-    }
-
-    void unbindFly(Handle* it) {
-        dropFlyReq();
-        if (0 == it->dropFlyReq() && 0 == it->getGrabCount()) {
-            addClose(it);
-        }
-    }
-
     EventPoller& getEventPoller() {
         return mPoller;
     }
 
     s32 postTask(const MsgHeader& task);
+
+    void bindFly(Handle* it);
+    void unbindFly(Handle* it);
 
 protected:
     void updatePending();
@@ -138,6 +122,10 @@ protected:
     u32 getWaitTime();
     void addClose(Handle* it);
     void relinkTime(HandleTime* it);
+    void addPending(Request* it);
+
+    void bindHandle(Handle* it);
+    void unbindHandle(Handle* it);
 
     //linux
     void addPendingAll(Request* it) {

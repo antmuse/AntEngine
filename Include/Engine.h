@@ -182,10 +182,6 @@ public:
         return mConfig;
     }
 
-    MemSlabPool& getMemSlabPool() {
-        return *reinterpret_cast<MemSlabPool*>(mMapfile.getMem());
-    }
-
     s32 getPID()const{
         return mPID;
     }
@@ -194,8 +190,13 @@ public:
         return mMain;
     }
 
-    EngineStats& getEngineStats() const {
-        return *mEngStats;
+    /** @return Engine's statistics datas in shared mem. @see mMapfile. */
+    EngineStats& getEngineStats() {
+        return *reinterpret_cast<EngineStats*>(mMapfile.getMem());
+    }
+
+    MemSlabPool& getMemSlabPool() {
+        return *reinterpret_cast<MemSlabPool*>(mMapfile.getMem() + sizeof(EngineStats));
     }
 
 protected:
@@ -211,7 +212,6 @@ private:
     String mAppName;
     Loop mLoop;
     MapFile mMapfile;
-    EngineStats* mEngStats;  // Engine's statistics datas in shared mem \p mMapfile.
     ThreadPool mThreadPool;
     s32 mPPID;
     s32 mPID;

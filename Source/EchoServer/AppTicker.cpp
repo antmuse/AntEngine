@@ -46,8 +46,6 @@ void AppTicker::onClose(Handle* it) {
 
 
 s32 AppTicker::onTimeout(HandleTime* it) {
-    static ssz hcntLast = 0;   //handle count
-    static ssz fcntLast = 0;   //fly count
     static ssz icntLast = 0;   //in count
     static ssz ocntLast = 0;   //out count
     static ssz ipackLast = 0;   //in packets count
@@ -55,10 +53,6 @@ s32 AppTicker::onTimeout(HandleTime* it) {
     static ssz tickLast = 0;    //heatbeat count
     static ssz tickRespLast = 0;   //heatbeat count
 
-    ssz hcnt = mLoop.getHandleCount() - hcntLast;
-    hcntLast = mLoop.getHandleCount();
-    ssz fcnt = mLoop.getFlyRequest() - fcntLast;
-    fcntLast = mLoop.getFlyRequest();
     ssz icnt = gTotalSizeIn - icntLast;
     icntLast = gTotalSizeIn;
     ssz ocnt = gTotalSizeOut - ocntLast;
@@ -73,8 +67,6 @@ s32 AppTicker::onTimeout(HandleTime* it) {
     tickRespLast = gTotalActiveResp;
 
     EngineStats& estat = Engine::getInstance().getEngineStats();
-    estat.mTotalHandles.fetch_add(hcnt);
-    estat.mFlyRequests.fetch_add(fcnt);
     estat.mInBytes.fetch_add(icnt);
     estat.mOutBytes.fetch_add(ocnt);
     estat.mInPackets.fetch_add(ipack);

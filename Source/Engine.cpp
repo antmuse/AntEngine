@@ -45,7 +45,6 @@ Engine::Engine() :
     mPPID(0),
     mPID(0),
     mChild(32),
-    mEngStats(nullptr),
     mMain(true) {
 }
 
@@ -188,8 +187,7 @@ bool Engine::init(const s8* fname, bool child) {
         MemSlabPool& mpool = getMemSlabPool();
         new (&mpool) MemSlabPool(mConfig.mMemSize); // mpool.initSlabSize();
         // mpool.mLock.tryUnlock();  TODO clear lock when ...
-        mEngStats = reinterpret_cast<EngineStats*>(mpool.allocMem(sizeof(*mEngStats)));
-        mEngStats->clear();
+        getEngineStats().clear();
 
         FileWriter file;
         if (file.openFile(mConfig.mPidFile, false)) {
@@ -227,12 +225,11 @@ bool Engine::init(const s8* fname, bool child) {
 bool Engine::uninit() {
     if (mMain) {
         MemSlabPool& mpool = getMemSlabPool();
+        EngineStats& engStats = getEngineStats();
 
         Logger::log(ELL_INFO, "Engine::uninit>>share stats[total=%ld, closed=%ld, in=%lu, out=%lu]",
-            mEngStats->mTotalHandles.load(), mEngStats->mClosedHandles.load(), mEngStats->mInBytes.load(),
-            mEngStats->mOutBytes.load());
-
-        mpool.freeMem(mEngStats);  // mEngStats = nullptr;
+            engStats.mTotalHandles.load(), engStats.mClosedHandles.load(), engStats.mInBytes.load(),
+            engStats.mOutBytes.load());
 
         u32 cnt = mpool.getStateCount();
         for (u32 i = 0; i < cnt; i++) {

@@ -269,6 +269,36 @@ u32 Loop::getWaitTime() {
 }
 
 
+void Loop::bindHandle(Handle* it) {
+    ++Engine::getInstance().getEngineStats().mTotalHandles;
+    it->grab();
+    grab();
+}
+
+
+void Loop::unbindHandle(Handle* it) {
+    if (0 == it->drop() && 0 == it->getFlyRequest()) {
+        addClose(it);
+    }
+}
+
+
+void Loop::bindFly(Handle* it) {
+    ++Engine::getInstance().getEngineStats().mFlyRequests;
+    it->grabFlyReq();
+    grabFlyReq();
+}
+
+
+void Loop::unbindFly(Handle* it) {
+    --Engine::getInstance().getEngineStats().mFlyRequests;
+    dropFlyReq();
+    if (0 == it->dropFlyReq() && 0 == it->getGrabCount()) {
+        addClose(it);
+    }
+}
+
+
 bool Loop::start(net::Socket& sockRead, net::Socket& sockWrite) {
     mCMD.mSock = sockRead;
     mCMD.setClose(EHT_TCP_LINK, LoopOnClose, this);
@@ -376,6 +406,7 @@ u32 Loop::updateTimeHub() {
 
 
 void Loop::addClose(Handle* it) {
+    --Engine::getInstance().getEngineStats().mTotalHandles;
     it->delink();
     mHandleClose.pushFront(*it);
 }
@@ -433,9 +464,7 @@ s32 Loop::closeHandle(Handle* it) {
     }//switch
 
     if (EE_OK == ret) {
-        if (0 == it->drop() && 0 == it->getFlyRequest()) {
-            addClose(it);
-        }
+        unbindHandle(it);
     }
     return ret;
 }
