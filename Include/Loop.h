@@ -255,7 +255,8 @@ private:
 
     void freeAllTaskNode() {
         mTaskIdleLock.lock();
-        for (TaskNode* nd = popTaskNode(); nd; nd = popTaskNode()) {
+        for (TaskNode* nd = mTaskHeadIdle; nd; nd = mTaskHeadIdle) {
+            mTaskHeadIdle = nd->mNext;
             delete nd;
         }
         mTaskIdleCount = 0;
