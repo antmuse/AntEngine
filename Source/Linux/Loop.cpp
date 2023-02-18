@@ -42,7 +42,10 @@ Loop::Loop() :
     mTime(Timer::getRelativeTime()),
     mStop(0),
     mTaskHead(nullptr),
-    mMaxEvents(128),
+    mTaskHeadIdle(nullptr),
+    mTaskIdleCount(0),
+    mTaskIdleMax(1000),
+    mMaxEvents(128), 
     mPackCMD(1024),
     mFlyRequest(0),
     mGrabCount(0) {
@@ -55,6 +58,7 @@ Loop::~Loop() {
     //mPoller.close();
     delete[] mEvents;
     mEvents = nullptr;
+    freeAllTaskNode();
 }
 
 
@@ -838,7 +842,7 @@ void Loop::onTask(void* it) {
         TaskNode* nd = reinterpret_cast<TaskNode*>((s8*)head - DOFFSET(TaskNode, mNext));
         (*nd)();
         head = (void**)(*head); //next
-        delete nd;
+        pushTaskNode(nd);
     }
 }
 

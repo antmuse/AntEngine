@@ -114,10 +114,10 @@ public:
 
     template <class P>
     s32 postTask(void (*func)(P*), P* dat) {
-        TaskNode* task = new TaskNode();
+        TaskNode* task = popTaskNode();
         task->pack(func, dat);
         if (EE_OK != postTask(task)) {
-            delete task;
+            pushTaskNode(task);
             return EE_ERROR;
         }
         return EE_OK;
@@ -125,10 +125,10 @@ public:
 
     template <class T, class P>
     s32 postTask(void (T::*func)(P*), const void* it, P* dat) {
-        TaskNode* task = new TaskNode();
+        TaskNode* task = popTaskNode();
         task->pack(func, it, dat);
         if (EE_OK != postTask(task)) {
-            delete task;
+            pushTaskNode(task);
             return EE_ERROR;
         }
         return EE_OK;
@@ -179,8 +179,12 @@ private:
 
     // for task queue
     Spinlock mTaskLock;
+    Spinlock mTaskIdleLock;
     void** mTaskTailPos;
     TaskNode* mTaskHead;
+    TaskNode* mTaskHeadIdle;
+    s32 mTaskIdleCount;
+    s32 mTaskIdleMax;
 
     net::HandleTCP mCMD;
     Packet mPackCMD;
@@ -213,6 +217,50 @@ private:
 
     void onTask(void* it);
     s32 postTask(TaskNode* task);
+
+    TaskNode* popTaskNode() {
+        TaskNode* ret = nullptr;
+
+        mTaskIdleLock.lock();
+        if (mTaskHeadIdle) {
+            ret = mTaskHeadIdle;
+            mTaskHeadIdle = ret->mNext;
+            --mTaskIdleCount;
+        }
+        mTaskIdleLock.unlock();
+
+        if (ret) {
+            ret->clear();
+            return ret;
+        }
+        return new TaskNode();
+    }
+
+    void pushTaskNode(TaskNode* it) {
+        DASSERT(it);
+
+        mTaskIdleLock.lock();
+        if (mTaskIdleCount < mTaskIdleMax) {
+            it->mNext = mTaskHeadIdle;
+            mTaskHeadIdle = it;
+            ++mTaskIdleCount;
+            it = nullptr;
+        }
+        mTaskIdleLock.unlock();
+
+        if (it) {
+            delete it;
+        }
+    }
+
+    void freeAllTaskNode() {
+        mTaskIdleLock.lock();
+        for (TaskNode* nd = popTaskNode(); nd; nd = popTaskNode()) {
+            delete nd;
+        }
+        mTaskIdleCount = 0;
+        mTaskIdleLock.unlock();
+    }
 };
 
 } //namespace app

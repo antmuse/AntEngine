@@ -53,6 +53,13 @@ public:
     ~TaskNode() {
     }
 
+    void clear() {
+        mNext = nullptr;
+        mCall = nullptr;
+        mThis = nullptr;
+        mData = nullptr;
+    }
+
     template <class P>
     void pack(void (*func)(P*), P* dat) {
         mCall = func;
