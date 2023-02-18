@@ -20,19 +20,19 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_THREADPOOL_H
 #define APP_THREADPOOL_H
 
-#include <memory>
-#include <atomic>
-#include <thread>
-#include <mutex>
-#include <vector>
-#include <condition_variable>
 #include "Config.h"
+#include <atomic>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 namespace app {
 
@@ -40,37 +40,53 @@ using FuncVoid = void (*)();
 using FuncTask = void (*)(void*);
 using FuncTaskClass = void (*)(const void*, void*);
 
+
+class TaskNode {
+public:
+    TaskNode* mNext;
+    FuncTask mCall;
+    const void* mThis;
+    void* mData;
+    TaskNode() : mNext(nullptr), mCall(nullptr), mThis(nullptr), mData(nullptr) {
+    }
+
+    ~TaskNode() {
+    }
+
+    template <class P>
+    void pack(void (*func)(P*), P* dat) {
+        mCall = func;
+        mThis = nullptr;
+        mData = dat;
+    }
+
+    template <class T, class P>
+    void pack(void (T::*func)(P*), const void* it, P* dat) {
+        void* fff = reinterpret_cast<void*>(&func);
+        mCall = *(FuncTask*)fff;
+        mThis = it;
+        mData = dat;
+    }
+
+    void operator()() {
+        if (mThis) {
+            ((FuncTaskClass)mCall)(mThis, mData);
+        } else {
+            mCall(mData);
+        }
+    }
+};
+
+
 class ThreadPool {
 public:
-    class Task {
-    public:
-        Task* mNext;
-        FuncTask mCall;
-        const void* mThis;
-        void* mData;
-        Task() :mNext(nullptr), mCall(nullptr), mThis(nullptr), mData(nullptr) {
-        }
-        ~Task() { }
-        void operator()() {
-            if (mThis) {
-                ((FuncTaskClass)mCall)(mThis, mData);
-            } else {
-                mCall(mData);
-            }
-        }
-    };
-
-
-    ThreadPool() : mRunning(false), mTaskCount(0),
-        mAllocated(0), mMaxAllocated(1000),
-        mAllTask(nullptr), mIdleTask(nullptr),
+    ThreadPool() :
+        mRunning(false), mTaskCount(0), mAllocated(0), mMaxAllocated(1000), mAllTask(nullptr), mIdleTask(nullptr),
         mThreadInit(nullptr), mThreadUninit(nullptr) {
     }
 
-    ThreadPool(u32 cnt, FuncVoid init = nullptr, FuncVoid uninit = nullptr)
-        : mRunning(false), mTaskCount(0),
-        mAllocated(0), mMaxAllocated(1000),
-        mAllTask(nullptr), mIdleTask(nullptr),
+    ThreadPool(u32 cnt, FuncVoid init = nullptr, FuncVoid uninit = nullptr) :
+        mRunning(false), mTaskCount(0), mAllocated(0), mMaxAllocated(1000), mAllTask(nullptr), mIdleTask(nullptr),
         mThreadInit(init), mThreadUninit(uninit) {
         start(cnt);
     }
@@ -86,20 +102,20 @@ public:
     ThreadPool& operator=(const ThreadPool&&) = delete;
 
     /**
-    * @brief 在ThreadPool::start前设置每个线程需要调用的初始化或清理函数.
-    * @param init 线程开始时回调函数
-    * @param uninit 线程结束时回调函数
-    */
+     * @brief 在ThreadPool::start前设置每个线程需要调用的初始化或清理函数.
+     * @param init 线程开始时回调函数
+     * @param uninit 线程结束时回调函数
+     */
     void setThreadCalls(FuncVoid init, FuncVoid uninit) {
         mThreadInit = init;
         mThreadUninit = uninit;
     }
 
-    s64 getTaskCount()const {
+    s64 getTaskCount() const {
         return mTaskCount.load();
     }
 
-    u32 getAllocated()const {
+    u32 getAllocated() const {
         std::unique_lock<std::mutex> ak(mMutex);
         return mAllocated;
     }
@@ -112,13 +128,13 @@ public:
      * @param urgent 优先级
      * @return ture if success, else failed.
      */
-    template<class T, class P>
-    bool postTask(void(T::* func)(P*), const T* hold, P* dat, bool urgent = false) {
+    template <class T, class P>
+    bool postTask(void (T::*func)(P*), const T* hold, P* dat, bool urgent = false) {
         std::unique_lock<std::mutex> ak(mMutex);
         if (!mRunning) {
             return false;
         }
-        Task* task = popFreeTask();
+        TaskNode* task = popFreeTask();
         task->mThis = hold;
         void* fff = reinterpret_cast<void*>(&func);
         task->mCall = *(FuncTask*)fff;
@@ -128,13 +144,13 @@ public:
         return true;
     }
 
-    template<class P>
-    bool postTask(void(*func)(P*), P* dat, bool urgent = false) {
+    template <class P>
+    bool postTask(void (*func)(P*), P* dat, bool urgent = false) {
         std::unique_lock<std::mutex> ak(mMutex);
         if (!mRunning) {
             return false;
         }
-        Task* task = popFreeTask();
+        TaskNode* task = popFreeTask();
         task->mCall = reinterpret_cast<FuncTask>(func);
         task->mData = dat;
         pushTask(task, urgent);
@@ -187,20 +203,20 @@ private:
     u32 mAllocated;
     u32 mMaxAllocated;
     bool mRunning;
-    Task* mAllTask;     //单向环型链表，指向队尾
-    Task* mIdleTask;    //单向链表
+    TaskNode* mAllTask;  // 单向环型链表，指向队尾
+    TaskNode* mIdleTask; // 单向链表
     FuncVoid mThreadInit;
     FuncVoid mThreadUninit;
 
     void run(u32 idx) {
-        //std::this_thread::get_id();
-        //std::thread.native_handle();
+        // std::this_thread::get_id();
+        // std::thread.native_handle();
 
-        //printf("ThreadPool::run>>start thread[%d] id=%u\n", idx, std::this_thread::get_id());
+        // printf("ThreadPool::run>>start thread[%d] id=%u\n", idx, std::this_thread::get_id());
         if (mThreadInit) {
             mThreadInit();
         }
-        Task* task = nullptr;
+        TaskNode* task = nullptr;
         for (;;) {
             {
                 std::unique_lock<std::mutex> ank(mMutex);
@@ -215,30 +231,30 @@ private:
                 }
                 task = popTask();
             }
-            //do it
+            // do it
             (*task)();
         }
         if (mThreadUninit) {
             mThreadUninit();
         }
-        //printf("ThreadPool::run>>stop thread[%d] id=%u\n", idx, std::this_thread::get_id());
+        // printf("ThreadPool::run>>stop thread[%d] id=%u\n", idx, std::this_thread::get_id());
     }
 
-    Task* popFreeTask() {
+    TaskNode* popFreeTask() {
         ++mTaskCount;
         if (mIdleTask) {
-            Task* ret = mIdleTask;
+            TaskNode* ret = mIdleTask;
             mIdleTask = ret->mNext;
             ret->mThis = nullptr;
             ret->mNext = nullptr;
             return ret;
         } else {
             ++mAllocated;
-            return new Task();
+            return new TaskNode();
         }
     }
 
-    void pushFreeTask(Task* it) {
+    void pushFreeTask(TaskNode* it) {
         --mTaskCount;
         if (mAllocated > mMaxAllocated) {
             --mAllocated;
@@ -249,9 +265,9 @@ private:
         mIdleTask = it;
     }
 
-    Task* popTask() {
+    TaskNode* popTask() {
         if (mAllTask) {
-            Task* head = mAllTask->mNext;
+            TaskNode* head = mAllTask->mNext;
             if (head == mAllTask) {
                 mAllTask = nullptr;
             } else {
@@ -262,11 +278,11 @@ private:
         return nullptr;
     }
 
-    void pushTask(Task* it, bool urgent) {
+    void pushTask(TaskNode* it, bool urgent) {
         if (mAllTask) {
             it->mNext = mAllTask->mNext;
             mAllTask->mNext = it;
-            if (!urgent) {//push on tail
+            if (!urgent) { // push on tail
                 mAllTask = it;
             }
         } else {
@@ -276,8 +292,8 @@ private:
     }
 
     void clear() {
-        //u32 cnt = 0;
-        Task* head = mIdleTask;
+        // u32 cnt = 0;
+        TaskNode* head = mIdleTask;
         while (head) {
             mIdleTask = head->mNext;
             delete head;
@@ -291,7 +307,7 @@ private:
     }
 };
 
-}//namespace app
+} // namespace app
 
 
-#endif //APP_THREADPOOL_H
+#endif // APP_THREADPOOL_H

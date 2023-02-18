@@ -201,15 +201,16 @@ void HandleFile::stepByPool(RequestFD* it) {
     } else if (ret < 0) {
         it->mError = System::getAppError();
         Logger::log(
-            ELL_ERROR, "HandleFile::readByPool>> ecode=%d, offset=%lu, file=%s", it->mError, offset, mFilename.c_str());
+            ELL_ERROR, "HandleFile::stepByPool>> ecode=%d, offset=%lu, file=%s", it->mError, offset, mFilename.c_str());
     }
 
-    CommandTask task;
-    task.pack(&HandleFile::stepByLoop, this, it);
-    if (EE_OK != mLoop->postTask(task)) {
+    if (EE_OK != mLoop->postTask(&HandleFile::stepByLoop, this, it)) {
         it->mError = System::getAppError();
-        Logger::log(ELL_ERROR, "HandleFile::readByPool>> post ecode=%d, offset=%lu, file=%s", it->mError, offset,
+        Logger::log(ELL_ERROR, "HandleFile::stepByPool>> post ecode=%d, offset=%lu, file=%s", it->mError, offset,
             mFilename.c_str());
+        
+        mFlag &= ~(EHF_READABLE | EHF_WRITEABLE);
+        // it->mCall(it);   now, call here is not thread safe for user
     }
 }
 

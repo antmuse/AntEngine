@@ -30,6 +30,8 @@
 #include "Strings.h"
 #include "MsgHeader.h"
 #include "BinaryHeap.h"
+#include "Spinlock.h"
+#include "ThreadPool.h"
 #include "Handle.h"
 #include "Net/HandleTCP.h"
 #include "Packet.h"
@@ -110,6 +112,28 @@ public:
         return mPoller;
     }
 
+    template <class P>
+    s32 postTask(void (*func)(P*), P* dat) {
+        TaskNode* task = new TaskNode();
+        task->pack(func, dat);
+        if (EE_OK != postTask(task)) {
+            delete task;
+            return EE_ERROR;
+        }
+        return EE_OK;
+    }
+
+    template <class T, class P>
+    s32 postTask(void (T::*func)(P*), const void* it, P* dat) {
+        TaskNode* task = new TaskNode();
+        task->pack(func, it, dat);
+        if (EE_OK != postTask(task)) {
+            delete task;
+            return EE_ERROR;
+        }
+        return EE_OK;
+    }
+
     s32 postTask(const MsgHeader& task);
 
     void addPending(Request* it);
@@ -153,17 +177,16 @@ private:
     EventPoller mPoller;
     EventPoller::SEvent* mEvents;
 
+    // for task queue
+    Spinlock mTaskLock;
+    void** mTaskTailPos;
+    TaskNode* mTaskHead;
+
     net::HandleTCP mCMD;
     Packet mPackCMD;
     net::RequestTCP mReadCMD;
 
     net::Socket mSendCMD;
-
-    Loop(const Loop&) = delete;
-    Loop(const Loop&&) = delete;
-    const Loop& operator=(const Loop&) = delete;
-    const Loop& operator=(const Loop&&) = delete;
-
 
     //cmd callbacks for Loop
     static s32 LoopOnTime(HandleTime* it) {
@@ -187,6 +210,9 @@ private:
     void onClose(Handle* it);
     //cmd timeout
     s32 onTimeout(HandleTime& it);
+
+    void onTask(void* it);
+    s32 postTask(TaskNode* task);
 };
 
 } //namespace app

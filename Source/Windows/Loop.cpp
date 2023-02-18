@@ -39,11 +39,13 @@ Loop::Loop() :
     mRequest(nullptr),
     mTime(Timer::getRelativeTime()),
     mStop(0),
+    mTaskHead(nullptr),
     mMaxEvents(128),
     mPackCMD(1024),
     mFlyRequest(0),
     mGrabCount(0) {
     mEvents = new EventPoller::SEvent[mMaxEvents];
+    mTaskTailPos = reinterpret_cast<void**>(&mTaskHead);
 }
 
 Loop::~Loop() {
@@ -632,11 +634,57 @@ void Loop::addPending(Request* it) {
 
 
 s32 Loop::postTask(const MsgHeader& task) {
-    /** TODO: keep send is thread/process safe
+    /** @note: keep send is thread/process safe
      *  @see Engine::postCommand
      */
-
     return task.mSize == mSendCMD.send(&task, task.mSize) ? EE_OK : EE_ERROR;
 }
+
+
+s32 Loop::postTask(TaskNode* task) {
+    if (!task || isStop()) {
+        return EE_ERROR;
+    }
+
+    mTaskLock.lock();
+    bool active = (nullptr == mTaskHead);
+    void** link = (void**)((s8*)task + DOFFSET(TaskNode, mNext));
+    *link = nullptr;
+    *mTaskTailPos = (void*)link;
+    mTaskTailPos = link;
+    mTaskLock.unlock();
+
+    if (active) {
+        CommandTask activeTask;
+        activeTask.pack(&Loop::onTask, this, (void*)nullptr);
+        if (activeTask.mSize != mSendCMD.send(&activeTask, activeTask.mSize)) {
+            Logger::log(ELL_ERROR, "Loop::postTask>>send cmd, failed to active the loop");
+        }
+    }
+    return EE_OK;
+}
+
+
+void Loop::onTask(void* it) {
+    void** head = nullptr;
+
+    mTaskLock.lock();
+    if (mTaskHead) {
+        head = (void**)(mTaskHead);
+        //clear queue
+        mTaskHead = nullptr;
+        mTaskTailPos = reinterpret_cast<void**>(&mTaskHead);
+    }
+    mTaskLock.unlock();
+
+    //process all tasks
+    while (head) {
+        TaskNode* nd = reinterpret_cast<TaskNode*>((s8*)head - DOFFSET(TaskNode, mNext));
+        (*nd)();
+        head = (void**)(*head); //next
+        delete nd;
+    }
+}
+
 
 } //namespace app
