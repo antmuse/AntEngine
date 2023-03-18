@@ -25,6 +25,14 @@
   <ItemGroup>
     <ClInclude Include="..\..\Source\Server\AppTicker.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AntEngine\AntEngine.vcxproj">
+      <Project>{323ca6c7-fb56-4590-bf44-9b151281e81d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Lua\Lua.vcxproj">
+      <Project>{0d7657bd-0c41-4709-a511-9fb8377e50c3}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{E4ECFC67-D8DB-4221-982C-E0C778DEC92F}</ProjectGuid>
@@ -113,7 +121,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -131,7 +139,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -153,7 +161,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -175,7 +183,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

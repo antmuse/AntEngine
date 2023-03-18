@@ -2,8 +2,8 @@
 #include <stdarg.h>
 #include "Logger.h"
 #include "Engine.h"
-#include "Script/ScriptFunc.h"
-#include "Script/ScriptFileHandle.h"
+#include "Script/LuaFunc.h"
+#include "Script/LuaRegClass.h"
 
 namespace app {
 namespace script {
@@ -12,7 +12,7 @@ static const s8* G_LOAD_INFO =
 "--just for test\n"
 "local ver = GVersion\n"
 "function EngInfo(val)\n"
-"  Eng.Info()\n"
+"  Eng.showInfo()\n"
 "  Log(Info, \"LuaEng> package.path = \" .. package.path)\n"
 "  if val>100 then\n"
 "    Log(Info, \"LuaEng> GPath = \" .. GPath)\n"
@@ -31,16 +31,15 @@ static s32 LuaWriter(lua_State* state, const void* p, usz sz, void* user) {
     return 0;
 }
 
-
 ScriptManager::ScriptManager() {
     initialize();
 }
 
 ScriptManager::~ScriptManager() {
     removeAll();
-    if (mLuaState) {
-        lua_close(mLuaState);
-        mLuaState = nullptr;
+    if (mRootVM) {
+        lua_close(mRootVM);
+        mRootVM = nullptr;
     }
 }
 
@@ -53,220 +52,116 @@ void ScriptManager::initialize() {
     mScriptPath = Engine::getInstance().getAppPath();
     mScriptPath += "Script/";
 
-    mLuaState = luaL_newstate();
-    luaL_openlibs(mLuaState);
+    mRootVM = luaL_newstate();
+    luaL_openlibs(mRootVM);
 
     // fix  package.path, package.cpath
     String tmp = mScriptPath;
     tmp += "?.lua";
-    lua_getglobal(mLuaState, "package");
-    lua_pushstring(mLuaState, "path");
-    lua_pushstring(mLuaState, tmp.c_str());
-    lua_settable(mLuaState, -3);
-    lua_getglobal(mLuaState, "package");
-    lua_pushstring(mLuaState, "cpath");
-    lua_pushstring(mLuaState, tmp.c_str());
-    lua_settable(mLuaState, -3);
-    //lua_newtable(mLuaState); // same as lua_createtable(L, 0, 0);
-
-    //lib Eng
-    luaL_requiref(mLuaState, "Eng", LuaOpenEngLib, 1);          // 1=global
-    luaL_requiref(mLuaState, "HandleFile", LuaOpenLibFile, 1);
+    lua_getglobal(mRootVM, "package");
+    lua_pushstring(mRootVM, "path");
+    lua_pushstring(mRootVM, tmp.c_str());
+    lua_settable(mRootVM, -3); //pop 2
+    lua_pushstring(mRootVM, "cpath");
+    lua_pushstring(mRootVM, tmp.c_str());
+    lua_settable(mRootVM, -3); //pop 2
+    lua_pop(mRootVM, 1);       //pop package
 
     //base data struct
-    lua_register(mLuaState, "Color", LuaColor);
+    lua_register(mRootVM, "Color", LuaColor);
 
     //global fuctions
-    lua_register(mLuaState, "Log", LuaLog);
-    lua_register(mLuaState, "Include", LuaInclude);
+    lua_register(mRootVM, "Log", LuaLog);
+    lua_register(mRootVM, "Include", LuaInclude);
 
     //global val
-    lua_pushinteger(mLuaState, 1000ULL);
-    lua_setglobal(mLuaState, "GVersion");
-    lua_pushstring(mLuaState, "1.0.0.0");
-    lua_setglobal(mLuaState, "GVerName");
-    lua_pushstring(mLuaState, getScriptPath().c_str());
-    lua_setglobal(mLuaState, "GPath");
+    lua_pushinteger(mRootVM, 1000ULL);
+    lua_setglobal(mRootVM, "GVersion");  //set and pop 1
+    lua_pushstring(mRootVM, "1.0.0.0");
+    lua_setglobal(mRootVM, "GVerName");
+    lua_pushstring(mRootVM, getScriptPath().c_str());
+    lua_setglobal(mRootVM, "GPath");
     for (s32 i = ELL_DEBUG; i < ELL_COUNT; ++i) {
-        lua_pushinteger(mLuaState, i);
-        lua_setglobal(mLuaState, AppLogLevelNames[i]);
+        lua_pushinteger(mRootVM, i);
+        lua_setglobal(mRootVM, AppLogLevelNames[i]);
     }
+
+    //lib Eng
+    luaL_requiref(mRootVM, "Eng", LuaOpenEngLib, 1);          // 1=global
+    lua_pop(mRootVM, 1); //pop lib
+
+    s32 cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
+
+    LuaRegRequest(mRootVM);
+    LuaRegFile(mRootVM);
+
+    cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
 }
 
 usz ScriptManager::getMemory() {
-    return lua_gc(mLuaState, LUA_GCCOUNT, 0) * 1024ULL;
+    return lua_gc(mRootVM, LUA_GCCOUNT, 0) * 1024ULL;
 }
 
 
 bool ScriptManager::loadFirstScript() {
-    // test
-    bool ret = exec("ScriptManager", G_LOAD_INFO, strlen(G_LOAD_INFO), nullptr, 0, 1, 0);
+    Script nd;
+    if (!nd.loadBuf(mRootVM, "ScriptManager", G_LOAD_INFO, strlen(G_LOAD_INFO), true)) {
+        return false;
+    }
+    s32 cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
+    bool ret = nd.exec(mRootVM, nullptr, 0, 0, 0);
     Logger::logInfo("ScriptManager::initialize, ret = %s", ret ? "ok" : "no");
+    cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
 
-    Script* nd = loadScript("init.lua");
-    callFunc("main");
-    // callFunc("main2", 0, "d", 2345);
-    //exec(nd, "main");
+    if (!nd.load(mRootVM, getScriptPath(), "init.lua", true)) {
+        return false;
+    }
+    nd.exec(mRootVM); // exec the file
+    cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
+    nd.execFunc(mRootVM, "main");  // call the function after exec file
+    cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
     return true;
 }
 
-lua_State* ScriptManager::getEngine() const {
-    return mLuaState;
+lua_State* ScriptManager::getRootVM() const {
+    return mRootVM;
 }
 
 void ScriptManager::pushParam(s32 prm) {
     ++mParamCount;
-    lua_pushnumber(mLuaState, prm);
+    lua_pushnumber(mRootVM, prm);
 }
 
 void ScriptManager::pushParam(s8* prm) {
     ++mParamCount;
-    lua_pushstring(mLuaState, prm);
+    lua_pushstring(mRootVM, prm);
 }
 
 void ScriptManager::pushParam(void* pNode) {
     ++mParamCount;
-    lua_pushlightuserdata(mLuaState, pNode);
+    lua_pushlightuserdata(mRootVM, pNode);
 }
 
 void ScriptManager::popParam(s32 iSum) {
-    lua_pop(mLuaState, iSum);
+    lua_pop(mRootVM, iSum);
     --mParamCount;
 }
 
 bool ScriptManager::include(const String& fileName) {
-    //TODO
-    //Script* nd = ;
-    //if (nd) {
-    //    return exec(nd->getName(), nd->getBuffer(), nd->getBufferSize(), nullptr, 0, LUA_MULTRET, 0);;
-    //}
-
-    // luaL_dofile();
-    // luaL_loadfile();
-    // luaL_loadfile();
-    // lua_load(mLuaState, LuaReader, nullptr, "chunkname", "rb");
-    // lua_pcall(mLuaState, 0,LUA_MULTRET,0);
-    return nullptr != loadScript(fileName);
-}
-
-bool ScriptManager::exec(const Script& it, const s8* func,
-    s32 nargs, s32 nresults, s32 errfunc) {
-    return exec(it.getName(), it.getBuffer(), it.getBufferSize(), func, nargs, nresults, errfunc);
-}
-
-bool ScriptManager::exec(const String& iName, const s8* const pBuffer, usz fSize,
-    const s8* func, s32 nargs, s32 nresults, s32 errfunc) {
-    if (!pBuffer || 0 == fSize) {
-        return false;
-    }
-    if (0 != luaL_loadbuffer(mLuaState, pBuffer, fSize, iName.c_str())) {
-        Logger::logError("ScriptManager::exec, load err = %s, name=%s\n",
-            lua_tostring(mLuaState, -1), iName.c_str());
-        lua_pop(mLuaState, 1);  // pop lua err
-        return false;
-    }
-
-    if (func) {
-        lua_getglobal(mLuaState, func);
-    }
-
-    /**
-     * lua_pcall参数:
-     * 传入nargs个参数,期望得到nresults个返回值,errfunc表示错误处理函数在栈中的索引值,
-     * 压入结果前会弹出函数和参数*/
-    s32 expr = lua_pcall(mLuaState, nargs, nresults, errfunc);
-    if (expr) {
-        Logger::logError("ScriptManager::exec, call err = %s, name=%s\n",
-            lua_tostring(mLuaState, -1), iName.c_str());
-        lua_pop(mLuaState, 1);  // pop lua err
-        return false;
+    if (!Script::isLoaded(mRootVM, fileName)) {
+        Script nd;
+        if (!nd.load(mRootVM, getScriptPath(), fileName, true) || !nd.exec(mRootVM)) {
+            return false;
+        }
     }
     return true;
 }
-
-
-bool ScriptManager::callWith(const s8* cFuncName, s32 nResults, const s8* cFormat, va_list& vlist) {
-    if (!cFuncName) {
-        return false;
-    }
-    f64	nNumber = 0;
-    s32 nInteger = 0;
-    s8* cString = nullptr;
-    void* pPoint = nullptr;
-
-    s32 param_cnt = 0;
-    lua_CFunction CFunc = nullptr;
-
-    lua_getglobal(mLuaState, cFuncName); //在堆栈中加入需要调用的函数名
-
-    if (cFormat) {
-        for (s32 i = 0; '\0' != cFormat[i]; ++i) {
-            switch (cFormat[i]) {
-            case 'f':  // 输入的数据是Double型
-            {
-                nNumber = va_arg(vlist, f64);
-                lua_pushnumber(mLuaState, nNumber);
-                param_cnt++;
-                break;
-            }
-            case 'd':  // 输入的数据为整形
-            {
-                nInteger = va_arg(vlist, s32);
-                lua_pushinteger(mLuaState, nInteger);
-                param_cnt++;
-                break;
-            }
-            case 's':  // 字符串型
-            {
-                cString = va_arg(vlist, s8*);
-                lua_pushstring(mLuaState, cString);
-                param_cnt++;
-                break;
-            }
-            case 'N':  // nullptr
-            {
-                lua_pushnil(mLuaState);
-                param_cnt++;
-                break;
-            }
-            case 'F':  // 输入的是CFun形，即内部函数形
-            {
-                CFunc = va_arg(vlist, lua_CFunction);
-                lua_pushcfunction(mLuaState, CFunc);
-                param_cnt++;
-                break;
-            }
-            case 'v':  // 输入的是堆栈中Index为nIndex的数据类型
-            {
-                nNumber = va_arg(vlist, s32);
-                s32 nIndex1 = (s32)nNumber;
-                lua_pushvalue(mLuaState, nIndex1);
-                param_cnt++;
-                break;
-            }
-            default: break;
-            } // switch
-        } // for
-    } //if
-
-    s32 ret = lua_pcall(mLuaState, param_cnt, nResults, 0);
-    if (ret != 0) {
-        Logger::logInfo("ScriptManager::callWith, [%s] %s\n", cFuncName, lua_tostring(mLuaState, -1));
-        lua_pop(mLuaState, 1);  // pop lua err
-        return false;
-    }
-    return	true;
-}
-
-
-bool ScriptManager::callFunc(const s8* cFuncName, s32 nResults, const s8* fmtstr, ...) {
-    va_list vlist;
-    va_start(vlist, fmtstr);
-    bool ret = callWith(cFuncName, nResults, fmtstr, vlist);
-    va_end(vlist);
-    return ret;
-}
-
 
 bool ScriptManager::add(Script* script) {
     if (!script) {
@@ -275,26 +170,15 @@ bool ScriptManager::add(Script* script) {
     if (getScript(script->getName())) {
         return false;
     }
-    script->grab();
     mAllScript.insert(script->getName(), script);
     return true;
 }
 
 Script* ScriptManager::createScript(const String& keyname) {
-    String filenm(240);
-    filenm = getScriptPath();
-    filenm += keyname;
-
-    Script* ret = new Script(keyname, filenm);
-    bool success = ret->load(true);
+    Script* ret = new Script();
+    bool success = ret->load(mRootVM, getScriptPath(), keyname, true);
     if (!success) {
-        ret->drop();
         Logger::logError("ScriptManager::createScript,fail load script= %s", keyname.c_str());
-        return nullptr;
-    }
-    if (!exec(*ret)) {
-        ret->drop();
-        Logger::logError("ScriptManager::createScript,exec script= %s", keyname.c_str());
         return nullptr;
     }
     Logger::logInfo("ScriptManager::createScript,load script= %s", keyname.c_str());
@@ -313,15 +197,6 @@ Script* ScriptManager::loadScript(const String& fileName) {
     return ret;
 }
 
-Script* ScriptManager::getScript(const u32 id) {
-    for (TMap<String, Script*>::Iterator git = mAllScript.getIterator(); !git.atEnd(); ++git) {
-        if (git->getValue()->getID() == id) {
-            return git->getValue();
-        }
-    }
-    return nullptr;
-}
-
 Script* ScriptManager::getScript(const String& name) {
     TMap<String, Script*>::Node* nd = mAllScript.find(name);
     return nd ? nd->getValue() : nullptr;
@@ -329,7 +204,7 @@ Script* ScriptManager::getScript(const String& name) {
 
 void ScriptManager::removeAll() {
     for (TMap<String, Script*>::Iterator it = mAllScript.getIterator(); !it.atEnd(); ++it) {
-        it->getValue()->drop();
+        delete it->getValue();
     }
     mAllScript.clear();
 }
@@ -341,25 +216,39 @@ bool ScriptManager::remove(Script* script) {
     return remove(script->getName());
 }
 
-bool ScriptManager::remove(const u32 id) {
-    for (TMap<String, Script*>::Iterator git = mAllScript.getIterator(); !git.atEnd(); ++git) {
-        if (git->getValue()->getID() == id) {
-            git->getValue()->drop();
-            mAllScript.remove(git->getKey());
-            return true;
-        }
-    }
-    return false;
-}
-
 bool ScriptManager::remove(const String& name) {
     TMap<String, Script*>::Node* nd = mAllScript.find(name);
     if (!nd) {
         return false;
     }
-    nd->getValue()->drop();
+    delete nd->getValue();
     mAllScript.remove(nd);
     return true;
+}
+
+lua_State* ScriptManager::createThread() {
+    /* 创建Lua协程，返回的新lua_State跟原有的lua_State共享所有的全局对象（如表），
+     * 但是有一个独立的执行栈。 协程依赖垃圾回收销毁 */
+    lua_State* ret = lua_newthread(mRootVM);
+
+    /* 将lua虚拟机VM栈上的入口函数闭包移到新创建的协程栈上，
+       这样新协程就有了虚拟机已经解析完毕的代码了。*/
+       //lua_xmove(mRootVM, ret, 1);
+    return ret;
+}
+
+s32 ScriptManager::resumeThread(lua_State* vm, s32& ret_cnt) {
+    ret_cnt = 0;
+    s32 ret = lua_resume(vm, NULL, 0, &ret_cnt);
+    if (LUA_YIELD != ret) {
+        Logger::logError("ScriptManager::resumeThread, fail ret = %d", ret);
+        return EE_ERROR;
+    }
+    return EE_OK;
+}
+
+void ScriptManager::deleteThread(lua_State* vm) {
+
 }
 
 }//namespace script

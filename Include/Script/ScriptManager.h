@@ -29,8 +29,6 @@
 #include "TMap.h"
 #include "Script/Script.h"
 
-struct lua_State;
-
 namespace app {
 namespace script {
 
@@ -38,7 +36,7 @@ class ScriptManager : public Nocopy {
 public:
     static ScriptManager& getInstance();
 
-    lua_State* getEngine() const;
+    lua_State* getRootVM() const;
 
     void pushParam(s32 prm);
     void pushParam(s8* prm);
@@ -54,20 +52,6 @@ public:
     * @param fileName relative filename of the file to load.
     */
     bool include(const String& fileName);
-
-    bool exec(const Script& it, const s8* func = nullptr,
-        s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
-
-    /**
-    *@brief exec script buffer with name
-    *@param func call function if not null, else run the script buf. 
-    */
-    bool exec(const String& iName, const s8* const pBuffet, usz fSize,
-        const s8* func = nullptr, s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
-
-    bool callFunc(const s8* cFuncName, s32 nResults = 0, const s8* fmtstr = nullptr, ...);
-
-    bool callWith(const s8* cFuncName, s32 nResults, const s8* cFormat, va_list& vlist);
 
     //! Adds the given Script to the ScriptManager
     //! @param script        Pointer to the Script to add.
@@ -88,10 +72,6 @@ public:
     */
     Script* loadScript(const String& fileName);
 
-    //! Gets the Script with the given ID.
-    //! @return Pointer to the Script if found, else NULL.
-    Script* getScript(const u32 id);
-
     //! Gets the Script with the given name.
     //! @return Pointer to the Script if found, else NULL.
     Script* getScript(const String& name);
@@ -102,11 +82,6 @@ public:
     //! @param script        Pointer to the Script to remove.
     //! @return True if removal was successful, false if removal was a failure.
     bool remove(Script* pScript);
-
-    //! Removes the given Script with the given ID.
-    //! @param id            ID of the Script to remove.
-    //! @return True if removal was successful, false if removal was a failure.
-    bool remove(const u32 id);
 
     //! Removes the given Script with the given name.
     //! @param name          Name of the Script to remove.
@@ -122,9 +97,13 @@ public:
     // gc
     usz getMemory();
 
+    lua_State* createThread();
+    void deleteThread(lua_State* vm);
+    s32 resumeThread(lua_State* vm, s32& ret_cnt);
+
 private:
     s32 mParamCount;
-    lua_State* mLuaState;
+    lua_State* mRootVM;
     TMap<String, Script*> mAllScript;
     String mScriptPath;
 

@@ -23,11 +23,18 @@
 ***************************************************************************************************/
 
 #include "Handle.h"
+#include "Loop.h"
+
+namespace app {
+
+s32 Handle::launchClose() {
+    DASSERT(mLoop);
+    return mLoop->closeHandle(this);
+}
 
 #if defined(DOS_ANDROID) || defined(DOS_LINUX)
 #include "Linux/Request.h"
 
-namespace app {
 
 Request* Handle::popReadReq() {
     return AppPopRingQueueHead_1(mReadQueue);
@@ -53,7 +60,6 @@ void Handle::addWritePendingHead(Request* it) {
     AppPushRingQueueHead_1(mWriteQueue, it);
 }
 
-} //namespace app
-
-
 #endif
+
+} //namespace app

@@ -30,12 +30,6 @@
 
 
 namespace app {
-
-s32 Handle::launchClose() {
-    DASSERT(mLoop);
-    return mLoop->closeHandle(this);
-}
-
 namespace net {
 
 HandleTLS::HandleTLS() :

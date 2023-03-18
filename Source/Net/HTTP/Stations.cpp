@@ -2,6 +2,7 @@
 #include "Net/HTTP/HttpLayer.h"
 #include "Net/HTTP/HttpFileRead.h"
 #include "Net/HTTP/HttpFileSave.h"
+#include "Net/HTTP/HttpEvtLua.h"
 #include "Net/HTTP/Website.h"
 
 //def str view
@@ -47,7 +48,12 @@ s32 StationPath::onMsg(HttpMsg* msg) {
 
     StringView requrl = msg->getURL().getPath();
 
-    if (requrl.equalsn("/api/", sizeof("/api/") - 1)) {
+    if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
+        requrl.set(requrl.mData + 5, requrl.mLen - 5);
+        HttpEventer* evt = new HttpEvtLua(requrl);
+        msg->setEvent(evt);
+        evt->drop();
+    } else if (requrl.equalsn("/api/", sizeof("/api/") - 1)) {
         //
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
         HttpEventer* evt = new HttpFileRead();

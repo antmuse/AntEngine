@@ -44,6 +44,7 @@
     <ClCompile Include="..\..\Source\MemoryHub.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileRead.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp" />
@@ -82,10 +83,11 @@
     <ClCompile Include="..\..\Source\Net\TcpProxy.cpp" />
     <ClCompile Include="..\..\Source\Packet.cpp" />
     <ClCompile Include="..\..\Source\RingBuffer.cpp" />
-    <ClCompile Include="..\..\Source\Script\ScriptFileHandle.cpp" />
-    <ClCompile Include="..\..\Source\Script\ScriptFunc.cpp" />
+    <ClCompile Include="..\..\Source\Script\LuaFileHandle.cpp" />
+    <ClCompile Include="..\..\Source\Script\LuaFunc.cpp" />
     <ClCompile Include="..\..\Source\Script\Script.cpp" />
     <ClCompile Include="..\..\Source\Script\ScriptManager.cpp" />
+    <ClCompile Include="..\..\Source\Script\LuaRequestFD.cpp" />
     <ClCompile Include="..\..\Source\StrConverterGBK.cpp" />
     <ClCompile Include="..\..\Source\Timer.cpp" />
     <ClCompile Include="..\..\Source\TimerWheel.cpp" />
@@ -156,6 +158,7 @@
     <ClInclude Include="..\..\Include\Net\HandleTLS.h" />
     <ClInclude Include="..\..\Include\Net\HandleUDP.h" />
     <ClInclude Include="..\..\Include\Net\Hostcheck.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpFileRead.h" />
@@ -185,8 +188,8 @@
     <ClInclude Include="..\..\Include\Queue.h" />
     <ClInclude Include="..\..\Include\RefCount.h" />
     <ClInclude Include="..\..\Include\RingBuffer.h" />
-    <ClInclude Include="..\..\Include\Script\ScriptFileHandle.h" />
-    <ClInclude Include="..\..\Include\Script\ScriptFunc.h" />
+    <ClInclude Include="..\..\Include\Script\LuaRegClass.h" />
+    <ClInclude Include="..\..\Include\Script\LuaFunc.h" />
     <ClInclude Include="..\..\Include\Script\Script.h" />
     <ClInclude Include="..\..\Include\Script\ScriptManager.h" />
     <ClInclude Include="..\..\Include\Script\HLua.h" />
@@ -292,9 +295,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <StringPooling>true</StringPooling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -309,9 +314,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <StringPooling>true</StringPooling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -328,9 +335,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <StringPooling>true</StringPooling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -349,9 +358,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <StringPooling>true</StringPooling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

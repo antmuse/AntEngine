@@ -129,6 +129,12 @@ struct EngineStats {
     }
 };
 
+struct EngineData {
+    EngineStats mStats;
+    Process* mAllProcess;
+    s32 mProcessCount;
+};
+
 class Engine {
 public:
     static Engine& getInstance() {
@@ -191,13 +197,16 @@ public:
 
     /** @return Engine's statistics datas in shared mem. @see mMapfile. */
     EngineStats& getEngineStats() {
-        return *reinterpret_cast<EngineStats*>(mMapfile.getMem());
+        return reinterpret_cast<EngineData*>(mMapfile.getMem())->mStats;
     }
 
     MemSlabPool& getMemSlabPool() {
-        return *reinterpret_cast<MemSlabPool*>(mMapfile.getMem() + sizeof(EngineStats));
+        return *reinterpret_cast<MemSlabPool*>(mMapfile.getMem() + sizeof(EngineData));
     }
 
+    usz getMemSlabPoolSize() const {
+        return mConfig.mMemSize - sizeof(EngineData);
+    }
 protected:
     Engine();
     ~Engine();

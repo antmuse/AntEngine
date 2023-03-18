@@ -1,36 +1,16 @@
 -- This file called once when Engine init.
-require "Public/public"
-require "Public/ScriptInfo"
+require "Eng"
+local MyMod = require("Public/MyModule")
 
-G_VLAUE = 333;
-
-local function test(val)
-    Log("lua: func test val="..val);
-    print("test G_VLAUE = "..G_VLAUE)
-    print("test val = "..val)
+local function showInfo(val)
+    Eng.showInfo()
+    Log("init.lua, param= "..val);
+    Log("init.lua, GLibPath = "..GPath);
+    MyMod.show()
 end
 
 function main()
-    Log("lua: func main, path = "..GPath);
-    print("main val = "..G_VLAUE)
-    print("main GPath = "..GPath)
-    test("ok100")
-    test(110)
-    show()
-    ScriptInfo.init()
+    showInfo("show")
 end
 
-
-
-local filend = HandleFile.new()
-filend:open("Script/init.lua_null", 1)
- 
-print(filend)
-print("file= " .. filend:getFileName())
---class::__tostring()
- 
---let it been gc
-filend = nil
- 
---force gc
---collectgarbage("collect")
+Log("init.lua, you can call this main() after exec this script")

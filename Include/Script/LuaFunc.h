@@ -27,7 +27,7 @@
 #define	APP_SCRIPTFUNC_H
 
 #include "Config.h"
-#include "HLua.h"
+#include "Script/HLua.h"
 
 namespace app {
 namespace script {
@@ -60,6 +60,9 @@ extern int LuaEngExit(lua_State* iState);
 extern int LuaOpenEngLib(lua_State* iState);
 
 extern int LuaInclude(lua_State* iState);
+
+extern void LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
+    const s8* className, const s8* namespac = nullptr);
 
 }//namespace script
 }//namespace app

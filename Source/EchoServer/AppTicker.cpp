@@ -44,6 +44,15 @@ void AppTicker::onClose(Handle* it) {
     Logger::log(ELL_INFO, "AppTicker::onClose>>=%p, grab=%d, pid=%d", it, grab, Engine::getInstance().getPID());
 }
 
+static void tmpfunc(void* it) {
+    printf("tmpfunc = %lld\n", (ssz)it);
+}
+
+static void poolfunc(void* it) {
+    if (EE_OK != Engine::getInstance().getLoop().postTask(&tmpfunc, it)) {
+        printf("poolfunc idx=%lld", (ssz)it);
+    }
+}
 
 s32 AppTicker::onTimeout(HandleTime* it) {
     static ssz icntLast = 0;   //in count
@@ -92,6 +101,10 @@ s32 AppTicker::onTimeout(HandleTime* it) {
             Logger::flush();
         }
 
+        //for (ssz i = 0; i < 100; ++i) {
+        //    //mLoop.postTask(tmpfunc, (void*)i);
+        //    Engine::getInstance().getThreadPool().postTask(poolfunc, (void*)i);
+        //}
         return EE_OK;
     }
 

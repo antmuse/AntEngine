@@ -185,7 +185,7 @@ bool Engine::init(const s8* fname, bool child) {
 
     if (mMain) {
         MemSlabPool& mpool = getMemSlabPool();
-        new (&mpool) MemSlabPool(mConfig.mMemSize); // mpool.initSlabSize();
+        new (&mpool) MemSlabPool(getMemSlabPoolSize()); // mpool.initSlabSize();
         // mpool.mLock.tryUnlock();  TODO clear lock when ...
         getEngineStats().clear();
 

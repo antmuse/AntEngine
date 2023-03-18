@@ -296,16 +296,22 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Script\ScriptFunc.cpp">
-      <Filter>Source\Script</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Script\Script.cpp">
       <Filter>Source\Script</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Script\ScriptManager.cpp">
       <Filter>Source\Script</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Script\ScriptFileHandle.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\LuaRequestFD.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\LuaFileHandle.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\LuaFunc.cpp">
       <Filter>Source\Script</Filter>
     </ClCompile>
   </ItemGroup>
@@ -607,14 +613,17 @@
     <ClInclude Include="..\..\Include\Script\ScriptManager.h">
       <Filter>Include\Script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Script\ScriptFunc.h">
-      <Filter>Include\Script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Script\ScriptFileHandle.h">
-      <Filter>Include\Script</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Net\HandleUDP.h">
       <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtLua.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\LuaRegClass.h">
+      <Filter>Include\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Script\LuaFunc.h">
+      <Filter>Include\Script</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

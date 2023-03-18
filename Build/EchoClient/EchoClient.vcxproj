@@ -121,7 +121,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;zlib.lib;libmysql.lib;Lua.lib;AntEngine.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -139,7 +139,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>AntEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -161,7 +161,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>AntEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -183,7 +183,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;zlib.lib;libmysql.lib;Lua.lib;AntEngine.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

@@ -2,6 +2,7 @@
 #define	APP_LINKERUDP_H
 
 #include "Engine.h"
+#include "RefCount.h"
 #include "Packet.h"
 #include "Net/HandleUDP.h"
 

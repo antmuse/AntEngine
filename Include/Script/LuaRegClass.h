@@ -23,30 +23,18 @@
 ***************************************************************************************************/
 
 
-#ifndef APP_SCRIPTFILEhANDLE_H
-#define	APP_SCRIPTFILEhANDLE_H
+#ifndef APP_LUAGEGCLASS_H
+#define	APP_LUAGEGCLASS_H
 
 #include "Config.h"
-#include "HLua.h"
+#include "Script/HLua.h"
 
 namespace app {
 namespace script {
 
-int LuaOpenLibFile(lua_State* val);
-
-/**
- * @brief create a new file
- * @param 1 filename
- * @param 2: mode
- * @return 0
- */
-int LuaNewFile(lua_State* iState);
-
-int LuaDelFile(lua_State* iState);
-
-int LuaOpenFile(lua_State* iState);
-
+extern s32 LuaRegRequest(lua_State* val);
+extern s32 LuaRegFile(lua_State* val);
 
 }//namespace script
 }//namespace app
-#endif	// APP_SCRIPTFILEhANDLE_H
+#endif	// APP_LUAGEGCLASS_H

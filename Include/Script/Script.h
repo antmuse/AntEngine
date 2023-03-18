@@ -25,30 +25,43 @@
 #ifndef APP_SCRIPT_H
 #define	APP_SCRIPT_H
 
-#include "RefCount.h"
 #include "Strings.h"
+
+struct lua_State;
 
 namespace app {
 namespace script {
 
-class Script : public RefCountAtomic {
+class Script {
 public:
-    /**
-    *@param iName  Name of the script.
-    *@param iPath   path of the script file.
-    */
-    Script(const String& iName, const String& iPath);
+    Script();
 
     virtual ~Script();
 
     /**
      * @brief Loads a script file and builds it.
+     * @param iName  Name of the script.
      * @param reload force to reload
      * @return true if successful loading, else false.
      */
-    bool load(bool reload);
+    bool load(lua_State* vm, const String& iPath, const String& iName, bool reload, bool pop = true);
 
-    void unload();
+    bool loadBuf(lua_State* vm, const String& iName, const s8* buf, usz bsz, bool reload, bool pop = true);
+
+    static bool isLoaded(lua_State* vm, const String& iName);
+
+    static bool getLoaded(lua_State* vm, const String& iName);
+
+    static bool compile(lua_State* vm, const String& iName, const s8* buf, usz bufsz, bool pop = false);
+
+    void unload(lua_State* vm);
+
+    bool exec(lua_State* vm, const s8* func = nullptr,
+        s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
+
+    bool execFunc(lua_State* vm, const s8* cFuncName, s32 nResults = 0, const s8* fmtstr = nullptr, ...);
+
+    bool execWith(lua_State* vm, const s8* cFuncName, s32 nResults, const s8* cFormat, va_list& vlist);
 
     const String& getName() const {
         return mName;
@@ -62,24 +75,8 @@ public:
         mName = name;
     }
 
-    u32 getID() const {
-        return mID;
-    }
-
-    const s8* getBuffer() const {
-        return mBuffer;
-    }
-
-    usz getBufferSize() const {
-        return mBufferSize;
-    }
-
 private:
-    u32 mID;
-    s8* mBuffer;
-    usz mBufferSize;
     String mName;
-    String mPath;
 };
 
 
