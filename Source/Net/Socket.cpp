@@ -506,7 +506,7 @@ bool Socket::openSenior(s32 domain, s32 type, s32 protocol, void* info, u32 grou
 }
 
 
-bool Socket::receive(RequestTCP* iAction)const {
+bool Socket::receive(RequestFD* iAction)const {
     //DWORD bytes = 0;
     DWORD flags = 0;
     StringView vvv = iAction->getWriteBuf();
@@ -523,7 +523,7 @@ bool Socket::receive(RequestTCP* iAction)const {
     return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
 }
 
-bool Socket::receiveFrom(RequestTCP* iAction, NetAddress& addr)const {
+bool Socket::receiveFrom(RequestFD* iAction, NetAddress& addr)const {
     DWORD flags = 0;
     StringView vvv = iAction->getWriteBuf();
     WSABUF buf = {(ULONG)vvv.mLen, vvv.mData};
@@ -542,7 +542,7 @@ bool Socket::receiveFrom(RequestTCP* iAction, NetAddress& addr)const {
     return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
 }
 
-bool Socket::send(RequestTCP* iAction)const {
+bool Socket::send(RequestFD* iAction)const {
     //DWORD bytes = 0;
     //DWORD flags = 0;
     StringView vvv = iAction->getReadBuf();
@@ -559,7 +559,7 @@ bool Socket::send(RequestTCP* iAction)const {
     return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
 }
 
-bool Socket::sendTo(RequestTCP* iAction, const NetAddress& addr)const {
+bool Socket::sendTo(RequestFD* iAction, const NetAddress& addr)const {
     //DWORD bytes = 0;
     //DWORD flags = 0;
     StringView vvv = iAction->getReadBuf();
@@ -578,7 +578,7 @@ bool Socket::sendTo(RequestTCP* iAction, const NetAddress& addr)const {
     return 0 == ret ? true : (WSA_IO_PENDING == System::getError());
 }
 
-bool Socket::connect(const NetAddress& it, RequestTCP* iAction)const {
+bool Socket::connect(const NetAddress& it, RequestFD* iAction)const {
     iAction->clearOverlap();
     void* function = mFunctionConnect;
     LPFN_CONNECTEX iConnect = (LPFN_CONNECTEX)(function ? function : getFunctionConnect());
@@ -599,7 +599,7 @@ bool Socket::connect(const NetAddress& it, RequestTCP* iAction)const {
 }
 
 
-bool Socket::disconnect(RequestTCP* iAction)const {
+bool Socket::disconnect(RequestFD* iAction)const {
     iAction->clearOverlap();
     void* function = mFunctionDisconnect;
     LPFN_DISCONNECTEX iDisconnect = (LPFN_DISCONNECTEX)(function ? function : getFunctionDisconnect());
@@ -614,7 +614,7 @@ bool Socket::disconnect(RequestTCP* iAction)const {
 }
 
 
-bool Socket::accept(const Socket& sock, RequestTCP* iAction, void* addressCache, u32 addsize)const {
+bool Socket::accept(const Socket& sock, RequestFD* iAction, void* addressCache, u32 addsize)const {
     iAction->clearOverlap();
     void* function = mFunctionAccept;
     LPFN_ACCEPTEX func = (LPFN_ACCEPTEX)(function ? function : getFunctionAccpet());

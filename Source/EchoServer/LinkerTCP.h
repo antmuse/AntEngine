@@ -16,7 +16,7 @@ public:
 
     virtual ~LinkerTCP();
 
-    bool onLink(NetServerTCP* sev, net::RequestTCP* it);
+    bool onLink(NetServerTCP* sev, RequestFD* it);
 
 private:
 
@@ -24,16 +24,16 @@ private:
 
     void onClose(Handle* it);
 
-    void onWrite(net::RequestTCP* it);
+    void onWrite(RequestFD* it);
 
-    void onRead(net::RequestTCP* it);
+    void onRead(RequestFD* it);
 
 
-    DFINLINE s32 writeIF(net::RequestTCP* it) {
+    DFINLINE s32 writeIF(RequestFD* it) {
         return mTLS ? mTCP.write(it) : mTCP.getHandleTCP().write(it);
     }
 
-    DFINLINE s32 readIF(net::RequestTCP* it) {
+    DFINLINE s32 readIF(RequestFD* it) {
         return mTLS ? mTCP.read(it) : mTCP.getHandleTCP().read(it);
     }
 
@@ -42,12 +42,12 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         LinkerTCP& nd = *(LinkerTCP*)it->mUser;
         nd.onWrite(it);
     }
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         LinkerTCP& nd = *(LinkerTCP*)it->mUser;
         nd.onRead(it);
     }
@@ -68,7 +68,7 @@ public:
     NetServerTCP(bool tls) :mTLS(tls) { }
     virtual ~NetServerTCP() { }
 
-    static void funcOnLink(net::RequestTCP* it) {
+    static void funcOnLink(RequestFD* it) {
         DASSERT(it && it->mUser);
         net::Acceptor* accp = reinterpret_cast<net::Acceptor*>(it->mUser);
         NetServerTCP* web = reinterpret_cast<NetServerTCP*>(accp->getUser());
@@ -90,7 +90,7 @@ public:
     }
 
 private:
-    void onLink(net::RequestTCP* it) {
+    void onLink(RequestFD* it) {
         net::LinkerTCP* con = new net::LinkerTCP();
         con->onLink(this, it);
         con->drop();

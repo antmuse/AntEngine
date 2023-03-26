@@ -42,17 +42,17 @@ public:
     ~HandleTLS();
 
     //connect
-    s32 open(const String& addr, RequestTCP* it, const net::TlsContext* tlsctx = nullptr);
+    s32 open(const String& addr, RequestFD* it, const net::TlsContext* tlsctx = nullptr);
 
     //connect
-    s32 open(const NetAddress& addr, RequestTCP* it, const net::TlsContext* tlsctx = nullptr);
+    s32 open(const NetAddress& addr, RequestFD* it, const net::TlsContext* tlsctx = nullptr);
 
     //link
-    s32 open(const RequestAccept& accp, RequestTCP* it, const net::TlsContext* tlsctx = nullptr);
+    s32 open(const RequestAccept& accp, RequestFD* it, const net::TlsContext* tlsctx = nullptr);
 
-    s32 write(RequestTCP* it);
+    s32 write(RequestFD* it);
 
-    s32 read(RequestTCP* it);
+    s32 read(RequestFD* it);
 
     void setClose(EHandleType tp, FunCloseCallback fc, void* user) {
         HandleTime::setClose(tp, fc, user);
@@ -92,40 +92,40 @@ protected:
 
     void onClose(Handle* it);
 
-    void onConnect(RequestTCP* it);
+    void onConnect(RequestFD* it);
 
-    void onWrite(RequestTCP* it);
-    void onWriteHello(RequestTCP* it);
+    void onWrite(RequestFD* it);
+    void onWriteHello(RequestFD* it);
 
-    void onRead(RequestTCP* it);
-    void onReadHello(RequestTCP* it);
+    void onRead(RequestFD* it);
+    void onReadHello(RequestFD* it);
 
     static s32 funcOnTime(HandleTime* it) {
         HandleTLS& nd = *(HandleTLS*)it->getUser();
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         HandleTLS& nd = *(HandleTLS*)it->mUser;
         nd.onWrite(it);
     }
 
-    static void funcOnWriteHello(RequestTCP* it) {
+    static void funcOnWriteHello(RequestFD* it) {
         HandleTLS& nd = *(HandleTLS*)it->mUser;
         nd.onWriteHello(it);
     }
 
-    static void funcOnRead(RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         HandleTLS& nd = *(HandleTLS*)it->mUser;
         nd.onRead(it);
     }
 
-    static void funcOnReadHello(RequestTCP* it) {
+    static void funcOnReadHello(RequestFD* it) {
         HandleTLS& nd = *(HandleTLS*)it->mUser;
         nd.onReadHello(it);
     }
 
-    static void funcOnConnect(RequestTCP* it) {
+    static void funcOnConnect(RequestFD* it) {
         HandleTLS& nd = *(HandleTLS*)it->mUser;
         nd.onConnect(it);
     }
@@ -158,15 +158,15 @@ protected:
         landQueue(mLandWrites);
     }
 
-    static void landQueue(RequestTCP*& que);
+    static void landQueue(RequestFD*& que);
 
     HandleTCP mTCP;
-    RequestTCP mRead;
-    RequestTCP mWrite;
-    RequestTCP* mFlyWrites;
-    RequestTCP* mFlyReads;
-    RequestTCP* mLandWrites;
-    RequestTCP* mLandReads;
+    RequestFD mRead;
+    RequestFD mWrite;
+    RequestFD* mFlyWrites;
+    RequestFD* mFlyReads;
+    RequestFD* mLandWrites;
+    RequestFD* mLandReads;
     void* mTlsSession;
     s8 mHostName[256];
     RingBuffer mInBuffers;

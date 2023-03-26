@@ -33,12 +33,12 @@ s32 SenderTCP::open(const String& addr, bool tls) {
         mTCP.getHandleTCP().setTime(SenderTCP::funcOnTime, 15 * 1000, 20 * 1000, -1);
     }
 
-    net::RequestTCP* it = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* it = RequestFD::newRequest(4 * 1024);
     it->mUser = this;
     it->mCall = funcOnConnect;
     s32 ret = mTLS ? mTCP.open(addr, it) : mTCP.getHandleTCP().open(addr, it);
     if (EE_OK != ret) {
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
     return ret;
 }
@@ -47,14 +47,14 @@ s32 SenderTCP::open(const String& addr, bool tls) {
 s32 SenderTCP::onTimeout(HandleTime& it) {
     DASSERT(mTCP.getGrabCount() > 0);
 
-    net::RequestTCP* tick = net::RequestTCP::newRequest(sizeof(net::PackActive));
+    RequestFD* tick = RequestFD::newRequest(sizeof(net::PackActive));
     tick->mUser = this;
     tick->mCall = SenderTCP::funcOnWrite;
     net::PackActive* head = (net::PackActive*)(tick->getWriteBuf().mData);
     head->pack(++mSN);
     tick->mUsed = head->mSize;
     if (0 != writeIF(tick)) {
-        net::RequestTCP::delRequest(tick);
+        RequestFD::delRequest(tick);
         //@note: 此时,不管是否调用close handle，皆必须返回EE_ERROR
         return EE_ERROR;
     }
@@ -73,7 +73,7 @@ void SenderTCP::onClose(Handle* it) {
 }
 
 
-void SenderTCP::onWrite(net::RequestTCP* it) {
+void SenderTCP::onWrite(RequestFD* it) {
     if (0 == it->mError) {
         StringView dat = it->getReadBuf();
         MsgHeader* head = (MsgHeader*)dat.mData;
@@ -92,20 +92,20 @@ void SenderTCP::onWrite(net::RequestTCP* it) {
     } else {
         Logger::log(ELL_ERROR, "SenderTCP::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
     //mTCP.getSock().closeSend();
     //mTCP.getSock().closeReceive();
 }
 
 
-void SenderTCP::onRead(net::RequestTCP* it) {
+void SenderTCP::onRead(RequestFD* it) {
     if (it->mUsed > 0) {
         StringView dat = it->getReadBuf();
         usz got = mPack.write(dat.mData, dat.mLen);
         AppTicker::gTotalSizeIn += dat.mLen;
         it->mUsed = 0;
         if (EE_OK != readIF(it)) {
-            net::RequestTCP::delRequest(it);
+            RequestFD::delRequest(it);
             return;
         }
 
@@ -121,7 +121,7 @@ void SenderTCP::onRead(net::RequestTCP* it) {
                 ++AppTicker::gTotalPacketIn;
                 if (mMaxMsg > 0) {
                     --mMaxMsg;
-                    net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
+                    RequestFD* out = RequestFD::newRequest(head->mSize);
                     out->mUser = this;
                     out->mCall = SenderTCP::funcOnWrite;
                     dat = out->getWriteBuf();
@@ -131,7 +131,7 @@ void SenderTCP::onRead(net::RequestTCP* it) {
                     s8* val = head->readItem(net::PackSubmit::EI_VALUE, sz);
                     out->mUsed = head->mSize;
                     if (0 != writeIF(out)) {
-                        net::RequestTCP::delRequest(out);
+                        RequestFD::delRequest(out);
                         return;
                     }
                 }
@@ -148,32 +148,32 @@ void SenderTCP::onRead(net::RequestTCP* it) {
     } else {
         //stop read
         Logger::log(ELL_INFO, "SenderTCP::onRead>>read 0, ecode=%d", it->mError);
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
 }
 
 
-void SenderTCP::onConnect(net::RequestTCP* it) {
+void SenderTCP::onConnect(RequestFD* it) {
     if (0 == it->mError) {
         //printf("SenderTCP::onConnect>>success\n");
         it->mCall = SenderTCP::funcOnRead;
         if (0 != readIF(it)) {
-            net::RequestTCP::delRequest(it);
+            RequestFD::delRequest(it);
             return;
         }
 
         /*for (s32 i = 0; i < 2; ++i) {
-            net::RequestTCP* read = net::RequestTCP::newRequest(4*1024);
+            RequestFD* read = RequestFD::newRequest(4*1024);
             read->mUser = this;
             read->mCall = SenderTCP::funcOnRead;
             if (0 != readIF(read)) {
-                net::RequestTCP::delRequest(read);
+                RequestFD::delRequest(read);
                 return;
             }
         }*/
 
         for (s32 i = 0; mMaxMsg > 0 && i < 2; ++i) {
-            net::RequestTCP* out = net::RequestTCP::newRequest(1024);
+            RequestFD* out = RequestFD::newRequest(1024);
             StringView buf = out->getWriteBuf();
             net::PackSubmit& head = *(net::PackSubmit*)buf.mData;
             head.clear();
@@ -190,13 +190,13 @@ void SenderTCP::onConnect(net::RequestTCP* it) {
             if (0 == writeIF(out)) {
                 --mMaxMsg;
             } else {
-                net::RequestTCP::delRequest(out);
+                RequestFD::delRequest(out);
                 break;
             }
         }
     } else {
         Logger::log(ELL_ERROR, "SenderTCP::onConnect>>ecode=%d", it->mError);
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
 }
 

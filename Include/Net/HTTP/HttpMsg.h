@@ -57,7 +57,7 @@ namespace net {
   XX(305, USE_PROXY,                       Use Proxy)                       \
   XX(307, TEMPORARY_REDIRECT,              Temporary Redirect)              \
   XX(308, PERMANENT_REDIRECT,              Permanent Redirect)              \
-  XX(400, BAD_REQUEST,                     Bad Request)                     \
+  XX(400, BAD_REQUEST,                     Bad RequestFD)                     \
   XX(401, UNAUTHORIZED,                    Unauthorized)                    \
   XX(402, PAYMENT_REQUIRED,                Payment Required)                \
   XX(403, FORBIDDEN,                       Forbidden)                       \
@@ -65,7 +65,7 @@ namespace net {
   XX(405, METHOD_NOT_ALLOWED,              Method Not Allowed)              \
   XX(406, NOT_ACCEPTABLE,                  Not Acceptable)                  \
   XX(407, PROXY_AUTHENTICATION_REQUIRED,   Proxy Authentication Required)   \
-  XX(408, REQUEST_TIMEOUT,                 Request Timeout)                 \
+  XX(408, REQUEST_TIMEOUT,                 RequestFD Timeout)                 \
   XX(409, CONFLICT,                        Conflict)                        \
   XX(410, GONE,                            Gone)                            \
   XX(411, LENGTH_REQUIRED,                 Length Required)                 \
@@ -75,14 +75,14 @@ namespace net {
   XX(415, UNSUPPORTED_MEDIA_TYPE,          Unsupported Media Type)          \
   XX(416, RANGE_NOT_SATISFIABLE,           Range Not Satisfiable)           \
   XX(417, EXPECTATION_FAILED,              Expectation Failed)              \
-  XX(421, MISDIRECTED_REQUEST,             Misdirected Request)             \
+  XX(421, MISDIRECTED_REQUEST,             Misdirected RequestFD)             \
   XX(422, UNPROCESSABLE_ENTITY,            Unprocessable Entity)            \
   XX(423, LOCKED,                          Locked)                          \
   XX(424, FAILED_DEPENDENCY,               Failed Dependency)               \
   XX(426, UPGRADE_REQUIRED,                Upgrade Required)                \
   XX(428, PRECONDITION_REQUIRED,           Precondition Required)           \
   XX(429, TOO_MANY_REQUESTS,               Too Many Requests)               \
-  XX(431, REQUEST_HEADER_FIELDS_TOO_LARGE, Request Header Fields Too Large) \
+  XX(431, REQUEST_HEADER_FIELDS_TOO_LARGE, RequestFD Header Fields Too Large) \
   XX(451, UNAVAILABLE_FOR_LEGAL_REASONS,   Unavailable For Legal Reasons)   \
   XX(500, INTERNAL_SERVER_ERROR,           Internal Server Error)           \
   XX(501, NOT_IMPLEMENTED,                 Not Implemented)                 \
@@ -103,7 +103,7 @@ enum EHttpStatus {
 };
 
 
-/* Request Methods */
+/* RequestFD Methods */
 #define HTTP_METHOD_MAP(XX)         \
   XX(0,  DELETE,      DELETE)       \
   XX(1,  GET,         GET)          \

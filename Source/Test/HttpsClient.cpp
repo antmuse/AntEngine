@@ -16,13 +16,13 @@ HttpsClient::~HttpsClient() {
 
 
 s32 HttpsClient::open(const String& addr) {
-    net::RequestTCP* it = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* it = RequestFD::newRequest(4 * 1024);
     it->mUser = this;
     it->mCall = HttpsClient::funcOnConnect;
     s32 ret = mTCP.open(addr, it);
     mTCP.setHost("www.baidu.com", sizeof("www.baidu.com") - 1);
     if (EE_OK != ret) {
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
     return ret;
 }
@@ -41,17 +41,17 @@ void HttpsClient::onClose(Handle* it) {
 }
 
 
-void HttpsClient::onWrite(net::RequestTCP* it) {
+void HttpsClient::onWrite(RequestFD* it) {
     if (0 == it->mError) {
         //printf("HttpsClient::onWrite>>success = %u\n", it->mUsed);
     } else {
         Logger::log(ELL_ERROR, "HttpsClient::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 
-void HttpsClient::onRead(net::RequestTCP* it) {
+void HttpsClient::onRead(RequestFD* it) {
     if (it->mUsed > 0) {
         StringView dat = it->getReadBuf();
         printf("%.*s\n", (s32)dat.mLen, dat.mData);
@@ -64,11 +64,11 @@ void HttpsClient::onRead(net::RequestTCP* it) {
 
     //stop read
     Logger::log(ELL_INFO, "HttpsClient::onRead>>read 0, ecode=%d", it->mError);
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 
-void HttpsClient::onConnect(net::RequestTCP* it) {
+void HttpsClient::onConnect(RequestFD* it) {
     if (0 == it->mError) {
         s32 ret = mTCP.verify(net::ETLS_VERIFY_CERT_HOST);
         if (EE_OK != ret) {
@@ -82,20 +82,20 @@ void HttpsClient::onConnect(net::RequestTCP* it) {
         mFile.openFile(fnm, false);
         it->mCall = HttpsClient::funcOnRead;
         if (0 == mTCP.read(it)) {
-            net::RequestTCP* get = net::RequestTCP::newRequest(1 * 1024);
+            RequestFD* get = RequestFD::newRequest(1 * 1024);
             get->mUsed = snprintf(get->mData, get->mAllocated,
                 "GET / HTTP/1.1\r\nAccept:*/*\r\nConnection:close\r\n\r\n");
             get->mUser = this;
             get->mCall = HttpsClient::funcOnWrite;
             if (0 != mTCP.write(get)) {
-                net::RequestTCP::delRequest(get);
+                RequestFD::delRequest(get);
             }
             return;
         }
     }
 
     Logger::log(ELL_ERROR, "HttpsClient::onConnect>>ecode=%d", it->mError);
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 

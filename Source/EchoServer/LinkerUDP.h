@@ -17,19 +17,19 @@ public:
 
     ~LinkerUDP();
 
-    s32 onLink(const NetServerUDP& sev, net::RequestUDP* sit);
+    s32 onLink(const NetServerUDP& sev, RequestUDP* sit);
 
 private:
     s32 sendMsgs(s32 max);
-    s32 sendMsgs(net::RequestUDP* it);
+    s32 sendMsgs(RequestUDP* it);
 
     s32 onTimeout(HandleTime& it);
 
     void onClose(Handle* it);
 
-    void onWrite(net::RequestUDP* it);
+    void onWrite(RequestUDP* it);
 
-    void onRead(net::RequestUDP* it);
+    void onRead(RequestUDP* it);
 
 
     static s32 funcOnTime(HandleTime* it) {
@@ -37,14 +37,14 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         LinkerUDP& nd = *(LinkerUDP*)it->mUser;
-        nd.onWrite(reinterpret_cast<net::RequestUDP*>(it));
+        nd.onWrite(reinterpret_cast<RequestUDP*>(it));
     }
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         LinkerUDP& nd = *(LinkerUDP*)it->mUser;
-        nd.onRead(reinterpret_cast<net::RequestUDP*>(it));
+        nd.onRead(reinterpret_cast<RequestUDP*>(it));
     }
 
     static void funcOnClose(Handle* it) {
@@ -87,12 +87,12 @@ public:
 private:
     s32 onTimeout(HandleTime& it);
     void onClose(Handle* it);
-    void onRead(net::RequestUDP* it);
+    void onRead(RequestUDP* it);
     
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         DASSERT(it && it->mUser);
         NetServerUDP& nd = *reinterpret_cast<NetServerUDP*>(it->getUser());
-        nd.onRead(reinterpret_cast<net::RequestUDP*>(it));
+        nd.onRead(reinterpret_cast<RequestUDP*>(it));
     }
     static void funcOnClose(Handle* it) {
         NetServerUDP& nd = *reinterpret_cast<NetServerUDP*>(it->getUser());

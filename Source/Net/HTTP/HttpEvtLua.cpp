@@ -88,7 +88,7 @@ void HttpEvtLua::onClose(Handle* it) {
     }
 }
 
-void HttpEvtLua::onRead(net::RequestTCP* it) {
+void HttpEvtLua::onRead(RequestFD* it) {
     if (it->mError) {
         mEvtFlags = true;
         mMsg->setStationID(net::ES_RESP_BODY_DONE);

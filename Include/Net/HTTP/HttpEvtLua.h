@@ -30,11 +30,11 @@ private:
     usz mReaded;
     u16 mEvtFlags;
 
-    void onRead(net::RequestTCP* it);
+    void onRead(RequestFD* it);
     void onClose(Handle* it);
     s32 launchRead();
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         HttpEvtLua& nd = *(HttpEvtLua*)it->mUser;
         nd.onRead(it);
     }

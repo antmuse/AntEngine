@@ -25,11 +25,11 @@ private:
 
     void onClose(Handle* it);
 
-    void onConnect(net::RequestTCP* it);
+    void onConnect(RequestFD* it);
 
-    void onWrite(net::RequestTCP* it);
+    void onWrite(RequestFD* it);
 
-    void onRead(net::RequestTCP* it);
+    void onRead(RequestFD* it);
 
     //net::HandleTCP& getHandleTCP() {
     //    return mTCP;
@@ -40,17 +40,17 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         SenderTCP& nd = *(SenderTCP*)it->mUser;
         nd.onWrite(it);
     }
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         SenderTCP& nd = *(SenderTCP*)it->mUser;
         nd.onRead(it);
     }
 
-    static void funcOnConnect(net::RequestTCP* it) {
+    static void funcOnConnect(RequestFD* it) {
         SenderTCP& nd = *(SenderTCP*)it->mUser;
         nd.onConnect(it);
     }
@@ -60,11 +60,11 @@ private:
         nd.onClose(it);
     }
 
-    DFINLINE s32 writeIF(net::RequestTCP* it) {
+    DFINLINE s32 writeIF(RequestFD* it) {
         return mTLS ? mTCP.write(it) : mTCP.getHandleTCP().write(it);
     }
 
-    DFINLINE s32 readIF(net::RequestTCP* it) {
+    DFINLINE s32 readIF(RequestFD* it) {
         return mTLS ? mTCP.read(it) : mTCP.getHandleTCP().read(it);
     }
 

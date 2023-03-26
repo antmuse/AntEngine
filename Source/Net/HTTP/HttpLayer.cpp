@@ -69,12 +69,12 @@ s32 HttpLayer::get(const String& gurl) {
     snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
     addr.setDomain(shost);
 
-    net::RequestTCP* nd = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* nd = RequestFD::newRequest(4 * 1024);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnConnect;
     s32 ret = mHTTPS ? mTCP.open(addr, nd) : mTCP.getHandleTCP().open(addr, nd);
     if (EE_OK != ret) {
-        net::RequestTCP::delRequest(nd);
+        RequestFD::delRequest(nd);
         return ret;
     }
     return EE_OK;
@@ -177,7 +177,7 @@ void HttpLayer::chunkDone() {
 bool HttpLayer::sendReq() {
     RingBuffer& bufs = mMsg->getCacheOut();
     if (bufs.getSize() > 0) {
-        net::RequestTCP* nd = net::RequestTCP::newRequest(0);
+        RequestFD* nd = RequestFD::newRequest(0);
         nd->mUser = mMsg;
         nd->mCall = HttpLayer::funcOnWrite;
         StringView msg = bufs.peekHead();
@@ -186,7 +186,7 @@ bool HttpLayer::sendReq() {
         nd->mUsed = (u32)msg.mLen;
         s32 ret = writeIF(nd);
         if (0 != ret) {
-            net::RequestTCP::delRequest(nd);
+            RequestFD::delRequest(nd);
             return false;
         }
     }
@@ -201,7 +201,7 @@ bool HttpLayer::sendResp(HttpMsg* msg) {
     }
 
     RingBuffer& bufs = msg->getCacheOut();
-    net::RequestTCP* nd = net::RequestTCP::newRequest(0);
+    RequestFD* nd = RequestFD::newRequest(0);
     nd->mUser = msg;
     nd->mCall = HttpLayer::funcOnWrite;
     StringView pack = bufs.peekHead();
@@ -210,7 +210,7 @@ bool HttpLayer::sendResp(HttpMsg* msg) {
     nd->mUsed = (u32)pack.mLen;
     s32 ret = writeIF(nd);
     if (EE_OK != ret) {
-        net::RequestTCP::delRequest(nd);
+        RequestFD::delRequest(nd);
         return false;
     }
     msg->grab();
@@ -311,10 +311,10 @@ void HttpLayer::onClose(Handle* it) {
 }
 
 
-bool HttpLayer::onLink(net::RequestTCP* it) {
+bool HttpLayer::onLink(RequestFD* it) {
     DASSERT(nullptr == mWebsite);
     net::Acceptor* accp = (net::Acceptor*)(it->mUser);
-    net::RequestAccept& req = *(net::RequestAccept*)it;
+    RequestAccept& req = *(RequestAccept*)it;
     mWebsite = reinterpret_cast<Website*>(accp->getUser());
     DASSERT(mWebsite);
     mHTTPS = 1 == mWebsite->getConfig().mType;
@@ -325,7 +325,7 @@ bool HttpLayer::onLink(net::RequestTCP* it) {
         mTCP.getHandleTCP().setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.getHandleTCP().setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
     }
-    net::RequestTCP* nd = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* nd = RequestFD::newRequest(4 * 1024);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnRead;
     s32 ret = mHTTPS ? mTCP.open(req, nd, &mWebsite->getTlsContext()) : mTCP.getHandleTCP().open(req, nd);
@@ -334,23 +334,23 @@ bool HttpLayer::onLink(net::RequestTCP* it) {
         Logger::log(ELL_INFO, "HttpLayer::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
         mWebsite = nullptr;
-        net::RequestTCP::delRequest(nd);
+        RequestFD::delRequest(nd);
         Logger::log(ELL_ERROR, "HttpLayer::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(), mTCP.getLocal().getStr(), ret);
     }
     return EE_OK == ret;
 }
 
-void HttpLayer::onConnect(net::RequestTCP* it) {
+void HttpLayer::onConnect(RequestFD* it) {
     if (0 == it->mError && sendReq()) {
         it->mCall = HttpLayer::funcOnRead;
         if (EE_OK == readIF(it)) {
             return;
         }
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
-void HttpLayer::onWrite(net::RequestTCP* it, HttpMsg* msg) {
+void HttpLayer::onWrite(RequestFD* it, HttpMsg* msg) {
     if (EE_OK != it->mError) {
         Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     } else {
@@ -364,12 +364,12 @@ void HttpLayer::onWrite(net::RequestTCP* it, HttpMsg* msg) {
             }
         }
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
     msg->drop();
 }
 
 
-void HttpLayer::onRead(net::RequestTCP* it) {
+void HttpLayer::onRead(RequestFD* it) {
     const s8* dat = it->getBuf();
     ssz datsz = it->mUsed;
     if (0 == datsz) {
@@ -403,7 +403,7 @@ void HttpLayer::onRead(net::RequestTCP* it) {
 #if defined(DDEBUG)
     printf("HttpLayer::onRead>>del req, read=%lld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError, getErrStr());
 #endif
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 
@@ -2597,7 +2597,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                      * If a Transfer-Encoding header field
                      * is present in a request and the chunked transfer coding is not
                      * the final encoding, the message body length cannot be determined
-                     * reliably; the server MUST respond with the 400 (Bad Request)
+                     * reliably; the server MUST respond with the 400 (Bad RequestFD)
                      * status code and then close the connection.
                      */
                     mReadSize = nread;

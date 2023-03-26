@@ -30,7 +30,7 @@ namespace app {
 namespace net {
 
 
-Acceptor::Acceptor(Loop& loop, FunReqTcpCallback func, RefCount* iUser) :
+Acceptor::Acceptor(Loop& loop, FuncReqCallback func, RefCount* iUser) :
     mFlyCount(0),
     mOnLink(func),
     mLoop(loop) {
@@ -62,7 +62,7 @@ s32 Acceptor::close() {
 s32 Acceptor::postAccept() {
     s32 ret = EE_OK;
     for (s32 i = 0; i < GMaxFly; ++i) {
-        mFlyRequests[i] = new net::RequestAccept(Acceptor::funcOnLink, this, mTCP.getLocal().getAddrSize());
+        mFlyRequests[i] = new RequestAccept(Acceptor::funcOnLink, this, mTCP.getLocal().getAddrSize());
         ret = mTCP.accept(mFlyRequests[i]);
         if (0 != ret) {
             delete mFlyRequests[i];
@@ -107,8 +107,8 @@ void Acceptor::onClose(Handle* it) {
 }
 
 
-void Acceptor::onLink(net::RequestTCP* it) {
-    net::RequestAccept* req = (net::RequestAccept*)it;
+void Acceptor::onLink(RequestFD* it) {
+    RequestAccept* req = (RequestAccept*)it;
     if (0 != it->mError) {
         --mFlyCount;
         if (!mLoop.isStop()) {

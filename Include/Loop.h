@@ -136,7 +136,7 @@ public:
 
     s32 postTask(const MsgHeader& task);
 
-    void addPending(Request* it);
+    void addPending(RequestFD* it);
 
     void bindFly(Handle* it);
     void unbindFly(Handle* it);
@@ -153,10 +153,10 @@ protected:
     void unbindHandle(Handle* it);
 
     //linux
-    void addPendingAll(Request* it) {
+    void addPendingAll(RequestFD* it) {
         if (it) {
             if (mRequest) {
-                Request* head = it->mNext;
+                RequestFD* head = it->mNext;
                 it->mNext = mRequest->mNext;
                 mRequest->mNext = head;
             }
@@ -173,7 +173,7 @@ private:
     BinaryHeap mTimeHub;    //最小堆用于管理超时事件
     Node2 mHandleActive;
     Node2 mHandleClose;
-    Request* mRequest;
+    RequestFD* mRequest;
     EventPoller mPoller;
     EventPoller::SEvent* mEvents;
 
@@ -188,7 +188,7 @@ private:
 
     net::HandleTCP mCMD;
     Packet mPackCMD;
-    net::RequestTCP mReadCMD;
+    RequestFD mReadCMD;
 
     net::Socket mSendCMD;
 
@@ -198,7 +198,7 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void LoopOnRead(net::RequestTCP* it) {
+    static void LoopOnRead(RequestFD* it) {
         Loop& nd = *(Loop*)it->mUser;
         nd.onRead(it);
     }
@@ -209,7 +209,7 @@ private:
     }
 
     //cmd read
-    void onRead(net::RequestTCP* it);
+    void onRead(RequestFD* it);
     //cmd close
     void onClose(Handle* it);
     //cmd timeout

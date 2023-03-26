@@ -73,7 +73,7 @@ void HttpFileRead::onFileClose(Handle* it) {
     }
 }
 
-void HttpFileRead::onFileRead(net::RequestTCP* it) {
+void HttpFileRead::onFileRead(RequestFD* it) {
     if (it->mError) {
         mDone = true;
         mMsg->setStationID(net::ES_RESP_BODY_DONE);

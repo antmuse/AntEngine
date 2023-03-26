@@ -36,27 +36,27 @@ s32 Handle::launchClose() {
 #include "Linux/Request.h"
 
 
-Request* Handle::popReadReq() {
+RequestFD* Handle::popReadReq() {
     return AppPopRingQueueHead_1(mReadQueue);
 }
 
-Request* Handle::popWriteReq() {
+RequestFD* Handle::popWriteReq() {
     return AppPopRingQueueHead_1(mWriteQueue);
 }
 
-void Handle::addReadPendingTail(Request* it) {
+void Handle::addReadPendingTail(RequestFD* it) {
     AppPushRingQueueTail_1(mReadQueue, it);
 }
 
-void Handle::addReadPendingHead(Request* it) {
+void Handle::addReadPendingHead(RequestFD* it) {
     AppPushRingQueueHead_1(mReadQueue, it);
 }
 
-void Handle::addWritePendingTail(Request* it) {
+void Handle::addWritePendingTail(RequestFD* it) {
     AppPushRingQueueTail_1(mWriteQueue, it);
 }
 
-void Handle::addWritePendingHead(Request* it) {
+void Handle::addWritePendingHead(RequestFD* it) {
     AppPushRingQueueHead_1(mWriteQueue, it);
 }
 

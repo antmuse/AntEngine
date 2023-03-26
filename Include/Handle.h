@@ -37,7 +37,7 @@ namespace app {
 class Loop;
 class Handle;
 class HandleTime;
-class Request;
+class RequestFD;
 
 typedef void (*FunCloseCallback)(Handle*);
 
@@ -150,14 +150,14 @@ public:
 protected:
 
 #if defined(DOS_ANDROID) || defined(DOS_LINUX)
-    Request* mReadQueue;  //point to tail,mReadQueue->mNext is head
-    Request* mWriteQueue; //point to tail,mReadQueue->mNext is head
-    Request* popReadReq();
-    Request* popWriteReq();
-    void addReadPendingTail(Request* it);
-    void addReadPendingHead(Request* it);
-    void addWritePendingTail(Request* it);
-    void addWritePendingHead(Request* it);
+    RequestFD* mReadQueue;  //point to tail,mReadQueue->mNext is head
+    RequestFD* mWriteQueue; //point to tail,mReadQueue->mNext is head
+    RequestFD* popReadReq();
+    RequestFD* popWriteReq();
+    void addReadPendingTail(RequestFD* it);
+    void addReadPendingHead(RequestFD* it);
+    void addWritePendingTail(RequestFD* it);
+    void addWritePendingHead(RequestFD* it);
 #endif
 
     mutable s32 mGrabCount;

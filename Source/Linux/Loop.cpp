@@ -131,7 +131,7 @@ bool Loop::run() {
             }
             if (mEvents[i].mData.mPointer) {
                 net::HandleTCP& han = *(net::HandleTCP*)(mEvents[i].mData.mPointer);
-                Request* req;
+                RequestFD* req;
                 if (EPOLLIN & eflag) {
                     req = han.popReadReq();
                     if (req) {
@@ -170,11 +170,11 @@ void Loop::updatePending() {
     if (nullptr == mRequest) {
         return;
     }
-    Request* first = mRequest->mNext;
-    Request* next = first;
+    RequestFD* first = mRequest->mNext;
+    RequestFD* next = first;
     mRequest = nullptr;
 
-    for (Request* req = next; next; req = next) {
+    for (RequestFD* req = next; next; req = next) {
         next = req->mNext != first ? req->mNext : nullptr;
         switch (req->mType) {
         case ERT_CONNECT:
@@ -782,7 +782,7 @@ s32 Loop::openHandle(Handle* it) {
 }
 
 
-void Loop::addPending(Request* it) {
+void Loop::addPending(RequestFD* it) {
     if (mRequest) {
         it->mNext = mRequest->mNext;
         mRequest->mNext = it;

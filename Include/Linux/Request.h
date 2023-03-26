@@ -9,10 +9,9 @@
 
 namespace app {
 class Handle;
-namespace net {
-class RequestTCP;
-}
-typedef void (*FunReqTcpCallback)(net::RequestTCP*);
+class RequestFD;
+
+typedef void (*FuncReqCallback)(RequestFD*);
 
 enum ERequestType {
     ERT_UNKNOWN = 0,
@@ -23,17 +22,25 @@ enum ERequestType {
     ERT_COUNT
 };
 
-class Request : public Nocopy {
+class RequestFD : public Nocopy {
 public:
-    Request() :
-        mNext(nullptr),
-        mHandle(nullptr),
-        mType(ERT_UNKNOWN),
-        mError(0),
-        mUser(nullptr) {
+    static RequestFD* newRequest(u32 cache_size) {
+        RequestFD* it = reinterpret_cast<RequestFD*>(new s8[sizeof(RequestFD) + cache_size]);
+        new ((void*)it) RequestFD();
+        it->mAllocated = cache_size;
+        it->mData = reinterpret_cast<s8*>(it + 1);
+        return it;
     }
 
-    ~Request() { }
+    static void delRequest(RequestFD* it) {
+        delete[] reinterpret_cast<s8*>(it);
+    }
+
+    RequestFD() {
+        clear();
+    }
+
+    ~RequestFD() { }
 
     void* getUser() const {
         return mUser;
@@ -45,38 +52,6 @@ public:
 
     void setStepSize(u32 it) {
         mStepSize = it;
-    }
-
-    Request* mNext;
-    Handle* mHandle;
-    void* mUser;
-    s32 mType;      //ERequestType
-    s32 mError;     //0=success,else failed code
-    u32 mStepSize;
-};
-
-
-
-namespace net {
-
-class RequestTCP : public Request {
-public:
-    RequestTCP() {
-        clear();
-    }
-
-    ~RequestTCP() { }
-
-    static RequestTCP* newRequest(u32 cache_size) {
-        RequestTCP* it = reinterpret_cast<RequestTCP*>(new s8[sizeof(RequestTCP) + cache_size]);
-        new ((void*)it) RequestTCP();
-        it->mAllocated = cache_size;
-        it->mData = reinterpret_cast<s8*>(it + 1);
-        return it;
-    }
-
-    static void delRequest(net::RequestTCP* it) {
-        delete[] reinterpret_cast<s8*>(it);
     }
 
     void clear() {
@@ -110,14 +85,20 @@ public:
         }
     }
 
-    FunReqTcpCallback mCall;
+    RequestFD* mNext;
+    Handle* mHandle;
+    void* mUser;
+    s32 mType;      //ERequestType
+    s32 mError;     //0=success,else failed code
+    u32 mStepSize;
+    FuncReqCallback mCall;
     s8* mData;
     u32 mAllocated;
     u32 mUsed;          //data size
 };
 
 
-class RequestUDP : public net::RequestTCP {
+class RequestUDP : public RequestFD {
 public:
     u32 mFlags;   //bits: [1=had connected, ...]
     net::NetAddress mRemote;
@@ -130,7 +111,7 @@ public:
         return it;
     }
 
-    static void delRequest(net::RequestUDP* it) {
+    static void delRequest(RequestUDP* it) {
         delete[] reinterpret_cast<s8*>(it);
     }
 
@@ -143,13 +124,13 @@ public:
 };
 
 
-class RequestAccept : public net::RequestTCP {
+class RequestAccept : public RequestFD {
 public:
     net::Socket mSocket;
     net::NetAddress mLocal;
     net::NetAddress mRemote;
 
-    RequestAccept(FunReqTcpCallback func, void* iUser, s32 addrSize) {
+    RequestAccept(FuncReqCallback func, void* iUser, s32 addrSize) {
         mLocal.setAddrSize(addrSize);
         mRemote.setAddrSize(addrSize);
         mUser = iUser;
@@ -163,8 +144,6 @@ public:
         mSocket.close();
     }
 };
-
-} //namespace net
 
 } //namespace app
 

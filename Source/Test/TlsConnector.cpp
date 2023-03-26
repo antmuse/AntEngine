@@ -25,12 +25,12 @@ void TlsConnector::setMaxMsg(s32 cnt) {
 
 
 s32 TlsConnector::open(const String& addr) {
-    net::RequestTCP* it = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* it = RequestFD::newRequest(4 * 1024);
     it->mUser = this;
     it->mCall = TlsConnector::funcOnConnect;
     s32 ret = mTCP.open(addr, it);
     if (EE_OK != ret) {
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
     return ret;
 }
@@ -39,14 +39,14 @@ s32 TlsConnector::open(const String& addr) {
 s32 TlsConnector::onTimeout(HandleTime& it) {
     DASSERT(mTCP.getGrabCount() > 0);
 
-    net::RequestTCP* tick = net::RequestTCP::newRequest(sizeof(net::PackActive));
+    RequestFD* tick = RequestFD::newRequest(sizeof(net::PackActive));
     tick->mUser = this;
     tick->mCall = TlsConnector::funcOnWrite;
     net::PackActive* head = (net::PackActive*)(tick->getWriteBuf().mData);
     head->pack(++mSN);
     tick->mUsed = head->mSize;
     if (0 != mTCP.write(tick)) {
-        net::RequestTCP::delRequest(tick);
+        RequestFD::delRequest(tick);
         //@note: 此时,不管是否调用close handle，皆必须返回EE_ERROR
         return EE_ERROR;
     }
@@ -61,7 +61,7 @@ void TlsConnector::onClose(Handle* it) {
 }
 
 
-void TlsConnector::onWrite(net::RequestTCP* it) {
+void TlsConnector::onWrite(RequestFD* it) {
     if (0 == it->mError) {
         StringView dat = it->getReadBuf();
         MsgHeader* head = (MsgHeader*)dat.mData;
@@ -80,20 +80,20 @@ void TlsConnector::onWrite(net::RequestTCP* it) {
     } else {
         Logger::log(ELL_ERROR, "TlsConnector::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
     //mTCP.getSock().closeSend();
     //mTCP.getSock().closeReceive();
 }
 
 
-void TlsConnector::onRead(net::RequestTCP* it) {
+void TlsConnector::onRead(RequestFD* it) {
     if (it->mUsed > 0) {
         StringView dat = it->getReadBuf();
         usz got = mPack.write(dat.mData, dat.mLen);
         AppTicker::gTotalSizeIn += dat.mLen;
         it->mUsed = 0;
         if (EE_OK != mTCP.read(it)) {
-            net::RequestTCP::delRequest(it);
+            RequestFD::delRequest(it);
             return;
         }
 
@@ -109,7 +109,7 @@ void TlsConnector::onRead(net::RequestTCP* it) {
                 ++AppTicker::gTotalPacketIn;
                 if (mMaxMsg > 0) {
                     --mMaxMsg;
-                    net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
+                    RequestFD* out = RequestFD::newRequest(head->mSize);
                     out->mUser = this;
                     out->mCall = TlsConnector::funcOnWrite;
                     dat = out->getWriteBuf();
@@ -119,7 +119,7 @@ void TlsConnector::onRead(net::RequestTCP* it) {
                     s8* val = head->readItem(net::PackSubmit::EI_VALUE, sz);
                     out->mUsed = head->mSize;
                     if (0 != mTCP.write(out)) {
-                        net::RequestTCP::delRequest(out);
+                        RequestFD::delRequest(out);
                         return;
                     }
                 }
@@ -136,32 +136,32 @@ void TlsConnector::onRead(net::RequestTCP* it) {
     } else {
         //stop read
         Logger::log(ELL_INFO, "TlsConnector::onRead>>read 0, ecode=%d", it->mError);
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
 }
 
 
-void TlsConnector::onConnect(net::RequestTCP* it) {
+void TlsConnector::onConnect(RequestFD* it) {
     if (0 == it->mError) {
         //printf("TlsConnector::onConnect>>success\n");
         it->mCall = TlsConnector::funcOnRead;
         if (0 != mTCP.read(it)) {
-            net::RequestTCP::delRequest(it);
+            RequestFD::delRequest(it);
             return;
         }
 
         /*for (s32 i = 0; i < 2; ++i) {
-            net::RequestTCP* read = net::RequestTCP::newRequest(4*1024);
+            RequestFD* read = RequestFD::newRequest(4*1024);
             read->mUser = this;
             read->mCall = TlsConnector::funcOnRead;
             if (0 != mTCP.read(read)) {
-                net::RequestTCP::delRequest(read);
+                RequestFD::delRequest(read);
                 return;
             }
         }*/
 
         for (s32 i = 0; mMaxMsg > 0 && i < 2; ++i) {
-            net::RequestTCP* out = net::RequestTCP::newRequest(1024);
+            RequestFD* out = RequestFD::newRequest(1024);
             StringView buf = out->getWriteBuf();
             net::PackSubmit& head = *(net::PackSubmit*)buf.mData;
             head.clear();
@@ -178,13 +178,13 @@ void TlsConnector::onConnect(net::RequestTCP* it) {
             if (0 == mTCP.write(out)) {
                 --mMaxMsg;
             } else {
-                net::RequestTCP::delRequest(out);
+                RequestFD::delRequest(out);
                 break;
             }
         }
     } else {
         Logger::log(ELL_ERROR, "TlsConnector::onConnect>>ecode=%d", it->mError);
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
     }
 }
 

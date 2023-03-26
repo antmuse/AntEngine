@@ -67,12 +67,12 @@ void RedisClient::onClose(Handle* it) {
 }
 
 
-void RedisClient::onWrite(net::RequestTCP* it) {
-    net::RequestTCP::delRequest(it);
+void RedisClient::onWrite(RequestFD* it) {
+    RequestFD::delRequest(it);
 }
 
 
-void RedisClient::onRead(net::RequestTCP* it) {
+void RedisClient::onRead(RequestFD* it) {
     if (it->mUsed > 0) {
         if (nullptr == mResult) {
             mResult = new
@@ -97,7 +97,7 @@ void RedisClient::onRead(net::RequestTCP* it) {
     }
     Logger::log(ELL_INFO, "RedisClient::onRead>>addr=%s, ecode=%d",
         mPool->getRemoterAddr().getStr(), it->mError);
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 
@@ -147,12 +147,12 @@ s32 RedisClient::open() {
     }
     mStatus = 1;
 
-    net::RequestTCP* it = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* it = RequestFD::newRequest(4 * 1024);
     it->mUser = this;
     it->mCall = funcOnConnect;
     s32 ret = mTCP.connect(it);
     if (EE_OK != ret) {
-        net::RequestTCP::delRequest(it);
+        RequestFD::delRequest(it);
         Logger::logError("RedisClient::open>>fail to connect redis = %s", mTCP.getRemote().getStr());
     }
     return EE_OK;
@@ -167,12 +167,12 @@ s32 RedisClient::close() {
 s32 RedisClient::onTimeout(HandleTime& it) {
     DASSERT(mTCP.getGrabCount() > 0);
 
-    //net::RequestTCP* tick = net::RequestTCP::newRequest(sizeof(net::PackActive));
+    //RequestFD* tick = RequestFD::newRequest(sizeof(net::PackActive));
     //tick->mUser = this;
     //tick->mCall = RedisClient::funcOnWrite;
     //tick->mUsed = 1212;
     //if (0 != mTCP.write(tick)) {
-    //    net::RequestTCP::delRequest(tick);
+    //    RequestFD::delRequest(tick);
     //    return EE_ERROR;
     //}
     if (mStatus & 1) {
@@ -190,7 +190,7 @@ bool RedisClient::postTask(RedisCommand* it) {
     mCMD = static_cast<RedisRequest*>(it);
     mCMD->grab();
 
-    net::RequestTCP* out = net::RequestTCP::newRequest(0);
+    RequestFD* out = RequestFD::newRequest(0);
     out->mData = (s8*)it->getRequestBuf();
     out->mAllocated = it->getRequestSize();
     out->mUsed = out->mAllocated;
@@ -200,7 +200,7 @@ bool RedisClient::postTask(RedisCommand* it) {
         return true;
     }
 
-    net::RequestTCP::delRequest(out);
+    RequestFD::delRequest(out);
     mCMD->drop();
     mCMD = nullptr;
     return false;
@@ -217,14 +217,14 @@ void RedisClient::onPassword() {
             mPool->push(this);
         } else {
             mStatus |= 2;
-            net::RequestTCP* out = net::RequestTCP::newRequest(128);
+            RequestFD* out = RequestFD::newRequest(128);
             out->mUser = this;
             out->mCall = RedisClient::funcOnWrite;
             out->mUsed = snprintf(out->mData, out->mAllocated, "%d", mPool->getDatabaseID());
             out->mUsed = snprintf(out->mData, out->mAllocated,
                 "*2\r\n$6\r\nSELECT$%u\r\n%d", out->mUsed, mPool->getDatabaseID());
             if (0 != mTCP.write(out)) {
-                net::RequestTCP::delRequest(out);
+                RequestFD::delRequest(out);
             }
         }
         return;
@@ -251,7 +251,7 @@ void RedisClient::onSelectDB() {
 }
 
 
-void RedisClient::onConnect(net::RequestTCP* it) {
+void RedisClient::onConnect(RequestFD* it) {
     if (nullptr == mResult) {
         mResult = new
         (reinterpret_cast<RedisResponse*>(mHub->allocate(sizeof(RedisResponse)))) RedisResponse(*mHub);
@@ -268,7 +268,7 @@ void RedisClient::onConnect(net::RequestTCP* it) {
                 mStatus &= ~1;
                 mPool->push(this);
             } else {
-                net::RequestTCP* out = net::RequestTCP::newRequest(128);
+                RequestFD* out = RequestFD::newRequest(128);
                 out->mUser = this;
                 out->mCall = RedisClient::funcOnWrite;
                 if (pwd.getLen() > 0) {
@@ -283,13 +283,13 @@ void RedisClient::onConnect(net::RequestTCP* it) {
                         "*2\r\n$6\r\nSELECT\r\n$%llu\r\n%s\r\n", pwd.getLen(), pwd.c_str());
                 }
                 if (0 != mTCP.write(out)) {
-                    net::RequestTCP::delRequest(out);
+                    RequestFD::delRequest(out);
                 }
             }
             return;
         }
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
     mPool->onClose(this, mStatus & 1);
 }
 

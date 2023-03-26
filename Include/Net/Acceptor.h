@@ -43,7 +43,7 @@ namespace net {
 
 class Acceptor :public RefCount {
 public:
-    Acceptor(Loop& loop, FunReqTcpCallback func, RefCount* iUser = nullptr);
+    Acceptor(Loop& loop, FuncReqCallback func, RefCount* iUser = nullptr);
 
     virtual ~Acceptor();
 
@@ -98,22 +98,22 @@ public:
 private:
     void onClose(Handle* it);
 
-    void onLink(net::RequestTCP* it);
+    void onLink(RequestFD* it);
 
     static void funcOnClose(Handle* it) {
         Acceptor& nd = *(Acceptor*)it->getUser();
         nd.onClose(it);
     }
 
-    static void funcOnLink(net::RequestTCP* it) {
+    static void funcOnLink(RequestFD* it) {
         Acceptor& nd = *(Acceptor*)it->mUser;
         nd.onLink(it);
     }
 
     const static s32 GMaxFly = 10;
     s32 mFlyCount;
-    FunReqTcpCallback mOnLink;
-    net::RequestAccept* mFlyRequests[GMaxFly];
+    FuncReqCallback mOnLink;
+    RequestAccept* mFlyRequests[GMaxFly];
     Loop& mLoop;
     net::HandleTCP mTCP;
 };

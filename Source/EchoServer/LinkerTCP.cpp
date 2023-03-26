@@ -38,7 +38,7 @@ void LinkerTCP::onClose(Handle* it) {
 }
 
 
-bool LinkerTCP::onLink(NetServerTCP* sev, net::RequestTCP* it) {
+bool LinkerTCP::onLink(NetServerTCP* sev, RequestFD* it) {
     DASSERT(sev);
     mServer = sev;
     mTLS = sev->isTLS();
@@ -51,24 +51,24 @@ bool LinkerTCP::onLink(NetServerTCP* sev, net::RequestTCP* it) {
         mTCP.getHandleTCP().setTime(LinkerTCP::funcOnTime, 15 * 1000, 30 * 1000, -1);
     }
 
-    net::RequestTCP* read = net::RequestTCP::newRequest(4 * 1024);
+    RequestFD* read = RequestFD::newRequest(4 * 1024);
     read->mUser = this;
     read->mCall = LinkerTCP::funcOnRead;
-    s32 ret = mTLS ? mTCP.open(*(net::RequestAccept*)it, read)
-        : mTCP.getHandleTCP().open(*(net::RequestAccept*)it, read);
+    s32 ret = mTLS ? mTCP.open(*(RequestAccept*)it, read)
+        : mTCP.getHandleTCP().open(*(RequestAccept*)it, read);
     if (0 == ret) {
         mServer->bind(this);
         Logger::log(ELL_INFO, "LinkerTCP::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
         mServer = nullptr;
-        net::RequestTCP::delRequest(read);
+        RequestFD::delRequest(read);
         Logger::log(ELL_INFO, "LinkerTCP::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(), mTCP.getLocal().getStr(), ret);
     }
     return 0 == ret;
 }
 
 
-void LinkerTCP::onWrite(net::RequestTCP* it) {
+void LinkerTCP::onWrite(RequestFD* it) {
     if (0 == it->mError) {
         StringView dat = it->getReadBuf();
         MsgHeader* head = (MsgHeader*)dat.mData;
@@ -84,17 +84,17 @@ void LinkerTCP::onWrite(net::RequestTCP* it) {
     } else {
         Logger::log(ELL_ERROR, "LinkerTCP::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 
-void LinkerTCP::onRead(net::RequestTCP* it) {
+void LinkerTCP::onRead(RequestFD* it) {
     if (it->mUsed > 0) {
         StringView dat = it->getReadBuf();
         usz got = mPack.write(dat.mData, dat.mLen);
         it->mUsed = 0;
         if (EE_OK != readIF(it)) {
-            net::RequestTCP::delRequest(it);
+            RequestFD::delRequest(it);
         }
 
         MsgHeader* head = (MsgHeader*)mPack.getPointer();
@@ -103,7 +103,7 @@ void LinkerTCP::onRead(net::RequestTCP* it) {
             case net::EPT_ACTIVE:
             {
                 ++AppTicker::gTotalActive;
-                net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
+                RequestFD* out = RequestFD::newRequest(head->mSize);
                 out->mUser = this;
                 out->mCall = LinkerTCP::funcOnWrite;
                 dat = out->getWriteBuf();
@@ -111,7 +111,7 @@ void LinkerTCP::onRead(net::RequestTCP* it) {
                 memcpy(dat.mData, head, head->mSize);
                 out->mUsed = head->mSize;
                 if (0 != writeIF(out)) {
-                    net::RequestTCP::delRequest(out);
+                    RequestFD::delRequest(out);
                 }
                 break;
             }
@@ -119,14 +119,14 @@ void LinkerTCP::onRead(net::RequestTCP* it) {
             {
                 ++AppTicker::gTotalPacketIn;
                 AppTicker::gTotalSizeIn += head->mSize;
-                net::RequestTCP* out = net::RequestTCP::newRequest(head->mSize);
+                RequestFD* out = RequestFD::newRequest(head->mSize);
                 out->mUser = this;
                 out->mCall = LinkerTCP::funcOnWrite;
                 dat = out->getWriteBuf();
                 memcpy(dat.mData, head, head->mSize);
                 out->mUsed = head->mSize;
                 if (0 != writeIF(out)) {
-                    net::RequestTCP::delRequest(out);
+                    RequestFD::delRequest(out);
                 }
                 break;
             }
@@ -145,7 +145,7 @@ void LinkerTCP::onRead(net::RequestTCP* it) {
 
     //stop read
     printf("LinkerTCP::onRead>>read 0 bytes, ecode=%d\n", it->mError);
-    net::RequestTCP::delRequest(it);
+    RequestFD::delRequest(it);
 }
 
 } //namespace net

@@ -22,7 +22,7 @@ public:
     Website(EngineConfig::WebsiteCfg& cfg);
     virtual ~Website();
 
-    static void funcOnLink(net::RequestTCP* it) {
+    static void funcOnLink(RequestFD* it) {
         DASSERT(it && it->mUser);
         net::Acceptor* accp = reinterpret_cast<net::Acceptor*>(it->mUser);
         Website* web = reinterpret_cast<Website*>(accp->getUser());
@@ -70,7 +70,7 @@ private:
     void loadTLS();
     void clear();
 
-    void onLink(net::RequestTCP* it) {
+    void onLink(RequestFD* it) {
         HttpLayer* con = new HttpLayer();
         con->onLink(it);
         con->drop();

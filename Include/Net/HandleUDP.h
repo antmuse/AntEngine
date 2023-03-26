@@ -31,9 +31,10 @@
 
 
 namespace app {
-namespace net {
 class RequestUDP;
 class RequestAccept;
+
+namespace net {
 
 class HandleUDP : public HandleTCP {
 public:

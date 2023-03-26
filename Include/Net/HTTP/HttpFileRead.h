@@ -27,12 +27,12 @@ private:
     usz mReaded;
     bool mDone;
 
-    void onFileRead(net::RequestTCP* it);
+    void onFileRead(RequestFD* it);
     void onFileClose(Handle* it);
 
     s32 launchRead();
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         HttpFileRead& nd = *(HttpFileRead*)it->mUser;
         nd.onFileRead(it);
     }

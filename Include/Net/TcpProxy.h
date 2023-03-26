@@ -43,7 +43,7 @@ public:
 
     virtual ~TcpProxy();
 
-    void onLink(net::RequestTCP* it);
+    void onLink(RequestFD* it);
 
 private:
 
@@ -53,25 +53,25 @@ private:
     void onClose(Handle* it);
     void onClose2(Handle* it);
 
-    void onWrite(net::RequestTCP* it);
-    void onWrite2(net::RequestTCP* it);
+    void onWrite(RequestFD* it);
+    void onWrite2(RequestFD* it);
 
-    void onRead(net::RequestTCP* it);
-    void onRead2(net::RequestTCP* it);
+    void onRead(RequestFD* it);
+    void onRead2(RequestFD* it);
 
-    void onConnect(net::RequestTCP* it);
+    void onConnect(RequestFD* it);
 
     static s32 funcOnTime(HandleTime* it) {
         TcpProxy& nd = *(TcpProxy*)it->getUser();
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         TcpProxy& nd = *(TcpProxy*)it->mUser;
         nd.onWrite(it);
     }
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         TcpProxy& nd = *(TcpProxy*)it->mUser;
         nd.onRead(it);
     }
@@ -87,12 +87,12 @@ private:
         return nd.onTimeout2(*it);
     }
 
-    static void funcOnWrite2(net::RequestTCP* it) {
+    static void funcOnWrite2(RequestFD* it) {
         TcpProxy& nd = *(TcpProxy*)it->mUser;
         nd.onWrite2(it);
     }
 
-    static void funcOnRead2(net::RequestTCP* it) {
+    static void funcOnRead2(RequestFD* it) {
         TcpProxy& nd = *(TcpProxy*)it->mUser;
         nd.onRead2(it);
     }
@@ -102,7 +102,7 @@ private:
         nd.onClose2(it);
     }
 
-    static void funcOnConnect(net::RequestTCP* it) {
+    static void funcOnConnect(RequestFD* it) {
         TcpProxy& nd = *(TcpProxy*)it->mUser;
         nd.onConnect(it);
     }
@@ -124,7 +124,7 @@ public:
     TcpProxyHub(EngineConfig::ProxyCfg& cfg) :mConfig(cfg) { }
     virtual ~TcpProxyHub() { }
 
-    static void funcOnLink(net::RequestTCP* it) {
+    static void funcOnLink(RequestFD* it) {
         TcpProxy* con = new TcpProxy(*it->mHandle->getLoop());
         con->onLink(it);
         con->drop();

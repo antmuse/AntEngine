@@ -28,12 +28,12 @@ s32 SenderUDP::open(const String& addr) {
     mUDP.setClose(EHT_UDP, SenderUDP::funcOnClose, this);
     mUDP.setTime(SenderUDP::funcOnTime, 5 * 1000, 2 * 1000, -1);
 
-    net::RequestUDP* it = net::RequestUDP::newRequest(GMAX_UDP_SIZE);
+    RequestUDP* it = RequestUDP::newRequest(GMAX_UDP_SIZE);
     it->mUser = this;
     it->mCall = funcOnRead;
     s32 ret = mUDP.open(it, addr.c_str(), nullptr, 2);
     if (EE_OK != ret) {
-        net::RequestUDP::delRequest(it);
+        RequestUDP::delRequest(it);
     }
     sendMsgs(mMaxMsg);
     return ret;
@@ -53,7 +53,7 @@ void SenderUDP::onClose(Handle* it) {
 }
 
 
-void SenderUDP::onWrite(net::RequestUDP* it) {
+void SenderUDP::onWrite(RequestUDP* it) {
     if (EE_OK == it->mError) {
         //++AppTicker::gTotalActive;
         ++AppTicker::gTotalPacketOut;
@@ -61,18 +61,18 @@ void SenderUDP::onWrite(net::RequestUDP* it) {
     } else {
         Logger::log(ELL_ERROR, "SenderUDP::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
-    net::RequestUDP::delRequest(it);
+    RequestUDP::delRequest(it);
 }
 
 
-void SenderUDP::onRead(net::RequestUDP* it) {
+void SenderUDP::onRead(RequestUDP* it) {
     if (EE_OK == it->mError) {
         StringView buf = it->getReadBuf();
         Logger::log(ELL_INFO, "SenderUDP::onRead>>read=%.*s", buf.mLen, buf.mData);
     }
     it->mUsed = 0;
     if (EE_OK != mUDP.read(it)) {
-        net::RequestUDP::delRequest(it);
+        RequestUDP::delRequest(it);
         Logger::log(ELL_ERROR, "SenderUDP::onRead>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
 }
@@ -80,17 +80,17 @@ void SenderUDP::onRead(net::RequestUDP* it) {
 
 s32 SenderUDP::sendMsgs(s32 max) {
     for (s32 i = 0; i < max; ++i) {
-        net::RequestUDP* out = net::RequestUDP::newRequest(512);
+        RequestUDP* out = RequestUDP::newRequest(512);
         if (EE_OK != sendMsgs(out)) {
             Logger::log(ELL_ERROR, "SenderUDP::sendMsgs>>ecode=%d", out->mError);
-            net::RequestUDP::delRequest(out);
+            RequestUDP::delRequest(out);
         }
     }
     return EE_OK;
 }
 
 
-s32 SenderUDP::sendMsgs(net::RequestUDP* out) {
+s32 SenderUDP::sendMsgs(RequestUDP* out) {
     DASSERT(out);
     usz sockid = mUDP.getSock().getValue();
     StringView buf = out->getWriteBuf();

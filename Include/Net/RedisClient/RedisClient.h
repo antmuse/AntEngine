@@ -75,11 +75,11 @@ public:
 
     void onClose(Handle* it);
 
-    void onConnect(net::RequestTCP* it);
+    void onConnect(RequestFD* it);
 
-    void onWrite(net::RequestTCP* it);
+    void onWrite(RequestFD* it);
 
-    void onRead(net::RequestTCP* it);
+    void onRead(RequestFD* it);
 
     net::HandleTCP& getHandleTCP() {
         return mTCP;
@@ -92,17 +92,17 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         RedisClient& nd = *(RedisClient*)it->mUser;
         nd.onWrite(it);
     }
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         RedisClient& nd = *(RedisClient*)it->mUser;
         nd.onRead(it);
     }
 
-    static void funcOnConnect(net::RequestTCP* it) {
+    static void funcOnConnect(RequestFD* it) {
         RedisClient& nd = *(RedisClient*)it->mUser;
         nd.onConnect(it);
     }

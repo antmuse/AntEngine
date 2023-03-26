@@ -147,8 +147,8 @@ s32 HandleTLS::verify(s32 vfg) {
 }
 
 
-void HandleTLS::landQueue(RequestTCP*& que) {
-    for (RequestTCP* nd = AppPopRingQueueHead_1(que);
+void HandleTLS::landQueue(RequestFD*& que) {
+    for (RequestFD* nd = AppPopRingQueueHead_1(que);
         nd; nd = AppPopRingQueueHead_1(que)) {
         DASSERT(nd->mCall);
         nd->mCall(nd);
@@ -161,7 +161,7 @@ void HandleTLS::doRead() {
     bool gogo = true;
     
     do {
-        for (RequestTCP* it = AppPopRingQueueHead_1(mFlyReads);
+        for (RequestFD* it = AppPopRingQueueHead_1(mFlyReads);
             it && gogo; it = AppPopRingQueueHead_1(mFlyReads)) {
             s32 nread = session->read(it->mData, (s32)it->mAllocated);
             if (nread > 0) {
@@ -209,7 +209,7 @@ s32 HandleTLS::setHost(const s8* host, usz length) {
 }
 
 
-s32 HandleTLS::open(const NetAddress& addr, RequestTCP* oit, const net::TlsContext* tlsctx) {
+s32 HandleTLS::open(const NetAddress& addr, RequestFD* oit, const net::TlsContext* tlsctx) {
     init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
 
     mType = EHT_TCP_CONNECT;
@@ -232,7 +232,7 @@ s32 HandleTLS::open(const NetAddress& addr, RequestTCP* oit, const net::TlsConte
 }
 
 
-s32 HandleTLS::open(const String& addr, RequestTCP* oit, const net::TlsContext* tlsctx) {
+s32 HandleTLS::open(const String& addr, RequestFD* oit, const net::TlsContext* tlsctx) {
     init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
 
     mType = EHT_TCP_CONNECT;
@@ -255,7 +255,7 @@ s32 HandleTLS::open(const String& addr, RequestTCP* oit, const net::TlsContext* 
 }
 
 
-s32 HandleTLS::open(const RequestAccept& accp, RequestTCP* oit, const net::TlsContext* tlsctx) {
+s32 HandleTLS::open(const RequestAccept& accp, RequestFD* oit, const net::TlsContext* tlsctx) {
     init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
     ((TlsSession*)mTlsSession)->setAcceptState();
 
@@ -286,7 +286,7 @@ s32 HandleTLS::open(const RequestAccept& accp, RequestTCP* oit, const net::TlsCo
 }
 
 
-s32 HandleTLS::write(RequestTCP* req) {
+s32 HandleTLS::write(RequestFD* req) {
     if (0 == (EHF_WRITEABLE & mFlag)) {
         return EE_NO_WRITEABLE;
     }
@@ -319,7 +319,7 @@ s32 HandleTLS::write(RequestTCP* req) {
 }
 
 
-s32 HandleTLS::read(RequestTCP* req) {
+s32 HandleTLS::read(RequestFD* req) {
     if (0 == (EHF_READABLE & mFlag)) {
         return EE_NO_READABLE;
     }
@@ -366,7 +366,7 @@ void HandleTLS::onClose(Handle* it) {
 }
 
 
-void HandleTLS::onWriteHello(RequestTCP* it) {
+void HandleTLS::onWriteHello(RequestFD* it) {
     if (0 == it->mError) {
         mWrite.mUser = nullptr;
         mOutBuffers.commitHeadPos(mCommitPos);
@@ -379,7 +379,7 @@ void HandleTLS::onWriteHello(RequestTCP* it) {
 }
 
 
-void HandleTLS::onWrite(RequestTCP* it) {
+void HandleTLS::onWrite(RequestFD* it) {
     landWrites();
     if (0 == it->mError) {
         mWrite.mUser = nullptr;
@@ -393,7 +393,7 @@ void HandleTLS::onWrite(RequestTCP* it) {
 }
 
 
-void HandleTLS::onRead(RequestTCP* it) {
+void HandleTLS::onRead(RequestFD* it) {
     if (it->mUsed > 0) {
         mInBuffers.commitTailPos((s32)it->mUsed);
         doRead();
@@ -409,7 +409,7 @@ void HandleTLS::onRead(RequestTCP* it) {
 }
 
 
-void HandleTLS::onReadHello(RequestTCP* it) {
+void HandleTLS::onReadHello(RequestFD* it) {
     if (it->mUsed > 0) {
         mRead.mUser = nullptr;
         mInBuffers.commitTailPos((s32)it->mUsed);
@@ -421,7 +421,7 @@ void HandleTLS::onReadHello(RequestTCP* it) {
                 mWrite.mCall = HandleTLS::funcOnWrite;
 
                 if (EHT_TCP_CONNECT == mType) {
-                    RequestTCP* oit = AppPopRingQueueHead_1(mFlyWrites);
+                    RequestFD* oit = AppPopRingQueueHead_1(mFlyWrites);
                     DASSERT(oit);
                     if (oit) {
                         //回调中自行决定是否要验证域名证书， HandleTLS::verify(1, "www.baidu.com");
@@ -451,7 +451,7 @@ void HandleTLS::onReadHello(RequestTCP* it) {
 }
 
 
-void HandleTLS::onConnect(RequestTCP* it) {
+void HandleTLS::onConnect(RequestFD* it) {
     DASSERT(it == &mWrite);
     mWrite.mUser = nullptr;
     mFlag = mTCP.getFlag();

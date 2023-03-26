@@ -31,9 +31,11 @@
 
 
 namespace app {
-namespace net {
-class RequestTCP;
+class RequestFD;
 class RequestAccept;
+
+namespace net {
+
 
 class HandleTCP : public HandleTime {
 public:
@@ -78,11 +80,11 @@ public:
 
     s32 accept(RequestAccept* it);
 
-    s32 connect(RequestTCP* it);
+    s32 connect(RequestFD* it);
 
-    s32 write(RequestTCP* it);
+    s32 write(RequestFD* it);
 
-    s32 read(RequestTCP* it);
+    s32 read(RequestFD* it);
 
     s32 close();
 
@@ -92,8 +94,8 @@ public:
     * @param it connect request
     * @return 0 if success, else failed.
     */
-    s32 open(const String& addr, RequestTCP* it);
-    s32 open(const NetAddress& addr, RequestTCP* it);
+    s32 open(const String& addr, RequestFD* it);
+    s32 open(const NetAddress& addr, RequestFD* it);
 
     /**
     * @brief launch linked sock
@@ -101,7 +103,7 @@ public:
     * @param it read request, don't start reading if null.
     * @return 0 if success, else failed and close the socket.
     */
-    s32 open(const RequestAccept& accp, RequestTCP* it);
+    s32 open(const RequestAccept& accp, RequestFD* it);
 
 protected:
     friend class app::Loop;

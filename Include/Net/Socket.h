@@ -30,8 +30,9 @@
 #include "NetAddress.h"
 
 namespace app {
+class RequestFD;
+
 namespace net {
-class RequestTCP;
 
 
 #if defined(DOS_WINDOWS)
@@ -323,23 +324,23 @@ public:
     *@param addressCache The cache to store addresses of local and remote.
     *@note: In IPV4, addressCache size must not less than 64 = 2*(sizeof(sockaddr_in) + 16).
     */
-    bool accept(const Socket& sock, RequestTCP* iAction, void* addressCache, u32 addrsz)const;
+    bool accept(const Socket& sock, RequestFD* iAction, void* addressCache, u32 addrsz)const;
 
     bool getAddress(void* addressCache, u32 addsize, NetAddress& local, NetAddress& remote)const;
 
-    bool connect(const NetAddress& it, RequestTCP* iAction)const;
+    bool connect(const NetAddress& it, RequestFD* iAction)const;
 
 
-    bool disconnect(RequestTCP* iAction)const;
+    bool disconnect(RequestFD* iAction)const;
 
 
-    bool receive(RequestTCP* iAction)const;
+    bool receive(RequestFD* iAction)const;
 
-    bool receiveFrom(RequestTCP* iAction, NetAddress& addr)const;
+    bool receiveFrom(RequestFD* iAction, NetAddress& addr)const;
 
-    bool send(RequestTCP* iAction)const;
+    bool send(RequestFD* iAction)const;
 
-    bool sendTo(RequestTCP* iAction, const NetAddress& addr)const;
+    bool sendTo(RequestFD* iAction, const NetAddress& addr)const;
 
 
     void* getFunctionDisconnect()const;

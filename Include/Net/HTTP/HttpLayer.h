@@ -78,7 +78,7 @@ public:
         return mTCP;
     }
 
-    bool onLink(net::RequestTCP* it);
+    bool onLink(RequestFD* it);
 
     bool sendReq();
     bool sendResp(HttpMsg* msg);
@@ -103,19 +103,19 @@ private:
 
     void onClose(Handle* it);
 
-    void onConnect(net::RequestTCP* it);
+    void onConnect(RequestFD* it);
 
-    void onWrite(net::RequestTCP* it, HttpMsg* msg);
+    void onWrite(RequestFD* it, HttpMsg* msg);
 
-    void onRead(net::RequestTCP* it);
+    void onRead(RequestFD* it);
 
     void postClose();
 
-    DFINLINE s32 writeIF(net::RequestTCP* it) {
+    DFINLINE s32 writeIF(RequestFD* it) {
         return mHTTPS ? mTCP.write(it) : mTCP.getHandleTCP().write(it);
     }
 
-    DFINLINE s32 readIF(net::RequestTCP* it) {
+    DFINLINE s32 readIF(RequestFD* it) {
         return mHTTPS ? mTCP.read(it) : mTCP.getHandleTCP().read(it);
     }
 
@@ -124,19 +124,19 @@ private:
         return nd.onTimeout(*it);
     }
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         HttpMsg* msg = reinterpret_cast<HttpMsg*>(it->mUser);
         HttpLayer* nd = msg->getHttpLayer();
         DASSERT(msg && nd);
         nd->onWrite(it, msg);
     }
 
-    static void funcOnRead(net::RequestTCP* it) {
+    static void funcOnRead(RequestFD* it) {
         HttpLayer& nd = *(HttpLayer*)it->mUser;
         nd.onRead(it);
     }
 
-    static void funcOnConnect(net::RequestTCP* it) {
+    static void funcOnConnect(RequestFD* it) {
         HttpLayer& nd = *(HttpLayer*)it->mUser;
         nd.onConnect(it);
     }

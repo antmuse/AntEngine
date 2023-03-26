@@ -69,7 +69,7 @@ void Loop::onClose(Handle* it) {
     //delete this;
 }
 
-void Loop::onRead(net::RequestTCP* it) {
+void Loop::onRead(RequestFD* it) {
     if (it->mError) {
         Logger::logCritical("Loop::onRead>>CMD read err=%d", it->mError);
         stop();
@@ -118,10 +118,10 @@ bool Loop::run() {
     u32 timeout = getWaitTime();
     s32 max = mPoller.getEvents(mEvents, mMaxEvents, timeout);
     if (max > 0) {
-        Request* req;
+        RequestFD* req;
         for (s32 i = 0; i < max; ++i) {
             if (mEvents[i].mPointer) {
-                req = DGET_HOLDER(mEvents[i].mPointer, Request, mOverlapped);
+                req = DGET_HOLDER(mEvents[i].mPointer, RequestFD, mOverlapped);
                 if (req->mHandle) {
                     addPending(req);
                 } else {
@@ -147,15 +147,15 @@ void Loop::updatePending() {
     if (nullptr == mRequest) {
         return;
     }
-    Request* first = mRequest->mNext;
-    Request* next = first;
+    RequestFD* first = mRequest->mNext;
+    RequestFD* next = first;
     mRequest = nullptr;
-    for (Request* req = next; next; req = next) {
+    for (RequestFD* req = next; next; req = next) {
         next = req->mNext != first ? req->mNext : nullptr;
         switch (req->mType) {
         case ERT_CONNECT:
         {
-            net::RequestTCP* nd = (net::RequestTCP*)req;
+            RequestFD* nd = (RequestFD*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             if ((NTSTATUS)(nd->mOverlapped.Internal) >= 0) {
                 if (0 == hnd->getSock().updateByConnect()) {
@@ -176,7 +176,7 @@ void Loop::updatePending() {
         }
         case ERT_READ:
         {//read on HandleTCP or HandleFile
-            net::RequestTCP* nd = (net::RequestTCP*)req;
+            RequestFD* nd = (RequestFD*)req;
             Handle* hnd = nd->mHandle;
             if ((NTSTATUS)(nd->mOverlapped.Internal) >= 0) {
                 nd->mUsed += (u32)nd->mOverlapped.InternalHigh;
@@ -196,7 +196,7 @@ void Loop::updatePending() {
         }
         case ERT_WRITE:
         {//write on HandleTCP or HandleFile
-            net::RequestTCP* nd = (net::RequestTCP*)req;
+            RequestFD* nd = (RequestFD*)req;
             Handle* hnd = nd->mHandle;
             if ((NTSTATUS)(nd->mOverlapped.Internal) >= 0) {
                 nd->mError = (nd->mUsed) ^ ((u32)nd->mOverlapped.InternalHigh);
@@ -211,7 +211,7 @@ void Loop::updatePending() {
         }
         case ERT_ACCEPT:
         {
-            net::RequestAccept* nd = (net::RequestAccept*)req;
+            RequestAccept* nd = (RequestAccept*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             if ((NTSTATUS)(nd->mOverlapped.Internal) >= 0) {
                 nd->mError = 0;
@@ -626,7 +626,7 @@ s32 Loop::openHandle(Handle* it) {
 }
 
 
-void Loop::addPending(Request* it) {
+void Loop::addPending(RequestFD* it) {
     if (mRequest) {
         it->mNext = mRequest->mNext;
         mRequest->mNext = it;

@@ -36,7 +36,7 @@
 namespace app {
 namespace net {
 
-s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
+s32 HandleTCP::open(const RequestAccept& req, RequestFD* it) {
     mType = EHT_TCP_LINK;
     mLoop = &Engine::getInstance().getLoop();
 
@@ -58,7 +58,7 @@ s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
     return ret;
 }
 
-s32 HandleTCP::open(const NetAddress& addr, RequestTCP* it) {
+s32 HandleTCP::open(const NetAddress& addr, RequestFD* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;
     mLoop = &Engine::getInstance().getLoop();
@@ -69,7 +69,7 @@ s32 HandleTCP::open(const NetAddress& addr, RequestTCP* it) {
     return connect(it);
 }
 
-s32 HandleTCP::open(const String& addr, RequestTCP* it) {
+s32 HandleTCP::open(const String& addr, RequestFD* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;
     mLoop = &Engine::getInstance().getLoop();
@@ -114,7 +114,7 @@ s32 HandleTCP::accept(RequestAccept* it) {
 }
 
 
-s32 HandleTCP::connect(RequestTCP* it) {
+s32 HandleTCP::connect(RequestFD* it) {
     if (0 == (EHF_OPEN & mFlag)) {
         return EE_NO_OPEN;
     }
@@ -133,7 +133,7 @@ s32 HandleTCP::connect(RequestTCP* it) {
 }
 
 
-s32 HandleTCP::read(RequestTCP* it) {
+s32 HandleTCP::read(RequestFD* it) {
     DASSERT(it);
     if (0 == (EHF_READABLE & mFlag)) {
         return EE_NO_READABLE;
@@ -152,7 +152,7 @@ s32 HandleTCP::read(RequestTCP* it) {
 }
 
 
-s32 HandleTCP::write(RequestTCP* it) {
+s32 HandleTCP::write(RequestFD* it) {
     DASSERT(it);
     if (0 == (EHF_WRITEABLE & mFlag)) {
         return EE_NO_WRITEABLE;
