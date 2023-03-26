@@ -37,7 +37,7 @@
 namespace app {
 namespace net {
 
-s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
+s32 HandleTCP::open(const RequestAccept& req, RequestFD* it) {
     mType = EHT_TCP_LINK;
     mLoop = &Engine::getInstance().getLoop();
 
@@ -59,7 +59,7 @@ s32 HandleTCP::open(const RequestAccept& req, RequestTCP* it) {
     return ret;
 }
 
-s32 HandleTCP::open(const NetAddress& addr, RequestTCP* it) {
+s32 HandleTCP::open(const NetAddress& addr, RequestFD* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;
     mLoop = &Engine::getInstance().getLoop();
@@ -70,7 +70,7 @@ s32 HandleTCP::open(const NetAddress& addr, RequestTCP* it) {
     return connect(it);
 }
 
-s32 HandleTCP::open(const String& addr, RequestTCP* it) {
+s32 HandleTCP::open(const String& addr, RequestFD* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;
     mLoop = &Engine::getInstance().getLoop();
@@ -107,7 +107,7 @@ s32 HandleTCP::accept(RequestAccept* it) {
         /* accept: Allow packets disorder
         if (mReadQueue) {
             addReadPendingTail(it);
-            it = (RequestTCP*)popReadReq();
+            it = (RequestFD*)popReadReq();
         } */
         mLoop->addPending(it);
         mFlag &= ~EHF_SYNC_READ;
@@ -119,7 +119,7 @@ s32 HandleTCP::accept(RequestAccept* it) {
 }
 
 
-s32 HandleTCP::connect(RequestTCP* it) {
+s32 HandleTCP::connect(RequestFD* it) {
     DASSERT(it);
     it->mType = ERT_CONNECT;
     it->mHandle = this;
@@ -165,7 +165,7 @@ s32 HandleTCP::connect(RequestTCP* it) {
 }
 
 
-s32 HandleTCP::read(RequestTCP* it) {
+s32 HandleTCP::read(RequestFD* it) {
     DASSERT(it);
     it->mType = ERT_READ;
     it->mHandle = this;
@@ -180,7 +180,7 @@ s32 HandleTCP::read(RequestTCP* it) {
     if (EHF_SYNC_READ & mFlag) {
         if (mReadQueue) {
             addReadPendingTail(it);
-            it = (RequestTCP*)popReadReq();
+            it = (RequestFD*)popReadReq();
         }
         mLoop->addPending(it);
         mFlag &= ~EHF_SYNC_READ;
@@ -192,7 +192,7 @@ s32 HandleTCP::read(RequestTCP* it) {
 }
 
 
-s32 HandleTCP::write(RequestTCP* it) {
+s32 HandleTCP::write(RequestFD* it) {
     DASSERT(it);
     it->mType = ERT_WRITE;
     it->mHandle = this;
@@ -209,7 +209,7 @@ s32 HandleTCP::write(RequestTCP* it) {
     if (EHF_SYNC_WRITE & mFlag) {
         if (mWriteQueue) {
             addWritePendingTail(it);
-            it = (RequestTCP*)popWriteReq();
+            it = (RequestFD*)popWriteReq();
         }
         mLoop->addPending(it);
         mFlag &= ~EHF_SYNC_WRITE;

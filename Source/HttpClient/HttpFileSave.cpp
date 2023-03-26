@@ -48,7 +48,7 @@ void HttpFileSave::onFileClose(Handle* it) {
     }
 }
 
-void HttpFileSave::onFileWrite(net::RequestTCP* it) {
+void HttpFileSave::onFileWrite(RequestFD* it) {
     if (it->mError) {
         return;
     }

@@ -24,12 +24,12 @@ private:
     HandleFile mFile;
     usz mWrited;
     bool mDone;
-    void onFileWrite(net::RequestTCP* it);
+    void onFileWrite(RequestFD* it);
     void onFileClose(Handle* it);
 
     s32 launchWrite();
 
-    static void funcOnWrite(net::RequestTCP* it) {
+    static void funcOnWrite(RequestFD* it) {
         HttpFileSave& nd = *(HttpFileSave*)it->mUser;
         nd.onFileWrite(it);
     }

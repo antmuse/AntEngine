@@ -73,7 +73,7 @@ void Loop::onClose(Handle* it) {
     //delete this;
 }
 
-void Loop::onRead(net::RequestTCP* it) {
+void Loop::onRead(RequestFD* it) {
     if (it->mError) {
         Logger::logCritical("Loop::onRead>>pid=%d, CMD read err=%d", Engine::getInstance().getPID(), it->mError);
         stop();
@@ -179,7 +179,7 @@ void Loop::updatePending() {
         switch (req->mType) {
         case ERT_CONNECT:
         {
-            net::RequestTCP* nd = (net::RequestTCP*)req;
+            RequestFD* nd = (RequestFD*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             if (0 == nd->mError) {
                 nd->mError = hnd->getSock().getError();
@@ -199,7 +199,7 @@ void Loop::updatePending() {
         }
         case ERT_READ:
         {
-            net::RequestTCP* nd = (net::RequestTCP*)req;
+            RequestFD* nd = (RequestFD*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             s32 err = 0;
             StringView buf;
@@ -208,7 +208,7 @@ void Loop::updatePending() {
                     buf = nd->getWriteBuf();
                     s32 rdsz;
                     if (EHT_UDP == hnd->mType) {
-                        net::RequestUDP* ndu = (net::RequestUDP*)req;
+                        RequestUDP* ndu = (RequestUDP*)req;
                         if ((1 & ndu->mFlags) > 0) {
                             rdsz = hnd->mSock.receive(buf.mData, (s32)buf.mLen);
                         } else {
@@ -252,7 +252,7 @@ void Loop::updatePending() {
                 }
 
                 nd->mCall(nd);
-                nd = (net::RequestTCP*)hnd->popReadReq();
+                nd = (RequestFD*)hnd->popReadReq();
                 unbindFly(hnd);
             }//while
 
@@ -265,7 +265,7 @@ void Loop::updatePending() {
         }
         case ERT_WRITE:
         {
-            net::RequestTCP* nd = (net::RequestTCP*)req;
+            RequestFD* nd = (RequestFD*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             StringView buf;
             s32 err = 0;
@@ -276,7 +276,7 @@ void Loop::updatePending() {
                     buf.mLen -= nd->mStepSize;
                     s32 wdsz;
                     if (EHT_UDP == hnd->mType) {
-                        net::RequestUDP* ndu = (net::RequestUDP*)req;
+                        RequestUDP* ndu = (RequestUDP*)req;
                         if ((1 & ndu->mFlags) > 0) {
                             wdsz = hnd->mSock.send(buf.mData, (s32)buf.mLen);
                         } else {
@@ -319,7 +319,7 @@ void Loop::updatePending() {
                 }
 
                 nd->mCall(nd);
-                nd = (net::RequestTCP*)hnd->popWriteReq();
+                nd = (RequestFD*)hnd->popWriteReq();
                 unbindFly(hnd);
             }//while
 
@@ -332,7 +332,7 @@ void Loop::updatePending() {
         }
         case ERT_ACCEPT:
         {
-            net::RequestAccept* nd = (net::RequestAccept*)req;
+            RequestAccept* nd = (RequestAccept*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             s32 err = 0;
             while (nd) {
@@ -373,7 +373,7 @@ void Loop::updatePending() {
                     nd->mError = EE_NO_READABLE;
                 }
                 nd->mCall(nd);
-                nd = (net::RequestAccept*)hnd->popReadReq();
+                nd = (RequestAccept*)hnd->popReadReq();
                 unbindFly(hnd);
             } //while
             
