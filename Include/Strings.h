@@ -231,9 +231,10 @@ public:
 template <typename T, typename TAlloc = TAllocator<T> >
 class TString {
 public:
-    TString() : mAllocated(16), mLen(0) {
-        mBuffer = mAllocator.allocate(mAllocated);
-        mBuffer[0] = 0;
+    /**
+     * @brief default constructor which have not alloc mem
+     */
+    TString() : mBuffer(reinterpret_cast<T*>(&mAllocated)), mAllocated(0), mLen(0) {
     }
 
     TString(usz reserve) : mAllocated(1 + reserve), mLen(0) {
@@ -241,32 +242,41 @@ public:
         mBuffer[0] = 0;
     }
 
-    TString(const TString<T, TAlloc>& other) : mBuffer(nullptr), mAllocated(0), mLen(0) {
+    TString(const TString<T, TAlloc>& other) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
+        mAllocated(0), mLen(0) {
         *this = other;
     }
 
     TString(TString<T, TAlloc>&& it) noexcept : mBuffer(it.mBuffer), mAllocated(it.mAllocated), mLen(it.mLen) {
-        it.mBuffer = nullptr;
-        it.mAllocated = 0;
-        it.mLen = 0;
-        AppSwap(mAllocator, it.mAllocator);
+        if (it.isAllocated()) {
+            it.mBuffer = reinterpret_cast<T*>(&it.mAllocated);
+            it.mAllocated = 0;
+            it.mLen = 0;
+            AppSwap(mAllocator, it.mAllocator);
+        } else {
+            mBuffer = reinterpret_cast<T*>(&mAllocated);
+            mAllocated = 0;
+            mLen = 0;
+        }
     }
 
     //! Constructor from other String types
     template <class B, class A>
-    TString(const TString<B, A>& other) : mBuffer(nullptr), mAllocated(0), mLen(0) {
+    TString(const TString<B, A>& other) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
+        mAllocated(0), mLen(0) {
         *this = other;
     }
 
-    TString<T, TAlloc>(const TStrView<T>& other) : mAllocated(1 + other.mLen), mLen(0) {
-        mBuffer = mAllocator.allocate(mAllocated);
-        mBuffer[0] = 0;
+    TString<T, TAlloc>(const TStrView<T>& other) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
+        mAllocated(0), mLen(0) {
+        reallocate(other.mLen);
         append(other.mData, other.mLen);
     }
 
     template <class B>
-    TString(const B* const str, usz length) : mAllocated(length + 1) {
-        mBuffer = mAllocator.allocate(mAllocated);
+    TString(const B* const str, usz length) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
+        mAllocated(0), mLen(0) {
+        reallocate(length);
         if (str) {
             for (usz i = 0; i < length; ++i) {
                 mBuffer[i] = (T)str[i];
@@ -282,17 +292,16 @@ public:
 
     //! Constructor for unicode and ascii strings
     template <class B>
-    TString(const B* const c) : mBuffer(nullptr), mAllocated(0), mLen(0) {
+    TString(const B* const c) : mBuffer(reinterpret_cast<T*>(&mAllocated)), mAllocated(0), mLen(0) {
         *this = c;
     }
 
-    TString(const T* const c) : mBuffer(nullptr), mAllocated(0), mLen(0) {
+    TString(const T* const c) : mBuffer(reinterpret_cast<T*>(&mAllocated)), mAllocated(0), mLen(0) {
         *this = c;
     }
 
     ~TString() {
-        mAllocator.deallocate(mBuffer);
-        mBuffer = nullptr;
+        setBuffer(&mAllocated);
         mAllocated = 0;
         mLen = 0;
     }
@@ -302,9 +311,7 @@ public:
         if (this != &other) {
             mLen = other.mLen;
             if (mLen >= mAllocated) {
-                mAllocator.deallocate(mBuffer);
-                mAllocated = mLen + 1;
-                mBuffer = mAllocator.allocate(mAllocated);
+                reallocate(mLen);
             }
             for (usz i = 0; i < mLen; ++i) {
                 mBuffer[i] = other.mBuffer[i];
@@ -316,10 +323,17 @@ public:
 
     TString<T, TAlloc>& operator=(TString<T, TAlloc>&& it) noexcept {
         if (&it != this) {
-            AppSwap(mBuffer, it.mBuffer);
-            AppSwap(mAllocated, it.mAllocated);
-            AppSwap(mLen, it.mLen);
-            AppSwap(mAllocator, it.mAllocator);
+            if (it.isAllocated()) {
+                setBuffer(it.mBuffer);
+                it.mBuffer = reinterpret_cast<T*>(&it.mAllocated);
+                it.mAllocated = 0;
+                it.mLen = 0;
+                AppSwap(mAllocator, it.mAllocator);
+            } else {
+                setBuffer(&mAllocated);
+                mAllocated = 0;
+                mLen = 0;
+            }
         }
         return *this;
     }
@@ -354,20 +368,20 @@ public:
 
         // we'll keep the old String for a while, because the new
         // String could be a part of the current String.
-        T* oldArray = mBuffer;
+        T* buf = mBuffer;
 
         if (len >= mAllocated) {
-            mAllocated = len + 1;
-            mBuffer = mAllocator.allocate(mAllocated);
+            mAllocated = nextAlloc(len);
+            buf = mAllocator.allocate(mAllocated);
         }
 
         for (usz l = 0; l < len; ++l) {
-            mBuffer[l] = (T)c[l];
+            buf[l] = (T)c[l];
         }
         mLen = len;
-        mBuffer[len] = 0;
-        if (oldArray != mBuffer) {
-            mAllocator.deallocate(oldArray);
+        buf[len] = 0;
+        if (buf != mBuffer) {
+            setBuffer(buf);
         }
         return *this;
     }
@@ -489,8 +503,17 @@ public:
         return mLen;
     }
 
+    usz size() const {
+        return mLen;
+    }
+
+    bool empty() const {
+        return 0 == mLen;
+    }
+
     /**
-    * @return pointer to C-style NUL terminated String. */
+    * @return A valid pointer to C-style NULL terminated String.
+    */
     const T* c_str() const {
         return mBuffer;
     }
@@ -585,7 +608,7 @@ public:
 
     void setLen(usz val) {
         if (val >= mAllocated) {
-            reallocate(val + 1);
+            reallocate(val);
         }
         mLen = val;
         mBuffer[val] = 0;
@@ -607,21 +630,21 @@ public:
         }
         // we'll keep the old String for a while, because the new
         // String could be a part of the current String.
-        T* oldArray = mBuffer;
+        T* buf = mBuffer;
         if (mLen + len + 1 > mAllocated) {
-            mAllocated = mLen + len + 1;
-            mBuffer = mAllocator.allocate(mAllocated);
+            mAllocated = nextAlloc(mLen + len);
+            buf = mAllocator.allocate(mAllocated);
             for (usz i = 0; i < mLen; ++i) {
-                mBuffer[i] = oldArray[i];
+                buf[i] = mBuffer[i];
             }
         }
         for (usz i = 0; i < len; ++i) {
-            mBuffer[mLen + i] = other[i];
+            buf[mLen + i] = other[i];
         }
         mLen += len;
-        mBuffer[mLen] = 0;
-        if (oldArray != mBuffer) {
-            mAllocator.deallocate(oldArray);
+        buf[mLen] = 0;
+        if (buf != mBuffer) {
+            setBuffer(buf);
         }
         return *this;
     }
@@ -637,7 +660,7 @@ public:
     * @param count: Amount of characters to reserve. */
     void reserve(usz count) {
         if (count >= mAllocated) {
-            reallocate(count + 1);
+            reallocate(count);
         }
     }
 
@@ -1001,7 +1024,7 @@ public:
         // Re-allocate the TString now, if needed.
         usz len = delta * find_count;
         if (mLen + len >= mAllocated) {
-            reallocate(mLen + len + 1);
+            reallocate(mLen + len);
         }
 
         // Start replacing.
@@ -1229,21 +1252,33 @@ public:
 
 
 protected:
+    DFINLINE bool isAllocated() const {
+        return reinterpret_cast<const T*>(&mAllocated) != mBuffer;
+    }
+
+    DFINLINE void setBuffer(void* val) {
+        if (isAllocated()) {
+            mAllocator.deallocate(mBuffer);
+        }
+        mBuffer = reinterpret_cast<T*>(val);
+    }
+
+    DFINLINE usz nextAlloc(usz newlen) const {
+        return newlen + (mLen < 512 ? (8 | mLen) : (mLen >> 2));
+    }
 
     void reallocate(usz newlen) {
-        T* old_array = mBuffer;
-
-        mBuffer = mAllocator.allocate(newlen);
+        newlen = nextAlloc(newlen);
+        T* buf = mAllocator.allocate(newlen);
         mAllocated = newlen;
 
         usz amount = mLen < newlen ? mLen : newlen - 1;
         for (usz i = 0; i < amount; ++i) {
-            mBuffer[i] = old_array[i];
+            buf[i] = mBuffer[i];
         }
-
-        mBuffer[amount] = 0;
+        buf[amount] = 0;
         mLen = amount;
-        mAllocator.deallocate(old_array);
+        setBuffer(buf);
     }
 
 
