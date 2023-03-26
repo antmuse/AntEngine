@@ -34,20 +34,15 @@ namespace app {
 
 #if defined(DOS_WINDOWS)
 using FD = void*;
-using RequestFD = RequestFD;
 #else //defined(DOS_LINUX) || defined(DOS_ANDROID)
 using FD = s32;
-class RequestFD : public RequestFD {
-public:
-    // usz mOffset;
-};
 #endif
 
 
 
 /**
 * @class HandleFile
-* @brief �첽�ļ�
+* @brief asynchronous I/O for file
 */
 class HandleFile : public HandleTime {
 public:
