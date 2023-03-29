@@ -37,7 +37,7 @@ namespace app {
 Loop::Loop() :
     mTimeHub(HandleTime::lessTime),
     mRequest(nullptr),
-    mTime(Timer::getRelativeTime()),
+    mTime(Timer::getTime()),
     mStop(0),
     mTaskHead(nullptr),
     mTaskHeadIdle(nullptr),
@@ -267,7 +267,7 @@ void Loop::updateClosed() {
 
 
 u32 Loop::getWaitTime() {
-    mTime = Timer::getRelativeTime();
+    mTime = Timer::getTime();
     if (mRequest || !mHandleClose.empty()) {
         return 0;
     }
@@ -514,7 +514,7 @@ s32 Loop::openHandle(Handle* it) {
             sock.close();
         } else {
             if (nd->mCallTime) {
-                nd->mTimeout += Timer::getRelativeTime();
+                nd->mTimeout += Timer::getTime();
                 mTimeHub.insert(&nd->mLink);
             }
         }
@@ -562,7 +562,7 @@ s32 Loop::openHandle(Handle* it) {
         } else {
             nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
             if (nd->mCallTime) {
-                nd->mTimeout += Timer::getRelativeTime();
+                nd->mTimeout += Timer::getTime();
                 mTimeHub.insert(&nd->mLink);
             }
         }
@@ -571,7 +571,7 @@ s32 Loop::openHandle(Handle* it) {
     case EHT_TIME:
     {
         HandleTime* nd = reinterpret_cast<HandleTime*>(it);
-        nd->mTimeout += Timer::getRelativeTime();
+        nd->mTimeout += Timer::getTime();
         mTimeHub.insert(&nd->mLink);
         break;
     }
@@ -585,7 +585,7 @@ s32 Loop::openHandle(Handle* it) {
         } else {
             nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
             if (nd->mCallTime) {
-                nd->mTimeout += Timer::getRelativeTime();
+                nd->mTimeout += Timer::getTime();
                 mTimeHub.insert(&nd->mLink);
             }
         }
@@ -601,7 +601,7 @@ s32 Loop::openHandle(Handle* it) {
         } else {
             nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
             if (nd->mCallTime) {
-                nd->mTimeout += Timer::getRelativeTime();
+                nd->mTimeout += Timer::getTime();
                 mTimeHub.insert(&nd->mLink);
             }
         }

@@ -4,14 +4,13 @@ AntEngine
 
 ## 依赖
 ----
-openssl, zlib, jsoncpp, http_parser, mysql
+openssl, zlib, jsoncpp, mysql
 
-## 环境
+## 开发环境
 ----
-+ 1 debian11, 64bit, kernal-v5.10, gcc-v10.2.1
-+ 2 windows10, 64bit, VS2019
++ 1 debian12, 64bit, kernal-v6.1
++ 2 windows11, 64bit, VS2022
 + 3 c++11
-
 ## Usage
 ----
 

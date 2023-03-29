@@ -39,7 +39,7 @@ s32 LinkerUDP::onLink(const NetServerUDP& sev, RequestUDP* sit) {
 
 s32 LinkerUDP::onTimeout(HandleTime& it) {
     DASSERT(mUDP.getGrabCount() > 0);
-    return sendMsgs(1);
+    return EE_ERROR;
 }
 
 
@@ -109,15 +109,13 @@ s32 LinkerUDP::sendMsgs(RequestUDP* out) {
 s32 NetServerUDP::open(const String& addr) {
     mUDP.setClose(EHT_UDP, NetServerUDP::funcOnClose, this);
     mUDP.setTime(NetServerUDP::funcOnTime, 25 * 1000, 25 * 1000, -1);
+    mUDP.setLocal(addr);
 
-    RequestUDP* it = RequestUDP::newRequest(GMAX_UDP_SIZE + sizeof(net::NetAddress));
-    net::NetAddress* from = reinterpret_cast<net::NetAddress*>(it->mData);
-    new (from) net::NetAddress(addr);  // init it, we need to know ipv6 or ipv4
-    it->mUsed = sizeof(net::NetAddress);
+    RequestUDP* it = RequestUDP::newRequest(GMAX_UDP_SIZE);
     it->mUser = this;
     it->mCall = NetServerUDP::funcOnRead;
-    mUDP.setLocal(addr);
-    s32 ret = mUDP.open(it, from, &mUDP.getLocal(), 1);
+    it->mRemote = mUDP.getLocal(); // init it, we need to know ipv6 or ipv4
+    s32 ret = mUDP.open(it, nullptr, &mUDP.getLocal(), 1);
     if (EE_OK != ret) {
         RequestUDP::delRequest(it);
     }

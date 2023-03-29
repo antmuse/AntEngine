@@ -4,32 +4,35 @@
 #include "Net/HTTP/MsgStation.h"
 #include "Script/LuaFunc.h"
 
-//TODO
+// TODO
 
 namespace app {
 
 static const s32 G_BLOCK_HEAD_SIZE = 6;
 
-HttpEvtLua::HttpEvtLua(const StringView& file)
-    :mReaded(0)
-    , mFileName(file)
-    , mEvtFlags(0)
-    , mLuaUserData(nullptr)
-    , mSubVM(nullptr)
-    , mMsg(nullptr)
-    , mBody(nullptr) {
+HttpEvtLua::HttpEvtLua(const StringView& file) :
+    mReaded(0), mRefVM(LUA_NOREF), mFileName(file), mEvtFlags(0), mLuaUserData(nullptr), mSubVM(nullptr), mMsg(nullptr),
+    mBody(nullptr) {
 
     mReqs.mCall = HttpEvtLua::funcOnRead;
-    //mReqs.mUser = this;
-
-    //mLuaUserData.setClose(EHT_FILE, HttpEvtLua::funcOnClose, this);
+    // mReqs.mUser = this;
+    // mLuaUserData.setClose(EHT_FILE, HttpEvtLua::funcOnClose, this);
 }
 
 HttpEvtLua::~HttpEvtLua() {
 }
 
 s32 HttpEvtLua::onSent(net::HttpMsg& msg) {
-    //go on to send body here
+    // go on to send body here
+    script::ScriptManager& eng = script::ScriptManager::getInstance();
+    if (!eng.getThread(mRefVM)) {
+        return EE_ERROR;
+    }
+
+    const s32 subcnt = lua_gettop(mSubVM);
+    s32 ret = lua_getglobal(mSubVM, "OnSent");
+    s32 nret;
+    ret = mScript.resumeThread(mSubVM, 0, nret);
     return EE_OK;
 }
 
@@ -42,21 +45,39 @@ s32 HttpEvtLua::onOpen(net::HttpMsg& msg) {
     mEvtFlags = EHF_OPEN;
     mReaded = 0;
     script::ScriptManager& eng = script::ScriptManager::getInstance();
-    mSubVM = eng.createThread();
-    if (!mSubVM || !mScript.load(mSubVM, eng.getScriptPath(), mFileName, false)) {
+    s32 subcnt = lua_gettop(eng.getRootVM());
+    mSubVM = eng.createThread(mRefVM);
+    subcnt = lua_gettop(eng.getRootVM());
+    if (!mSubVM || !mScript.load(mSubVM, eng.getScriptPath(), mFileName, false, true)) {
+        eng.deleteThread(mSubVM, mRefVM);
         return EE_ERROR;
     }
-    //bool ret = script::ScriptManager::exec(mSubVM, *snd);
+    subcnt = lua_gettop(eng.getRootVM());
+    if (!mScript.exec(mSubVM)) {
+        eng.deleteThread(mSubVM, mRefVM);
+        return EE_ERROR;
+    }
+    if (!mScript.getLoaded(mSubVM, mFileName)) {
+        lua_pop(mSubVM, 1);
+        return EE_ERROR;
+    }
+    subcnt = lua_gettop(eng.getRootVM());
+    subcnt = lua_gettop(mSubVM);
+    creatCurrContext();
+    subcnt = lua_gettop(mSubVM);
+
+    s32 ret = lua_getglobal(mSubVM, "OnOpen");
     s32 nret;
-    script::ScriptManager::getInstance().resumeThread(mSubVM, nret);
-    if (mLuaUserData) {
+    ret = mScript.resumeThread(mSubVM, 0, nret);
+    if (EE_OK == ret) {
+        lua_settop(mSubVM, -1);
+        eng.deleteThread(mSubVM, mRefVM);
+        return EE_OK;
+    }
+    if (EE_POSTED == ret) {
         msg.grab();
         grab();
         mMsg = &msg;
-        if (EE_OK != launchRead()) {
-            mEvtFlags |= EHF_CLOSING;
-            return EE_POSTED;
-        }
         return EE_OK;
     }
     return EE_ERROR;
@@ -80,8 +101,7 @@ void HttpEvtLua::onClose(Handle* it) {
     }
     if (mEvtFlags) {
         if (1 == getRefCount()) {
-            script::ScriptManager::getInstance().deleteThread(mSubVM);
-            mSubVM = nullptr;
+            script::ScriptManager::getInstance().deleteThread(mSubVM, mRefVM);
             mLuaUserData = nullptr;
         }
         drop();
@@ -125,7 +145,7 @@ void HttpEvtLua::onRead(RequestFD* it) {
     it->mUsed = 0;
     it->mUser = nullptr;
     if (mEvtFlags) {
-        //mLuaUserData.launchClose();
+        // mLuaUserData.launchClose();
     } else {
         launchRead();
     }
@@ -147,14 +167,26 @@ s32 HttpEvtLua::launchRead() {
         mChunkPos = mBody->getTail();
         mReqs.mAllocated = mBody->peekTailNode(G_BLOCK_HEAD_SIZE, &mReqs.mData, 4 * 1024);
         mReqs.mUser = this;
-        //if (EE_OK != mLuaUserData.read(&mReqs, mReaded)) {
-        //    mReqs.mUser = nullptr;
-        //    return mLuaUserData.launchClose();
-        //}
+        // if (EE_OK != mLuaUserData.read(&mReqs, mReaded)) {
+        //     mReqs.mUser = nullptr;
+        //     return mLuaUserData.launchClose();
+        // }
         return EE_OK;
     }
     return EE_ERROR;
 }
 
+void HttpEvtLua::creatCurrContext() {
+    script::Script::createGlobalTable(mSubVM, 0, 0);
+    script::Script::pushTable(mSubVM, "curr_ctx", sizeof("curr_ctx"), this);
+    script::Script::pushTable(mSubVM, "curr_name", sizeof("curr_name"), "curr_vname", sizeof("curr_vname"));
+    script::Script::popParam(mSubVM, 1); //pop table
+}
 
-}//namespace app
+void HttpEvtLua::pushCurrParam() {
+    lua_pushlstring(mSubVM, "curr_front_flag", sizeof("curr_front_flag") - 1);
+    lua_pushinteger(mSubVM, mEvtFlags);
+    lua_rawset(mSubVM, -2);
+}
+
+} // namespace app

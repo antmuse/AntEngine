@@ -89,43 +89,25 @@ int LuaOpenEngLib(lua_State* vm) {
 }
 
 int LuaInclude(lua_State* vm) {
-    ScriptManager& eng = ScriptManager::getInstance();
-    const s8* fnm;  //relative path
-
     s32 cnt = lua_gettop(vm);
     if (1 != cnt || !lua_isstring(vm, 1)) {
         Logger::logError("LuaEng> LuaInclude fail=param");
-        goto GT_LUA_FAIL;
+        return 0;
     }
 
-    fnm = lua_tostring(vm, 1);
+    const s8* fnm = lua_tostring(vm, 1); //relative path
     if (!fnm || '\0' == fnm[0]) {
         Logger::logError("LuaEng> LuaInclude fail=empty");
-        goto GT_LUA_FAIL;
+        return 0;
     }
 
     //load
-    if (!eng.loadScript(fnm)) {
-        Logger::logError("LuaEng> LuaInclude fail=include");
-        goto GT_LUA_FAIL;
+    ScriptManager& eng = ScriptManager::getInstance();
+    if (!eng.include(fnm)) {
+        Logger::logError("LuaEng> LuaInclude fail=%s", fnm);
     }
 
-    // success
-    lua_pushnumber(vm, 1);
-    return 1;
-
-    GT_LUA_FAIL:
-    lua_pushnil(vm);
     return 0;
-}
-
-
-void LuaCreateArray(lua_State* vm, s8** arr, int cnt) {
-    lua_newtable(vm);
-    for (ssz j = 0; j < cnt; ++j) {
-        lua_pushlstring(vm, arr[j], strlen(arr[j]));
-        lua_rawseti(vm, -2, j + 1);
-    }
 }
 
 

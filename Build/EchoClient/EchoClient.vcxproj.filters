@@ -27,6 +27,9 @@
     <ClInclude Include="..\..\Source\EchoClient\SenderUDP.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\EchoClient\SenderUDP2.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\EchoClient\AppTicker.cpp">
@@ -39,6 +42,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\EchoClient\SenderTCP.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\EchoClient\SenderUDP2.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

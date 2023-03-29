@@ -97,9 +97,9 @@ public:
     // gc
     usz getMemory();
 
-    lua_State* createThread();
-    void deleteThread(lua_State* vm);
-    s32 resumeThread(lua_State* vm, s32& ret_cnt);
+    lua_State* createThread(s32& ref);
+    void deleteThread(lua_State*& vm, s32& ref);
+    bool getThread(s32 ref);
 
 private:
     s32 mParamCount;

@@ -1,18 +1,16 @@
 #ifndef APP_ENCODERGZIP_H
 #define APP_ENCODERGZIP_H
 
-#if defined(DUSE_ZLIB)
-
 #include "gzip/CodecGzip.h"
+
+#if defined(DUSE_ZLIB)
 
 namespace app {
 
 class EncoderGzip : public CodecGzip {
 public:
     // by default refuse operation if uncompressed data is > 1GB
-    EncoderGzip(s32 level = Z_DEFAULT_COMPRESSION, usz max_bytes = 1000000000) :
-        mLevel(level),
-        CodecGzip(max_bytes) {
+    EncoderGzip(s32 level = Z_DEFAULT_COMPRESSION, usz max_bytes = 1000000000) : mLevel(level), CodecGzip(max_bytes) {
         clear();
     }
 
@@ -63,7 +61,7 @@ public:
         mStream.next_in = reinterpret_cast<z_const Bytef*>(data);
         mStream.avail_in = static_cast<u32>(size);
         mStream.avail_out = 0;
-        //mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
+        // mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
 
         usz usedsz = output.size();
         usz increase = size >> 1;
@@ -91,7 +89,7 @@ public:
         usz usedsz = output.size();
         usz increase = 128;
         mStream.avail_out = 0;
-        //mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
+        // mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
         do {
             if (0 == mStream.avail_out) {
                 output.resize(usedsz + increase);
@@ -110,7 +108,7 @@ protected:
 };
 
 
-} //namespace app
+} // namespace app
 
-#endif //DUSE_ZLIB
-#endif //APP_ENCODERGZIP_H
+#endif // DUSE_ZLIB
+#endif // APP_ENCODERGZIP_H

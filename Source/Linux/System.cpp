@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/sysctl.h>
+// #include <sys/sysctl.h>  needless
 #include <sys/sysinfo.h>
 #include <sys/statfs.h>
 #include <arpa/inet.h>

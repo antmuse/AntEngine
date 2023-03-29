@@ -8,19 +8,20 @@
 namespace app {
 namespace script {
 
-static const s8* G_LOAD_INFO =
-"--just for test\n"
-"local ver = GVersion\n"
-"function EngInfo(val)\n"
-"  Eng.showInfo()\n"
-"  Log(Info, \"LuaEng> package.path = \" .. package.path)\n"
-"  if val>100 then\n"
-"    Log(Info, \"LuaEng> GPath = \" .. GPath)\n"
-"  else\n"
-"    Log(Warn, \"LuaEng> GPath = \" .. GPath)\n"
-"  end\n"
-"end\n"
-"EngInfo(ver)";
+static const s8* G_LUA_THREAD = "G_LUA_THREAD";
+
+static const s8* G_LOAD_INFO = "--just for test\n"
+                               "local ver = GVersion\n"
+                               "function EngInfo(val)\n"
+                               "  Eng.showInfo()\n"
+                               "  Log(Info, \"LuaEng> package.path = \" .. package.path)\n"
+                               "  if val>100 then\n"
+                               "    Log(Info, \"LuaEng> GPath = \" .. GPath)\n"
+                               "  else\n"
+                               "    Log(Warn, \"LuaEng> GPath = \" .. GPath)\n"
+                               "  end\n"
+                               "end\n"
+                               "EngInfo(ver)";
 
 
 static const s8* LuaReader(lua_State* state, void* user, usz* sz) {
@@ -61,22 +62,22 @@ void ScriptManager::initialize() {
     lua_getglobal(mRootVM, "package");
     lua_pushstring(mRootVM, "path");
     lua_pushstring(mRootVM, tmp.c_str());
-    lua_settable(mRootVM, -3); //pop 2
+    lua_settable(mRootVM, -3); // pop 2
     lua_pushstring(mRootVM, "cpath");
     lua_pushstring(mRootVM, tmp.c_str());
-    lua_settable(mRootVM, -3); //pop 2
-    lua_pop(mRootVM, 1);       //pop package
+    lua_settable(mRootVM, -3); // pop 2
+    lua_pop(mRootVM, 1);       // pop package
 
-    //base data struct
+    // base data struct
     lua_register(mRootVM, "Color", LuaColor);
 
-    //global fuctions
+    // global fuctions
     lua_register(mRootVM, "Log", LuaLog);
     lua_register(mRootVM, "Include", LuaInclude);
 
-    //global val
+    // global val
     lua_pushinteger(mRootVM, 1000ULL);
-    lua_setglobal(mRootVM, "GVersion");  //set and pop 1
+    lua_setglobal(mRootVM, "GVersion"); // set and pop 1
     lua_pushstring(mRootVM, "1.0.0.0");
     lua_setglobal(mRootVM, "GVerName");
     lua_pushstring(mRootVM, getScriptPath().c_str());
@@ -86,15 +87,22 @@ void ScriptManager::initialize() {
         lua_setglobal(mRootVM, AppLogLevelNames[i]);
     }
 
-    //lib Eng
-    luaL_requiref(mRootVM, "Eng", LuaOpenEngLib, 1);          // 1=global
-    lua_pop(mRootVM, 1); //pop lib
+    // lib Eng
+    luaL_requiref(mRootVM, "Eng", LuaOpenEngLib, 1); // 1=global
+    lua_pop(mRootVM, 1);                             // pop lib
 
     s32 cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
 
     LuaRegRequest(mRootVM);
     LuaRegFile(mRootVM);
+
+    cnt = lua_gettop(mRootVM);
+    DASSERT(0 == cnt);
+
+    lua_pushstring(mRootVM, G_LUA_THREAD);
+    lua_newtable(mRootVM);
+    lua_rawset(mRootVM, LUA_REGISTRYINDEX);
 
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
@@ -123,7 +131,7 @@ bool ScriptManager::loadFirstScript() {
     nd.exec(mRootVM); // exec the file
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
-    nd.execFunc(mRootVM, "main");  // call the function after exec file
+    nd.execFunc(mRootVM, "main"); // call the function after exec file
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
     return true;
@@ -226,30 +234,59 @@ bool ScriptManager::remove(const String& name) {
     return true;
 }
 
-lua_State* ScriptManager::createThread() {
+lua_State* ScriptManager::createThread(s32& ref) {
     /* 创建Lua协程，返回的新lua_State跟原有的lua_State共享所有的全局对象（如表），
      * 但是有一个独立的执行栈。 协程依赖垃圾回收销毁 */
     lua_State* ret = lua_newthread(mRootVM);
+    if (!ret) {
+        ref = LUA_NOREF;
+        return nullptr;
+    }
 
     /* 将lua虚拟机VM栈上的入口函数闭包移到新创建的协程栈上，
        这样新协程就有了虚拟机已经解析完毕的代码了。*/
-       //lua_xmove(mRootVM, ret, 1);
+    // lua_xmove(mRootVM, ret, 1);
+
+    const s32 cnt = lua_gettop(mRootVM);
+
+    lua_pushstring(mRootVM, G_LUA_THREAD);
+    lua_rawget(mRootVM, LUA_REGISTRYINDEX);
+    lua_pushvalue(mRootVM, cnt);
+    ref = luaL_ref(mRootVM, -2); // pop 1
+    if (LUA_NOREF == ref) {
+        lua_settop(mRootVM, cnt - 1);
+        Logger::logError("ScriptManager::createThread, LUA_NOREF = %p", ret);
+        return nullptr;
+    }
+    lua_pop(mRootVM, 1);
+    DASSERT(cnt == lua_gettop(mRootVM));
     return ret;
 }
 
-s32 ScriptManager::resumeThread(lua_State* vm, s32& ret_cnt) {
-    ret_cnt = 0;
-    s32 ret = lua_resume(vm, NULL, 0, &ret_cnt);
-    if (LUA_YIELD != ret) {
-        Logger::logError("ScriptManager::resumeThread, fail ret = %d", ret);
-        return EE_ERROR;
+void ScriptManager::deleteThread(lua_State*& vm, s32& ref) {
+    if (vm) {
+        const s32 cnt = lua_gettop(mRootVM);
+        lua_pushstring(mRootVM, G_LUA_THREAD);
+        lua_rawget(mRootVM, LUA_REGISTRYINDEX);
+        luaL_unref(mRootVM, -1, ref);
+        lua_settop(mRootVM, cnt); // pop table
     }
-    return EE_OK;
+
+    ref = LUA_NOREF;
+    vm = nullptr;
 }
 
-void ScriptManager::deleteThread(lua_State* vm) {
-
+bool ScriptManager::getThread(s32 ref) {
+    if (LUA_NOREF != ref) {
+        s32 cnt = lua_gettop(mRootVM);
+        lua_pushstring(mRootVM, G_LUA_THREAD);
+        lua_rawget(mRootVM, LUA_REGISTRYINDEX);
+        lua_pushinteger(mRootVM, ref);
+        lua_rawget(mRootVM, -2);
+        return true;
+    }
+    return false;
 }
 
-}//namespace script
-}//namespace app
+} // namespace script
+} // namespace app

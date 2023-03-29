@@ -1,24 +1,20 @@
 #ifndef APP_DECODERGZIP_H
 #define APP_DECODERGZIP_H
 
-#if defined(DUSE_ZLIB)
-
 #include "gzip/CodecGzip.h"
 
-
+#if defined(DUSE_ZLIB)
 namespace app {
 
 class DecoderGzip : public CodecGzip {
 public:
     // by default refuse operation if compressed data is > 1GB
-    DecoderGzip(usz max_bytes = 1000000000) :
-        CodecGzip(max_bytes) {
+    DecoderGzip(usz max_bytes = 1000000000) : CodecGzip(max_bytes) {
         clear();
     }
 
     template <typename T>
     void decompress(T& output, const s8* data, usz size) {
-
 #ifdef DDEBUG
         // Verify if size (long type) input will fit into u32, type used for zlib's avail_in
         usz size_64 = size * 2;
@@ -45,10 +41,11 @@ public:
                 usz resize_to = usedsz + increase;
                 if (resize_to > mMaxBytes) {
                     finish(output);
-                    throw std::runtime_error("size of output string will use more memory then intended when decompressing");
+                    throw std::runtime_error(
+                        "size of output string will use more memory then intended when decompressing");
                 }
                 output.resize(usedsz + increase);
-                //output.resize(usedsz + size / 2 + 1024);
+                // output.resize(usedsz + size / 2 + 1024);
                 mStream.avail_out = static_cast<u32>(increase);
                 mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
             }
@@ -93,7 +90,7 @@ public:
         usz usedsz = output.size();
         usz increase = 128;
         mStream.avail_out = 0;
-        //mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
+        // mStream.next_out = reinterpret_cast<Bytef*>((s8*)output.data() + usedsz);
         do {
             if (0 == mStream.avail_out) {
                 output.resize(usedsz + increase);
@@ -109,7 +106,7 @@ public:
 };
 
 
-} //namespace app
+} // namespace app
 
-#endif //DUSE_ZLIB
-#endif //APP_DECODERGZIP_H
+#endif // DUSE_ZLIB
+#endif // APP_DECODERGZIP_H

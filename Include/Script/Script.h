@@ -47,6 +47,8 @@ public:
     bool load(lua_State* vm, const String& iPath, const String& iName, bool reload, bool pop = true);
 
     bool loadBuf(lua_State* vm, const String& iName, const s8* buf, usz bsz, bool reload, bool pop = true);
+    
+    void unload(lua_State* vm);
 
     static bool isLoaded(lua_State* vm, const String& iName);
 
@@ -54,7 +56,7 @@ public:
 
     static bool compile(lua_State* vm, const String& iName, const s8* buf, usz bufsz, bool pop = false);
 
-    void unload(lua_State* vm);
+    static s32 resumeThread(lua_State* vm, s32 argc, s32& ret_cnt);
 
     bool exec(lua_State* vm, const s8* func = nullptr,
         s32 nargs = 0, s32 nresults = 0, s32 errfunc = 0);
@@ -74,6 +76,26 @@ public:
     void setName(const String& name) {
         mName = name;
     }
+
+    static void setGlobalVal(lua_State* vm, const s8* key, const s8* val, usz vlen = 0);
+    static void setGlobalVal(lua_State* vm, const s8* key, ssz val);
+    static void setGlobalVal(lua_State* vm, const s8* key, f64 val);
+
+    // Create new table and set _G field to itself.
+    static void createGlobalTable(lua_State* vm, s32 narr = 0, s32 nrec = 0);
+
+    static void createArray(lua_State* vm, const s8** arr, ssz cnt);
+
+    static void popParam(lua_State* vm, s32 iSum);
+
+    static void pushTable(lua_State* vm, const s8* key, void* val);
+    static void pushTable(lua_State* vm, const s8* key, usz len, void* val);
+    static void pushTable(lua_State* vm, const s8* key, usz klen, const s8* val, usz vlen);
+    static void pushTable(lua_State* vm, void* key, void* val);
+
+    static void pushParam(lua_State* vm, void* val);
+    static void pushParam(lua_State* vm, s32 val);
+    static void pushParam(lua_State* vm, const s8* val);
 
 private:
     String mName;

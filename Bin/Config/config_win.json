@@ -1,7 +1,7 @@
 {
     "Print": 1, //0=disable print, 1=main process print, 2=all process print
-    "LogPath": "D:/Code/AntEngine/Bin/Log/",
-    "PidFile": "D:/Code/AntEngine/Bin/Log/pid.txt",
+    "LogPath": "D:/Code/My/AntEngine/Bin/Log/",
+    "PidFile": "D:/Code/My/AntEngine/Bin/Log/pid.txt",
     "ShareMem": "GMEM/MainMem.map", //共享内存名
     "ShareMemSize": 1, //[1-10 * 1024], 1MB
     "AcceptPost": 10, //[1-255]监听端口上侯命的请求数
@@ -13,14 +13,14 @@
             "Lisen": "0.0.0.0:8000",
             "Type": 0, //0=http,1=https
             "Timeout": 30, //秒,0不超时
-            "Path": "D:/Code/AntEngine/Bin/Web/"
+            "Path": "D:/Code/My/AntEngine/Bin/Web/"
         },
         {
             "Lisen": "0.0.0.0:8443",
             "Type": 1, //0=http,1=https
             "Timeout": 30, //秒,0不超时
-            "Path": "D:/Code/AntEngine/Bin/Web/",
-            "PathTLS": "D:/Code/AntEngine/Bin/Web/TLS"
+            "Path": "D:/Code/My/AntEngine/Bin/Web/",
+            "PathTLS": "D:/Code/My/AntEngine/Bin/Web/TLS"
         }
     ],
 

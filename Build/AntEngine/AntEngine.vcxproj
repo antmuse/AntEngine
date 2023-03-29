@@ -42,6 +42,7 @@
     <ClCompile Include="..\..\Source\EncoderMD5.cpp" />
     <ClCompile Include="..\..\Source\Logger.cpp" />
     <ClCompile Include="..\..\Source\MemoryHub.cpp" />
+    <ClCompile Include="..\..\Source\MemoryPool.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
@@ -50,6 +51,7 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\Stations.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp" />
+    <ClCompile Include="..\..\Source\Net\KCProtocal.cpp" />
     <ClCompile Include="..\..\Source\Net\TlsContext.cpp" />
     <ClCompile Include="..\..\Source\Net\HandleTLS.cpp" />
     <ClCompile Include="..\..\Source\Net\TlsSession.cpp" />
@@ -169,6 +171,7 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpURL.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\MsgStation.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\Website.h" />
+    <ClInclude Include="..\..\Include\Net\KCProtocal.h" />
     <ClInclude Include="..\..\Include\Net\NetAddress.h" />
     <ClInclude Include="..\..\Include\Net\NetHeader.h" />
     <ClInclude Include="..\..\Include\Net\NetProtocal.h" />
@@ -208,6 +211,7 @@
     <ClInclude Include="..\..\Include\Windows\WinAPI.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\.clang-format" />
     <None Include="..\..\.gitignore" />
     <None Include="..\..\Bin\Config\config.json" />
     <None Include="..\..\Bin\Config\config_win.json" />
@@ -226,26 +230,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -295,7 +299,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <StringPooling>true</StringPooling>
@@ -358,7 +362,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <StringPooling>true</StringPooling>

@@ -87,14 +87,8 @@ static s32 AppStrNocaseCMP(const T* s1, const T* s2, usz n) {
     }
     T ca, cb;
     do {
-        ca = *s1++;
-        cb = *s2++;
-        if (ca >= 'A' && ca <= 'Z') {
-            ca += 'a' - 'A';
-        }
-        if (cb >= 'A' && cb <= 'Z') {
-            cb += 'a' - 'A';
-        }
+        ca = (*s1++) | 32;
+        cb = (*s2++) | 32;
     } while (--n > 0 && ca == cb && ca != '\0');
     return ca - cb;
 }

@@ -1,0 +1,3 @@
+[submodule "Depend/zlib"]
+	path = Depend/zlib
+	url = git@github.com:madler/zlib.git

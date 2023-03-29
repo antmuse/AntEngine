@@ -45,7 +45,7 @@ static void AppMyTask(std::atomic<s64>* val) {
 
 class MyTask {
 public:
-    MyTask() :mID(0) {
+    MyTask() : mID(0) {
         printf("MyTask=%p\n", this);
     }
     virtual ~MyTask() {
@@ -55,17 +55,18 @@ public:
     }
     void run(std::atomic<s64>* val) {
         ++(*val);
-        //printf("MyTask::run=%p,val=%p\n", this, val);
+        // printf("MyTask::run=%p,val=%p\n", this, val);
         AppTestMemHub();
     }
+
 private:
     s32 mID;
 };
 
 
-class MyTask2 :public MyTask {
+class MyTask2 : public MyTask {
 public:
-    MyTask2() :mID2(0) {
+    MyTask2() : mID2(0) {
         printf("MyTask2=%p\n", this);
     }
     virtual void show2() {
@@ -74,16 +75,17 @@ public:
     void run(std::atomic<s64>* val) {
         ++(*val);
         ++(*val);
-        //printf("MyTask2::run=%p,val=%p\n", this, val);
+        // printf("MyTask2::run=%p,val=%p\n", this, val);
         AppTestMemHub();
     }
+
 private:
     s32 mID2;
 };
 
 
 
-//MyQueNode
+// MyQueNode
 class MyQueNode {
 public:
     static std::atomic<s32> GID;
@@ -92,7 +94,7 @@ public:
     static std::atomic<s32> G_CNT_W;
     static s32 G_MAX_MSG;
 
-    MyQueNode() :mID(++GID) {
+    MyQueNode() : mID(++GID) {
     }
 
 private:
@@ -114,7 +116,7 @@ public:
                 ++MyQueNode::G_CNT_R;
                 delete nd;
             } else {
-                //printf("read=0\n");
+                // printf("read=0\n");
                 ++MyQueNode::G_CNT_R_FAIL;
             }
         }
@@ -159,8 +161,8 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
     while (pool.getTaskCount() > 0) {
         std::this_thread::sleep_for(gap);
     }
-    printf("step1>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n",
-        pool.getAllocated(), cnt.load(), urg.load(), cnt.load() + urg.load(), posted);
+    printf("step1>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n", pool.getAllocated(), cnt.load(),
+        urg.load(), cnt.load() + urg.load(), posted);
     cnt.exchange(0);
     urg.exchange(0);
 
@@ -174,8 +176,8 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
     while (pool.getTaskCount() > 0) {
         std::this_thread::sleep_for(gap);
     }
-    printf("step3>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n",
-        pool.getAllocated(), cnt.load(), urg.load(), cnt.load() + urg.load(), posted);
+    printf("step3>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n", pool.getAllocated(), cnt.load(),
+        urg.load(), cnt.load() + urg.load(), posted);
     cnt.exchange(0);
     urg.exchange(0);
 
@@ -187,8 +189,8 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
         pool.postTask(&MyTask2::run, &tsk2, urgent ? &urg : &cnt, urgent);
     }
     pool.stop();
-    printf("step3>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n",
-        pool.getAllocated(), cnt.load(), urg.load(), cnt.load() + urg.load(), posted);
+    printf("step3>>pool Allocated=%d, cnt = %lld, urg=%lld, total=%lld/%d\n\n", pool.getAllocated(), cnt.load(),
+        urg.load(), cnt.load() + urg.load(), posted);
 
 
     posted = 0;
@@ -201,11 +203,10 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
 
 
 
-
-    //test queue
+    // test queue
     MyQueNode::G_MAX_MSG = 5000000;
     printf("\n\nstep5>>test queue start, max = %d\n\n", MyQueNode::G_MAX_MSG);
-    Queue* que = new Queue(0,1000);
+    Queue* que = new Queue(0, 1000);
     QueueTask allwk[threads];
     pool.start(threads);
     que->setBlockRead(false);
@@ -227,8 +228,8 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
 
     f32 ratio = 100.f * MyQueNode::G_CNT_R_FAIL.load();
     ratio /= MyQueNode::G_MAX_MSG;
-    printf("step5>>test queue stop, read0=%d=%.2f%%, que.size = %llu\n\n",
-        MyQueNode::G_CNT_R_FAIL.load(), ratio, que->getMsgCount());
+    printf("step5>>test queue stop, read0=%d=%.2f%%, que.size = %llu\n\n", MyQueNode::G_CNT_R_FAIL.load(), ratio,
+        que->getMsgCount());
     que->setBlock(false);
     pool.stop();
     que->drop();
@@ -237,5 +238,46 @@ s32 AppTestThreadPool(s32 argc, s8** argv) {
     return 0;
 }
 
+s32 AppTestMemPool(s32 argc, s8** argv) {
+    const s32 psz = 1024 * 1024 * 8;
+    MemPool* pool = MemPool::createMemPool(psz);
+    pool->logPool();
 
-}//namespace app
+    const s32 maxnd = 5000;
+    s8** nd = new s8*[maxnd];
+    for (s32 i = 0; i < maxnd; ++i) {
+        s32 ndsz = rand() % 1000 + i + 8 * sizeof(s32);
+#ifdef DDEBUG
+        nd[i] = pool->allocate(ndsz, "test", __FILE__, __LINE__);
+#else
+        nd[i] = pool->allocate(ndsz);
+#endif
+        *(s32*)nd[i] = ndsz;
+        snprintf(nd[i] + sizeof(s32), ndsz - sizeof(s32), ",%d", ndsz);
+        printf("create[%p]=%d\n", nd[i], ndsz);
+    }
+
+    pool->logPool();
+
+    for (s32 i = 0; i < maxnd; ++i) {
+        s32 ndsz = *(s32*)nd[i];
+        // printf("free[%p]=%d\n", nd[i], ndsz);
+        pool->release(nd[i]);
+    }
+
+#ifdef DDEBUG
+    nd[0] = pool->allocateAndClear(128, "last128", __FILE__, __LINE__);
+    nd[1] = pool->allocateAndClear(32, "last32", __FILE__, __LINE__);
+#else
+    nd[0] = pool->allocateAndClear(128);
+    nd[1] = pool->allocateAndClear(32);
+#endif
+    pool->release(nd[1]);
+    pool->release(nd[0]);
+    delete[] nd;
+    pool->logPool();
+    MemPool::releaseMemPool(pool);
+    return 0;
+}
+
+} // namespace app

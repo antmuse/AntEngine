@@ -22,6 +22,7 @@
     <ClInclude Include="..\..\Source\EchoClient\AppTicker.h" />
     <ClInclude Include="..\..\Source\EchoClient\SenderTCP.h" />
     <ClInclude Include="..\..\Source\EchoClient\SenderUDP.h" />
+    <ClInclude Include="..\..\Source\EchoClient\SenderUDP2.h" />
     <ClInclude Include="..\..\Source\Test\AppTicker.h" />
   </ItemGroup>
   <ItemGroup>
@@ -29,9 +30,15 @@
     <ClCompile Include="..\..\Source\EchoClient\SenderTCP.cpp" />
     <ClCompile Include="..\..\Source\EchoClient\EchoClient.cpp" />
     <ClCompile Include="..\..\Source\EchoClient\SenderUDP.cpp" />
+    <ClCompile Include="..\..\Source\EchoClient\SenderUDP2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Source\EchoClient\Makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AntEngine\AntEngine.vcxproj">
+      <Project>{323ca6c7-fb56-4590-bf44-9b151281e81d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -44,26 +51,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -121,7 +128,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../Public/openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;zlib.lib;libmysql.lib;Lua.lib;AntEngine.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -183,7 +190,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../Public/openssl</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;zlib.lib;libmysql.lib;Lua.lib;AntEngine.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

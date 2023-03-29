@@ -28,6 +28,7 @@
 
 #include "Config.h"
 #include <new>
+#include <utility>  //for std::move
 
 namespace app {
 

@@ -19,76 +19,70 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\Test\App.cpp" />
-    <ClCompile Include="..\..\Source\Test\AppTicker.cpp" />
-    <ClCompile Include="..\..\Source\Test\AsyncFile.cpp" />
-    <ClCompile Include="..\..\Source\Test\NetServer.cpp" />
-    <ClCompile Include="..\..\Source\Test\HttpsClient.cpp" />
-    <ClCompile Include="..\..\Source\Test\NetAddr.cpp" />
-    <ClCompile Include="..\..\Source\Test\StrConv.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestDataBase.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestDict.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestGbkUtf8.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestHttpsClient.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestRedis.cpp" />
-    <ClCompile Include="..\..\Source\Test\TestThreadPool.cpp" />
-    <ClCompile Include="..\..\Source\Test\TlsConnector.cpp" />
-    <ClCompile Include="..\..\Source\Test\Tree2.cpp" />
+    <ClCompile Include="..\..\Depend\zlib\adler32.c" />
+    <ClCompile Include="..\..\Depend\zlib\compress.c" />
+    <ClCompile Include="..\..\Depend\zlib\crc32.c" />
+    <ClCompile Include="..\..\Depend\zlib\deflate.c" />
+    <ClCompile Include="..\..\Depend\zlib\gzclose.c" />
+    <ClCompile Include="..\..\Depend\zlib\gzlib.c" />
+    <ClCompile Include="..\..\Depend\zlib\gzread.c" />
+    <ClCompile Include="..\..\Depend\zlib\gzwrite.c" />
+    <ClCompile Include="..\..\Depend\zlib\infback.c" />
+    <ClCompile Include="..\..\Depend\zlib\inffast.c" />
+    <ClCompile Include="..\..\Depend\zlib\inflate.c" />
+    <ClCompile Include="..\..\Depend\zlib\inftrees.c" />
+    <ClCompile Include="..\..\Depend\zlib\trees.c" />
+    <ClCompile Include="..\..\Depend\zlib\uncompr.c" />
+    <ClCompile Include="..\..\Depend\zlib\zutil.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Source\Test\AppTicker.h" />
-    <ClInclude Include="..\..\Source\Test\AsyncFile.h" />
-    <ClInclude Include="..\..\Source\Test\Connector.h" />
-    <ClInclude Include="..\..\Source\Test\HttpsClient.h" />
-    <ClInclude Include="..\..\Source\Test\Linker.h" />
-    <ClInclude Include="..\..\Source\Test\TlsConnector.h" />
+    <ClInclude Include="..\..\Depend\zlib\crc32.h" />
+    <ClInclude Include="..\..\Depend\zlib\deflate.h" />
+    <ClInclude Include="..\..\Depend\zlib\gzguts.h" />
+    <ClInclude Include="..\..\Depend\zlib\inffast.h" />
+    <ClInclude Include="..\..\Depend\zlib\inffixed.h" />
+    <ClInclude Include="..\..\Depend\zlib\inflate.h" />
+    <ClInclude Include="..\..\Depend\zlib\inftrees.h" />
+    <ClInclude Include="..\..\Depend\zlib\trees.h" />
+    <ClInclude Include="..\..\Depend\zlib\zconf.h" />
+    <ClInclude Include="..\..\Depend\zlib\zlib.h" />
+    <ClInclude Include="..\..\Depend\zlib\zutil.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Source\Test\CMakeLists.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\Source\Test\Makefile" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AntEngine\AntEngine.vcxproj">
-      <Project>{323ca6c7-fb56-4590-bf44-9b151281e81d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Lua\Lua.vcxproj">
-      <Project>{0d7657bd-0c41-4709-a511-9fb8377e50c3}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Zlib\zlib.vcxproj">
-      <Project>{dd3f5e27-00ec-4b15-84b0-274ce88cc66e}</Project>
-    </ProjectReference>
+    <None Include="..\..\Depend\zlib\README" />
+    <None Include="..\..\Depend\zlib\zconf.h.in" />
+    <None Include="..\..\Depend\zlib\zconf.h.included" />
+    <None Include="..\..\Depend\zlib\zlib.pc.in" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{01E78698-FBC7-4FD4-99ED-8B0BB53410C0}</ProjectGuid>
+    <ProjectGuid>{DD3F5E27-00EC-4B15-84B0-274CE88CC66E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>AntTest</RootNamespace>
+    <RootNamespace>Lua</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -115,24 +109,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
-    <TargetName>$(ProjectName)D</TargetName>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
-    <TargetName>$(ProjectName)D</TargetName>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -140,17 +132,16 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NO_FSEEKO;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/MySQL</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../Public/openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -159,17 +150,16 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;NO_FSEEKO;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -180,19 +170,18 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;NO_FSEEKO;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -203,19 +192,18 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;NO_FSEEKO;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/MySQL</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../Public/openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

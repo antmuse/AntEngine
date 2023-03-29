@@ -15,23 +15,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Source\Test\AppTicker.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Test\Acceptor.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Test\Linker.h">
+    <ClInclude Include="..\..\Source\EchoServer\LinkerUDP2.h">
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\EchoServer\AppTicker.h">
-      <Filter>Source</Filter>
+      <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\EchoServer\LinkerTCP.h">
-      <Filter>Source</Filter>
+      <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\EchoServer\LinkerUDP.h">
-      <Filter>Source</Filter>
+      <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -45,6 +39,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\EchoServer\LinkerUDP.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\EchoServer\LinkerUDP2.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

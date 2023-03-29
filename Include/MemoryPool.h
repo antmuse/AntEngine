@@ -27,6 +27,7 @@
 #define APP_MEMORYPOOL_H
 
 #include <stdlib.h>
+#include <mutex>
 #include "Config.h"
 
 // D_MEMPOOL_MAX_PAGE must be > 1
@@ -320,6 +321,81 @@ typedef MemoryPool<u8[2048]> CMemoryPool2048;
 typedef MemoryPool<u8[4096]> CMemoryPool4096;
 typedef MemoryPool<u8[8192]> CMemoryPool8192;
 typedef MemoryPool<u8[10240]> CMemoryPool10K;
+
+
+
+
+
+
+/**
+ * @brief MemPool is ZONE MEMORY ALLOCATION
+ * There is never any space between memblocks, and there will never be two
+ * contiguous free memblocks.
+ * The mRover can be left pointing at a non-empty block
+ * The zone calls are pretty much only mUsed for small strings and structures,
+ * all big things are allocated on the hunk.
+ */
+class MemPool {
+public:
+    static MemPool* createMemPool(s32 psz);
+    static void releaseMemPool(MemPool* it);
+    MemPool(const MemPool&) = delete;
+    MemPool(const MemPool&&) = delete;
+    MemPool& operator=(const MemPool&) = delete;
+    MemPool& operator=(const MemPool&&) = delete;
+
+    void releaseTags(s32 tag);
+#ifdef DDEBUG
+    s8* allocate(s32 wsize, const s8* label = "lab", const s8* file = __FILE__, s32 line = __LINE__);
+    s8* allocateAndClear(s32 wsize, const s8* label = "lab", const s8* file = __FILE__, s32 line = __LINE__);
+#else
+    s8* allocate(s32 wsize);
+    s8* allocateAndClear(s32 wsize);
+#endif
+
+    void release(void* val);
+
+    void initPool(s32 total);
+    void logPool(const s8* name = "MemPool");
+    void checkPool();
+    s32 getAvailable();
+
+private:
+    MemPool();
+    ~MemPool();
+
+    enum EMemTag {
+        TAG_FREE = 0,   // free tag, must=0
+        TAG_MEM_POOL,
+        TAG_MEM_NEW
+    };
+
+    struct MemDebug {
+        const s8* mLabel;
+        const s8* mFile;
+        s32 mLine;
+        s32 mAllocSize;
+    };
+
+    struct MemBlock {
+        s32 mSize; // including the header and possibly tiny fragments
+        s16 mTag;  // a tag of 0 is a free block
+        s16 mID;   // should be pool's ID
+        MemBlock* mNext;
+        MemBlock* mPrev;
+#ifdef DDEBUG
+        MemDebug mDebugInfo;
+#endif
+    };
+    s32 mTotal;            // total bytes malloced, including header
+    s32 mUsed;             // total bytes used
+    s16 mPoolID;           // pool's ID
+    s16 mPad;              // reserve
+    std::mutex mMutex;
+    MemBlock mBlockList;   // start/end cap for linked list
+    MemBlock* mRover;
+};
+
 }//namespace app
 
 

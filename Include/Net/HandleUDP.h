@@ -72,7 +72,7 @@ public:
     * @param flag [1=reuse ip:port, 2=connect it]
     * @return 0 if success, else failed.
     */
-    s32 open(RequestUDP* it, NetAddress* remote, const NetAddress* local = nullptr, s32 flag = 0);
+    s32 open(RequestUDP* it, const NetAddress* remote, const NetAddress* local = nullptr, s32 flag = 0);
 
 private:
     s32 mFlags;  //1=reused ip:port, 2=connected

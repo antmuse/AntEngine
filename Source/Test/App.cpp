@@ -36,6 +36,7 @@ void AppTestStr(s32 argc, s8** argv);
 void AppTestVector();
 void AppTestRBTreeMap();
 s32 AppTestThreadPool(s32 argc, s8** argv);
+s32 AppTestMemPool(s32 argc, s8** argv);
 s32 AppTestStrConvGBKU8(s32 argc, s8** argv);
 s32 AppTestSystem(s32 argc, s8** argv);
 s32 AppTestRedis(s32 argc, s8** argv);
@@ -104,7 +105,7 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestSystem(argc, argv);
+            AppTestMemPool(argc, argv);
         } else {
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);
@@ -118,6 +119,7 @@ int main(int argc, char** argv) {
             AppTestTree2heap();
             AppTestStrConv();
             AppTestSystem(argc, argv);
+            AppTestMemPool(argc, argv);
         }
         break;
     }
