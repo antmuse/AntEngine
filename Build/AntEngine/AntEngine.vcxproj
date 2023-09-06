@@ -174,7 +174,6 @@
     <ClInclude Include="..\..\Include\Net\KCProtocal.h" />
     <ClInclude Include="..\..\Include\Net\NetAddress.h" />
     <ClInclude Include="..\..\Include\Net\NetHeader.h" />
-    <ClInclude Include="..\..\Include\Net\NetProtocal.h" />
     <ClInclude Include="..\..\Include\Net\RedisClient\RedisClient.h" />
     <ClInclude Include="..\..\Include\Net\RedisClient\RedisClientCluster.h" />
     <ClInclude Include="..\..\Include\Net\RedisClient\RedisClientPool.h" />

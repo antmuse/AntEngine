@@ -538,9 +538,6 @@
     <ClInclude Include="..\..\Include\Net\NetHeader.h">
       <Filter>Include\Net</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\NetProtocal.h">
-      <Filter>Include\Net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Net\Socket.h">
       <Filter>Include\Net</Filter>
     </ClInclude>

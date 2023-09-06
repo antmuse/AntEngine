@@ -37,7 +37,7 @@
 namespace app {
 namespace net {
 
-s32 HandleUDP::open(RequestUDP* it, NetAddress* remote, const NetAddress* local, s32 flag) {
+s32 HandleUDP::open(RequestUDP* it, const NetAddress* remote, const NetAddress* local, s32 flag) {
     if (!it || (!remote && !local)) {
         return EE_INVALID_PARAM;
     }
