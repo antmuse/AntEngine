@@ -11,11 +11,12 @@ const u32 GMAX_UDP_SIZE = 1500;
 u32 LinkerUDP2::mSN = 0;
 
 LinkerUDP2::LinkerUDP2() :
-    mMemPool(nullptr), mSev(nullptr), mLoop(&Engine::getInstance().getLoop()), mPack(GMAX_UDP_SIZE) {
+    mTimeExt(0), mMemPool(nullptr), mSev(nullptr), mLoop(&Engine::getInstance().getLoop()), mPack(GMAX_UDP_SIZE) {
 }
 
 
 LinkerUDP2::~LinkerUDP2() {
+    mProto.clear();
 }
 
 bool LinkerUDP2::lessTime(const Node3* va, const Node3* vb) {
@@ -42,12 +43,7 @@ s32 LinkerUDP2::sendRawMsg(const void* buf, s32 len) {
 
 
 s32 LinkerUDP2::onLink(u32 id, NetServerUDP2* sev, RequestUDP* sit) {
-    mTimeNode.setTime(LinkerUDP2::funcOnTime, 5 * 100, 2 * 100, -1);
-    mTimeNode.setClose(EHT_TIME, LinkerUDP2::funcOnClose, this);
-    s32 ret = mLoop->openHandle(&mTimeNode);
-    if (EE_OK != ret) {
-        return ret;
-    }
+    mTimeExt = 0;
     mSev = sev;
     mMemPool = sev->getMemPool();
     mRemote = sit->mRemote;
@@ -62,6 +58,17 @@ s32 LinkerUDP2::onTimeout(u32 val) {
         rdsz = mProto.receiveKCP(mPack.getWritePointer(), mPack.getWriteSize());
     }
     if (rdsz < 0) {
+        if (EE_RETRY == rdsz) {
+            if (mTimeExt > 0) {
+                if (val - mTimeExt > 1000 * 15) {
+                    mProto.clear();
+                    mSev->closeNode(this);
+                    return EE_ERROR;
+                }
+            } else {
+                mTimeExt = val;
+            }
+        }
         if (0 == mPack.size()) {
             return EE_OK;
         }
@@ -118,12 +125,12 @@ void LinkerUDP2::onClose(Handle* it) {
 
 void LinkerUDP2::onWrite(RequestUDP* it) {
     if (EE_OK == it->mError) {
+        mTimeExt = 0;
         //++AppTicker::gTotalActive;
         //++AppTicker::gTotalPacketOut;
         AppTicker::gTotalSizeOut += it->mUsed;
         mProto.update((s32)mLoop->getTime());
     } else {
-        mTimeNode.launchClose();
         Logger::log(ELL_ERROR, "LinkerUDP2::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
     RequestUDP::delRequest(it);
@@ -133,6 +140,7 @@ void LinkerUDP2::onWrite(RequestUDP* it) {
 void LinkerUDP2::onRead(RequestUDP* it) {
     s32 err = it->mError;
     if (it->mUsed > 0) {
+        mTimeExt = 0;
         StringView dat = it->getReadBuf();
         s32 ecode = mProto.importRaw(dat.mData, dat.mLen);
         if (ecode < 0) {
@@ -197,8 +205,8 @@ void NetServerUDP2::closeNode(LinkerUDP2* nd) {
         TMap<u32, LinkerUDP2*>::Node* sid = val ? val->getValue()->find(id) : nullptr;
         if (sid) {
             usz cnt = val->getValue()->size();
-            Logger::log(ELL_INFO, "NetServerUDP2::closeNode>>close id=%u, remote=%s, cnt=%lu/%lu", id,
-                nd->getRemote().getStr(), cnt, mClients.size());
+            Logger::log(ELL_INFO, "NetServerUDP2::closeNode>>close id=%u, remote=%s, cnt=%lu/%lu = %lu", id,
+                nd->getRemote().getStr(), cnt, mClients.size(), mTimeHub.getSize());
             mTimeHub.remove(&sid->getValue()->getTimeNode());
             s32 dret = sid->getValue()->drop();
             val->getValue()->remove(sid);
@@ -241,10 +249,16 @@ void NetServerUDP2::onRead(RequestUDP* it) {
                 amap->insert(id, con);
                 mTimeHub.insert(&con->getTimeNode());
                 con->onRead(it);
-                Logger::log(ELL_INFO, "NetServerUDP2::onRead>>new id=%u, remote=%s", id, it->mRemote.getStr());
+                Logger::log(ELL_INFO, "NetServerUDP2::onRead>>new id=%u, remote=%s, cnt=%lu/%lu = %lu", id,
+                    it->mRemote.getStr(), amap->size(), mClients.size(), mTimeHub.getSize());
             } else {
-                Logger::log(ELL_ERROR, "NetServerUDP2::onRead>>fail new id=%u, remote=%s", id, it->mRemote.getStr());
                 con->drop();
+                if (amap->empty()) {
+                    delete amap;
+                    mClients.remove(cid);
+                }
+                Logger::log(ELL_ERROR, "NetServerUDP2::onRead>>fail new id=%u, remote=%s, cnt=x/%lu = %lu", id,
+                    it->mRemote.getStr(), mClients.size(), mTimeHub.getSize());
             }
         }
     } else {
@@ -274,11 +288,11 @@ s32 NetServerUDP2::onTimeout(HandleTime& it) {
         if (curr > tim) {
             break;
         }
-        if (EE_OK == val->onTimeout(tim)) { //relink
+        if (EE_OK == val->onTimeout(tim)) { // relink
             mTimeHub.remove(&val->getTimeNode());
             mTimeHub.insert(&val->getTimeNode());
         } else {
-            // TODO: remove it?
+            // have removed by it self
         }
     }
     return EE_OK;
@@ -287,6 +301,16 @@ s32 NetServerUDP2::onTimeout(HandleTime& it) {
 void NetServerUDP2::onClose(Handle* it) {
     DASSERT(&mUDP == it && "NetServerUDP2::onClose handle");
     Logger::log(ELL_INFO, "NetServerUDP2::onClose>>grab cnt=%d", it->getGrabCount());
+    TMap<u32, LinkerUDP2*>* clis = nullptr;
+    for (TMap<NetAddress::ID, TMap<u32, LinkerUDP2*>*>::Iterator i = mClients.getIterator(); !i.atEnd(); i++) {
+        clis = (*i).getValue();
+        for (TMap<u32, LinkerUDP2*>::Iterator j = clis->getIterator(); !j.atEnd(); j++) {
+            s32 cnt = (*j).getValue()->drop();
+            DASSERT(0 == cnt);
+        }
+        delete clis; // clis->clear();
+    }
+    mClients.clear();
     drop();
 }
 

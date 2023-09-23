@@ -70,8 +70,8 @@ void LinkerUDP::onRead(RequestUDP* it) {
     }
     it->mUsed = 0;
     if (EE_OK != mUDP.read(it)) {
-        RequestUDP::delRequest(it);
         Logger::log(ELL_ERROR, "LinkerUDP::onRead>>size=%u, ecode=%d", it->mUsed, it->mError);
+        RequestUDP::delRequest(it);
     }
 }
 

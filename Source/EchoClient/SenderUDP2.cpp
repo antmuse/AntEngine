@@ -9,12 +9,14 @@ u32 SenderUDP2::mSN = 0;
 u32 SenderUDP2::mID = 0x00000000U;
 
 SenderUDP2::SenderUDP2() :
-    mMaxMsg(1), mTLS(true), mMemPool(nullptr), mLoop(&Engine::getInstance().getLoop()), mPack(GMAX_UDP_SIZE) {
+    mTimeExt(0), mMaxMsg(1), mTLS(true), mMemPool(nullptr), mLoop(&Engine::getInstance().getLoop()),
+    mPack(GMAX_UDP_SIZE) {
 }
 
 
 SenderUDP2::~SenderUDP2() {
     if (mMemPool) {
+        mProto.clear();
         MemPool::releaseMemPool(mMemPool);
         mMemPool = nullptr;
     }
@@ -34,6 +36,7 @@ void SenderUDP2::setMaxMsg(s32 cnt) {
 
 
 s32 SenderUDP2::open(const String& addr, bool tls) {
+    mTimeExt = 0;
     mTLS = tls;
     mUDP.setClose(EHT_UDP, SenderUDP2::funcOnClose, this);
     mUDP.setTime(SenderUDP2::funcOnTime, 100, 20, -1);
@@ -58,8 +61,17 @@ s32 SenderUDP2::open(const String& addr, bool tls) {
 
 s32 SenderUDP2::onTimeout(HandleTime& it) {
     DASSERT(mUDP.getGrabCount() > 0);
-    mProto.update((u32)mLoop->getTime());
-    onReadKCP();
+    u32 val = (u32)mLoop->getTime();
+    mProto.update(val);
+    if (!onReadKCP()) {
+        if (mTimeExt > 0) {
+            if (val - mTimeExt > 1000 * 15) {
+                return EE_ERROR; // close mUDP;
+            }
+        } else {
+            mTimeExt = val;
+        }
+    }
     return EE_OK;
 }
 
@@ -78,6 +90,8 @@ void SenderUDP2::onClose(Handle* it) {
 void SenderUDP2::onWrite(RequestUDP* it) {
     if (0 != it->mError) {
         Logger::log(ELL_ERROR, "SenderUDP2::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
+    } else {
+        mTimeExt = 0;
     }
     RequestUDP::delRequest(it);
 }
@@ -93,6 +107,7 @@ void SenderUDP2::onRead(RequestUDP* it) {
         }
     }
     if (EE_OK == err) {
+        mTimeExt = 0;
         it->mUsed = 0;
         if (EE_OK != readIF(it)) {
             RequestUDP::delRequest(it);
@@ -101,14 +116,13 @@ void SenderUDP2::onRead(RequestUDP* it) {
         }
         onReadKCP();
     } else {
-        RequestUDP::delRequest(it);
         Logger::log(ELL_ERROR, "SenderUDP2::onRead>>read=%u, ecode=%d", it->mUsed, it->mError);
-        return;
+        RequestUDP::delRequest(it);
     }
 }
 
 
-void SenderUDP2::onReadKCP() {
+bool SenderUDP2::onReadKCP() {
     s32 rdsz = mProto.receiveKCP(mPack.getWritePointer(), mPack.getWriteSize());
     while (EE_INVALID_PARAM == rdsz && mPack.capacity() < mProto.getMaxSupportedMsgSize()) {
         mPack.reallocate(mPack.capacity() + GMAX_UDP_SIZE);
@@ -119,7 +133,7 @@ void SenderUDP2::onReadKCP() {
             if (EE_RETRY != rdsz) {
                 Logger::log(ELL_INFO, "SenderUDP2::onReadKCP>> ecode=%d", rdsz);
             }
-            return;
+            return false;
         }
     }
 
@@ -145,6 +159,7 @@ void SenderUDP2::onReadKCP() {
         sendMsgs(1);
     } // while
     mPack.clear(mPack.size() - got);
+    return true;
 }
 
 

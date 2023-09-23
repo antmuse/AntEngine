@@ -66,10 +66,10 @@ private:
     }
 
     static u32 mSN;
+    u32 mTimeExt;
     Node3 mNode;
     NetServerUDP2* mSev;
     net::NetAddress mRemote;
-    HandleTime mTimeNode;
     Loop* mLoop;
     MemPool* mMemPool;
     net::KCProtocal mProto;

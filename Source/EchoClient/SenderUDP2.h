@@ -32,7 +32,8 @@ private:
 
     void onRead(RequestUDP* it);
 
-    void onReadKCP();
+    //@return false if read none;
+    bool onReadKCP();
 
     static s32 sendKcpRaw(const void* buf, s32 len, void* user);
 
@@ -67,6 +68,7 @@ private:
     static u32 mSN;
     static u32 mID;
     bool mTLS;
+    u32 mTimeExt;
     usz mMaxMsg;
     Loop* mLoop;
     MemPool* mMemPool;
