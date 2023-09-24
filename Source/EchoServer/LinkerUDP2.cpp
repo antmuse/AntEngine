@@ -262,7 +262,8 @@ void NetServerUDP2::onRead(RequestUDP* it) {
             }
         }
     } else {
-        Logger::log(ELL_ERROR, "NetServerUDP2::onRead>>size=%u, remote=%s", it->mUsed, it->mRemote.getStr());
+        Logger::log(ELL_ERROR, "NetServerUDP2::onRead>>size=%u, remote=%s, ecode=%d", it->mUsed, it->mRemote.getStr(),
+            it->mError);
     }
     it->mUsed = 0;
     if (EE_OK != mUDP.readFrom(it)) {

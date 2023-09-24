@@ -181,7 +181,6 @@ s32 HandleUDP::write(RequestUDP* it, s32 flag) {
         return EE_NO_WRITEABLE;
     }
 
-    it->mFlags |= 1;
     it->mError = 0;
     mLoop->bindFly(this);
 
