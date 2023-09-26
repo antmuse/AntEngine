@@ -149,11 +149,11 @@ public:
     /**
     * @brief Register a Log Receiver.
     * @param iLog: The log receiver to Regist. */
-    static void add(ILogReceiver* iLog);
+    static const ILogReceiver* add(ILogReceiver* iLog);
 
-    static void addPrintReceiver();
+    static const ILogReceiver* addPrintReceiver();
 
-    static void addFileReceiver();
+    static const ILogReceiver* addFileReceiver();
 
     /**
     * @brief Unregister a Log Receiver.

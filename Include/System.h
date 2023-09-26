@@ -44,9 +44,9 @@ public:
 
 #if defined(DOS_WINDOWS)
     static s32 convNtstatus2NetError(s32 status);
-#else
-    static s32 daemon();
 #endif
+
+    static s32 daemon();
 
     static s32 getSignal() {
         return gSignal;

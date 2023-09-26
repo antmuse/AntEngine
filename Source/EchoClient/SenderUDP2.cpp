@@ -63,10 +63,17 @@ s32 SenderUDP2::onTimeout(HandleTime& it) {
     DASSERT(mUDP.getGrabCount() > 0);
     u32 val = (u32)mLoop->getTime();
     mProto.update(val);
-    if (!onReadKCP()) {
+    if (EE_OK != onReadKCP()) {
         if (mTimeExt > 0) {
-            if (val - mTimeExt > 1000 * 15) {
+            val -= mTimeExt;
+            if (val > 1000 * 15) {
                 return EE_ERROR; // close mUDP;
+            }
+            if (val >= 1000 * 10 && 0 == mMaxMsg) {
+                s32 step = mProto.sendKCP(nullptr, 0); // assert(0==step);
+                if (0 != step) {
+                    Logger::log(ELL_INFO, "SenderUDP2::onTimeout>> tick step=%d", step);
+                }
             }
         } else {
             mTimeExt = val;
@@ -100,6 +107,7 @@ void SenderUDP2::onWrite(RequestUDP* it) {
 void SenderUDP2::onRead(RequestUDP* it) {
     s32 err = it->mError;
     if (it->mUsed > 0) {
+        mTimeExt = 0;
         StringView dat = it->getReadBuf();
         s32 ecode = mProto.importRaw(dat.mData, dat.mLen);
         if (ecode < 0) {
@@ -107,7 +115,6 @@ void SenderUDP2::onRead(RequestUDP* it) {
         }
     }
     if (EE_OK == err) {
-        mTimeExt = 0;
         it->mUsed = 0;
         if (EE_OK != readIF(it)) {
             RequestUDP::delRequest(it);
@@ -122,21 +129,19 @@ void SenderUDP2::onRead(RequestUDP* it) {
 }
 
 
-bool SenderUDP2::onReadKCP() {
+s32 SenderUDP2::onReadKCP() {
     s32 rdsz = mProto.receiveKCP(mPack.getWritePointer(), mPack.getWriteSize());
     while (EE_INVALID_PARAM == rdsz && mPack.capacity() < mProto.getMaxSupportedMsgSize()) {
         mPack.reallocate(mPack.capacity() + GMAX_UDP_SIZE);
         rdsz = mProto.receiveKCP(mPack.getWritePointer(), mPack.getWriteSize());
     }
     if (rdsz < 0) {
-        if (0 == mPack.size()) {
-            if (EE_RETRY != rdsz) {
-                Logger::log(ELL_INFO, "SenderUDP2::onReadKCP>> ecode=%d", rdsz);
-            }
-            return false;
+        if (EE_RETRY != rdsz) {
+            Logger::log(ELL_INFO, "SenderUDP2::onReadKCP>> ecode=%d", rdsz);
         }
+        rdsz = 0;
     }
-
+    s32 send = 0;
     mPack.resize(mPack.size() + rdsz);
     AppTicker::gTotalSizeIn += rdsz;
     MsgHeader* head = (MsgHeader*)mPack.getPointer();
@@ -156,10 +161,11 @@ bool SenderUDP2::onReadKCP() {
         } // switch
         got -= head->mSize;
         head = (MsgHeader*)((s8*)head + head->mSize);
-        sendMsgs(1);
+        send |= 1;
     } // while
     mPack.clear(mPack.size() - got);
-    return true;
+
+    return send > 0 ? sendMsgs(1) : EE_RETRY;
 }
 
 
@@ -169,6 +175,7 @@ s32 SenderUDP2::sendMsgs(s32 max) {
     DASSERT(sizeof(buf) <= mProto.getMaxSupportedMsgSize());
     net::PackSubmit& head = *(net::PackSubmit*)buf;
     s32 step;
+    s32 ret = EE_RETRY;
     for (s32 i = 0; mMaxMsg > 0 && i < max; ++i) {
         if (0 == sentsz) {
             head.clear();
@@ -188,6 +195,7 @@ s32 SenderUDP2::sendMsgs(s32 max) {
             Logger::log(ELL_INFO, "SenderUDP2::sendMsgs>>step=%d", step);
             break; // need retry
         } else {
+            ret = EE_OK;
             sentsz += step;
             if (sentsz == head.mSize) {
                 sentsz = 0;
@@ -197,7 +205,7 @@ s32 SenderUDP2::sendMsgs(s32 max) {
             }
         }
     }
-    return EE_OK;
+    return ret;
 }
 
 

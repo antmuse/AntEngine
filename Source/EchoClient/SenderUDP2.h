@@ -32,8 +32,8 @@ private:
 
     void onRead(RequestUDP* it);
 
-    //@return false if read none;
-    bool onReadKCP();
+    //@return 0 if none error;
+    s32 onReadKCP();
 
     static s32 sendKcpRaw(const void* buf, s32 len, void* user);
 

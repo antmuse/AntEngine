@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "System.h"
@@ -36,7 +36,7 @@ namespace app {
 
 class FileFinder {
 public:
-    FileFinder() :mHandle(-1) {
+    FileFinder() : mHandle(-1) {
         mFormat[0] = 0;
     }
 
@@ -62,7 +62,7 @@ public:
         }
     }
 
-    const tchar* getFormat()const {
+    const tchar* getFormat() const {
         return mFormat;
     }
 
@@ -74,26 +74,27 @@ private:
 
 
 //@param disk NULL表示程序当前磁盘
-static u32 AppGetDiskSectorSize(const tchar* disk = nullptr/*DSTR("C:\\")*/) {
-    DWORD sectorsPerCluster;     //磁盘一个簇内的扇区数
-    DWORD bytesPerSector;        //磁盘一个扇区内的字节数
-    DWORD numberOfFreeClusters;  //磁盘总簇数
-    DWORD totalNumberOfClusters; //磁盘的剩余簇数
-    if ((TRUE == GetDiskFreeSpace(nullptr, &sectorsPerCluster, &bytesPerSector,
-        &numberOfFreeClusters, &totalNumberOfClusters))) {
+static u32 AppGetDiskSectorSize(const tchar* disk = nullptr /*DSTR("C:\\")*/) {
+    DWORD sectorsPerCluster;     // 磁盘一个簇内的扇区数
+    DWORD bytesPerSector;        // 磁盘一个扇区内的字节数
+    DWORD numberOfFreeClusters;  // 磁盘总簇数
+    DWORD totalNumberOfClusters; // 磁盘的剩余簇数
+    if ((TRUE
+            == GetDiskFreeSpace(
+                nullptr, &sectorsPerCluster, &bytesPerSector, &numberOfFreeClusters, &totalNumberOfClusters))) {
         return bytesPerSector;
     }
     return 0;
 }
 
 static u32 AppGetCoreCount() {
-    SYSTEM_INFO	info;
+    SYSTEM_INFO info;
     GetSystemInfo(&info);
     return info.dwNumberOfProcessors;
 }
 
 static u32 AppGetPageSize() {
-    SYSTEM_INFO	info;
+    SYSTEM_INFO info;
     GetSystemInfo(&info);
     return info.dwPageSize;
 }
@@ -229,12 +230,12 @@ s32 System::convNtstatus2NetError(s32 status) {
         return WSAEACCES;
 
     default:
-        if ((status & (FACILITY_NTWIN32 << 16)) == (FACILITY_NTWIN32 << 16) &&
-            (status & (ERROR_SEVERITY_ERROR | ERROR_SEVERITY_WARNING))) {
-            //It's a windows error that has been previously mapped to an ntstatus code.
+        if ((status & (FACILITY_NTWIN32 << 16)) == (FACILITY_NTWIN32 << 16)
+            && (status & (ERROR_SEVERITY_ERROR | ERROR_SEVERITY_WARNING))) {
+            // It's a windows error that has been previously mapped to an ntstatus code.
             return (DWORD)(status & 0xffff);
         } else {
-            //The default fallback for unmappable ntstatus codes.
+            // The default fallback for unmappable ntstatus codes.
             return WSAEINVAL;
         }
     }
@@ -285,6 +286,10 @@ s32 System::getAppError() {
     return getAppError(getNetError());
 }
 
+s32 System::daemon() {
+    // not support windows
+    return EE_OK;
+}
 
 s32 System::createPath(const String& it) {
     if (it.getLen() >= _MAX_PATH) {
@@ -451,17 +456,18 @@ s32 System::createProcess(usz socket, void*& handle) {
         mustInheritHandles = true;
         closesocket(socket);
     } else if (GetStdHandle(STD_INPUT_HANDLE)) {
-        ::DuplicateHandle(hProc, GetStdHandle(STD_INPUT_HANDLE), hProc, &startinfo.hStdInput, 0, TRUE, DUPLICATE_SAME_ACCESS);
+        ::DuplicateHandle(
+            hProc, GetStdHandle(STD_INPUT_HANDLE), hProc, &startinfo.hStdInput, 0, TRUE, DUPLICATE_SAME_ACCESS);
         mustInheritHandles = true;
     }
 
     /*if (GetStdHandle(STD_OUTPUT_HANDLE)) {
-        ::DuplicateHandle(hProc, GetStdHandle(STD_OUTPUT_HANDLE), hProc, &startinfo.hStdOutput, 0, TRUE, DUPLICATE_SAME_ACCESS);
-        mustInheritHandles = true;
+        ::DuplicateHandle(hProc, GetStdHandle(STD_OUTPUT_HANDLE), hProc, &startinfo.hStdOutput, 0, TRUE,
+    DUPLICATE_SAME_ACCESS); mustInheritHandles = true;
     }
     if (GetStdHandle(STD_ERROR_HANDLE)) {
-        ::DuplicateHandle(hProc, GetStdHandle(STD_ERROR_HANDLE), hProc, &startinfo.hStdError, 0, TRUE, DUPLICATE_SAME_ACCESS);
-        mustInheritHandles = true;
+        ::DuplicateHandle(hProc, GetStdHandle(STD_ERROR_HANDLE), hProc, &startinfo.hStdError, 0, TRUE,
+    DUPLICATE_SAME_ACCESS); mustInheritHandles = true;
     }*/
 
     if (mustInheritHandles) {
@@ -470,34 +476,25 @@ s32 System::createProcess(usz socket, void*& handle) {
 
     const tchar* pEnv = nullptr;
     PROCESS_INFORMATION pinfo;
-    //DWORD creationFlags = ::GetConsoleWindow() ? 0 : CREATE_NO_WINDOW;
+    // DWORD creationFlags = ::GetConsoleWindow() ? 0 : CREATE_NO_WINDOW;
     DWORD creationFlags = CREATE_NO_WINDOW;
-    BOOL rc = ::CreateProcess(
-        0,
-        fpath,
+    BOOL rc = ::CreateProcess(0, fpath,
         0, // process Attributes
         0, // thread Attributes
-        mustInheritHandles,
-        creationFlags,
-        (LPVOID)pEnv,
-        workpath,
-        &startinfo,
-        &pinfo
-        );
+        mustInheritHandles, creationFlags, (LPVOID)pEnv, workpath, &startinfo, &pinfo);
 
     if (rc) {
         ::CloseHandle(pinfo.hThread);
-        Logger::log(ELL_INFO, "System::createProcess>>pid = %d, cmdsock = %llu",
-            pinfo.dwProcessId, (usz)startinfo.hStdInput);
+        Logger::log(
+            ELL_INFO, "System::createProcess>>pid = %d, cmdsock = %llu", pinfo.dwProcessId, (usz)startinfo.hStdInput);
 
         handle = pinfo.hProcess;
-        //WaitForSingleObject(pinfo.hProcess, INFINITE);
+        // WaitForSingleObject(pinfo.hProcess, INFINITE);
         //::CloseHandle(pinfo.hProcess);
-    } else {//fail
+    } else { // fail
         pinfo.dwProcessId = 0;
         s32 du = System::getAppError();
-        Logger::log(ELL_INFO, "System::createProcess>>fail = %d, cmdsock = %llu",
-            du, (usz)startinfo.hStdInput);
+        Logger::log(ELL_INFO, "System::createProcess>>fail = %d, cmdsock = %llu", du, (usz)startinfo.hStdInput);
     }
     if (startinfo.hStdInput) {
         ::CloseHandle(startinfo.hStdInput);
@@ -531,9 +528,8 @@ String System::getWorkingPath() {
     return wkpath;
 }
 
-} //namespace app
+} // namespace app
 
 #else
 #error unsupported OS
-#endif //DOS_WINDOWS
-
+#endif // DOS_WINDOWS

@@ -420,7 +420,7 @@ void Loop::addClose(Handle* it) {
 
 s32 Loop::closeHandle(Handle* it) {
     DASSERT(it);
-    if (it->isClosing()) {
+    if (it->isClosing() || !it->isOpen()) {
         return EE_CLOSING;
     }
     it->mFlag |= EHF_CLOSING;

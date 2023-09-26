@@ -44,7 +44,7 @@ void AppTicker::onClose(Handle* it) {
 
 
 s32 AppTicker::onTimeout(HandleTime* it) {
-    s8 ch = 0;
+    s32 ch = 0;
 #ifdef DOS_WINDOWS
     //32=blank,27=esc
     if (!_kbhit() || (ch = _getch()) != 27)

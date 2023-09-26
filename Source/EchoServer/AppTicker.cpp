@@ -87,9 +87,8 @@ s32 AppTicker::onTimeout(HandleTime* it) {
         return EE_OK;
     }
 
-    s8 ch = 0;
 #ifdef DOS_WINDOWS
-    //32=blank,27=esc
+    s32 ch = 0; //32=blank,27=esc
     if (!_kbhit() || (ch = _getch()) != 27)
 #endif
     {

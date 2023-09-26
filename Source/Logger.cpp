@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Logger.h"
@@ -32,8 +32,8 @@
 namespace app {
 
 
-//log eg: 2022-12-01 20:50:39 [1,PID] Engine::init
-const s32 G_PRE_LEN = 23;  //pre len for PID position
+// log eg: 2022-12-01 20:50:39 [1,PID] Engine::init
+const s32 G_PRE_LEN = 23; // pre len for PID position
 
 s8 Logger::mText[MAX_TEXT_BUFFER_SIZE];
 TVector<ILogReceiver*> Logger::mAllReceiver;
@@ -41,18 +41,20 @@ std::mutex Logger::mMutex;
 s32 Logger::mPID = 0;
 s32 Logger::mPID_len = 0;
 
-#ifdef   DDEBUG
+#ifdef DDEBUG
 ELogLevel Logger::mMinLevel = ELL_DEBUG;
-#else       //for release version
+#else  // for release version
 ELogLevel Logger::mMinLevel = ELL_INFO;
-#endif  //release version
+#endif // release version
 
 static const s8* G_LOG_FMT = "%Y-%m-%d %H:%M:%S";
 
 class LogPrinter : public ILogReceiver {
 public:
-    LogPrinter() { }
-    virtual ~LogPrinter() { }
+    LogPrinter() {
+    }
+    virtual ~LogPrinter() {
+    }
 
     virtual void log(usz len, const s8* msg) {
 #if defined(DOS_ANDROID)
@@ -68,17 +70,11 @@ public:
 
 class LogFile : public ILogReceiver {
 public:
-    LogFile() :
-        mFileSize(0)
-        , mTodayID(0)
-        , mFormat("/%Y-%m-%d.") {
+    LogFile() : mFileSize(0), mTodayID(0), mFormat("/%Y-%m-%d.") {
         open();
     }
 
-    LogFile(const s8* fmt)
-        :mFileSize(0)
-        , mTodayID(0)
-        , mFormat(fmt ? fmt : "/%Y-%m-%d.") {
+    LogFile(const s8* fmt) : mFileSize(0), mTodayID(0), mFormat(fmt ? fmt : "/%Y-%m-%d.") {
         open();
     }
 
@@ -87,8 +83,8 @@ public:
 
     virtual void log(usz len, const s8* msg) {
         const s16 day = getDay(msg);
-        if (day != mTodayID) { //按天分割日志
-            //mFile.close();
+        if (day != mTodayID) { // split log by day
+            // mFile.close();
             open();
         }
         mFileSize += mFile.write(msg, len);
@@ -123,10 +119,9 @@ private:
 
 
 
-
 Logger::Logger() {
     memset(mText, 0, sizeof(mText));
-    //AppStrConverterInit();
+    // AppStrConverterInit();
 }
 
 
@@ -253,38 +248,39 @@ void Logger::postLog(const ELogLevel logLevel, const s8* msg, va_list args) {
     }
 }
 
-void Logger::addPrintReceiver() {
+const ILogReceiver* Logger::addPrintReceiver() {
     mMutex.lock();
     static bool on = false;
     if (on) {
         mMutex.unlock();
-        return;
+        return nullptr;
     }
     on = true;
     mMutex.unlock();
 
-    add(new LogPrinter());
+    return add(new LogPrinter());
 }
 
-void Logger::addFileReceiver() {
+const ILogReceiver* Logger::addFileReceiver() {
     mMutex.lock();
     static bool on = false;
     if (on) {
         mMutex.unlock();
-        return;
+        return nullptr;
     }
     on = true;
     mMutex.unlock();
 
-    add(new LogFile());
+    return add(new LogFile());
 }
 
-void Logger::add(ILogReceiver* iLog) {
+const ILogReceiver* Logger::add(ILogReceiver* iLog) {
     if (iLog) {
         mMutex.lock();
         mAllReceiver.pushBack(iLog);
         mMutex.unlock();
     }
+    return iLog;
 }
 
 
@@ -313,4 +309,4 @@ void Logger::clear() {
 }
 
 
-}//namespace app
+} // namespace app

@@ -1,16 +1,20 @@
 AntEngine
 ====
-跨平台，多进程，网络服务，Redis Client, TCP/TLS/HTTP/HTTPS
++ 1. This is a cross platform, multi process, asynchronous, network services.
++ 2. support TCP/TLS/HTTP/HTTPS/KCP
++ 3. support Redis Client, MySQL client
++ 4. use epoll, io_uring under Linux
++ 5. use IOCP under Windows
 
-## 依赖
+## Depends
 ----
 openssl, zlib, jsoncpp, mysql
 
-## 开发环境
+## Development environment
 ----
-+ 1 debian12, 64bit, kernal-v6.1
-+ 2 windows11, 64bit, VS2022
-+ 3 c++11
++ 1. debian12, 64bit, kernal-v6.1
++ 2. windows11, 64bit, VS2022
++ 3. c++11
 ## Usage
 ----
 
@@ -32,6 +36,4 @@ int main(int argc, char** argv) {
 
 ## TODO
 ----
-+ 1 Linux AIO
-+ 2 IPC
-+ 3 WebSite, 分离HTTP基础代码和业务代码
++ 1. FRP Server|Client

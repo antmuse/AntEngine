@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Engine.h"
@@ -41,20 +41,14 @@ const s8* G_CFGFILE = "Config/config.json";
 #endif
 u32 MsgHeader::gSharedSN = 0;
 
-Engine::Engine() :
-    mPPID(0),
-    mPID(0),
-    mChild(32),
-    mProcStatus(EPS_INIT),
-    mProcResponCount(0),
-    mMain(true) {
+Engine::Engine() : mPPID(0), mPID(0), mChild(32), mProcStatus(EPS_INIT), mProcResponCount(0), mMain(true) {
 }
 
 Engine::~Engine() {
 }
 
 void Engine::clear() {
-    //Logger::clear();
+    // Logger::clear();
     System::removeFile(mConfig.mPidFile.c_str());
 }
 
@@ -62,18 +56,15 @@ void Engine::clear() {
 void Engine::postCommand(s32 val) {
     MsgHeader cmd;
     switch (val) {
-    case ECT_EXIT:
-    {
+    case ECT_EXIT: {
         cmd.finish(ECT_EXIT, ++cmd.gSharedSN, ECT_VERSION);
         break;
     }
-    case ECT_ACTIVE:
-    {
+    case ECT_ACTIVE: {
         cmd.finish(ECT_ACTIVE, ++cmd.gSharedSN, ECT_VERSION);
         break;
     }
-    case ECT_RESPAWN:
-    {
+    case ECT_RESPAWN: {
         if (mMain && mConfig.mMaxProcess > 0) {
             ++mProcResponCount;
         }
@@ -118,7 +109,7 @@ void Engine::initPath(const s8* fname) {
         mAppPath.replace('\\', '/');
         mAppName = fname + mAppPath.getLen();
     } else {
-        mAppPath = System::getWorkingPath();  // pwd
+        mAppPath = System::getWorkingPath(); // pwd
         mAppName = fname;
         mAppName.deletePathFromFilename();
     }
@@ -137,7 +128,7 @@ bool Engine::init(const s8* fname, bool child) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
     }
-    if (mConfig.mDaemon) {
+    if (mMain && mConfig.mDaemon) {
         if (EE_OK != System::daemon()) {
             return false;
         }
@@ -150,8 +141,9 @@ bool Engine::init(const s8* fname, bool child) {
     System::getPageSize();
     System::getDiskSectorSize();
     System::createPath(mConfig.mLogPath);
+    const ILogReceiver* loger = nullptr;
     if ((mMain && 1 == mConfig.mPrint) || 2 == mConfig.mPrint) {
-        Logger::addPrintReceiver();
+        loger = Logger::addPrintReceiver();
     }
     Logger::addFileReceiver();
 
@@ -198,6 +190,7 @@ bool Engine::init(const s8* fname, bool child) {
         // mpool.mLock.tryUnlock();  TODO clear lock when ...
         getEngineStats().clear();
 
+        System::removeFile(mConfig.mPidFile.c_str());
         FileWriter file;
         if (file.openFile(mConfig.mPidFile, false)) {
             file.writeParams("%d", mPID);
@@ -210,8 +203,14 @@ bool Engine::init(const s8* fname, bool child) {
     }
 
     if (mMain) { // check again after fork()
+        if (0 == mConfig.mPrint) {
+            Logger::remove(loger);
+        }
         ret = runMainProcess();
     } else {
+        if (2 != mConfig.mPrint) {
+            Logger::remove(loger);
+        }
 #if defined(DOS_WINDOWS)
         net::Socket cmdsock = (net::netsocket)GetStdHandle(STD_INPUT_HANDLE);
         Logger::log(ELL_INFO, "Engine::init>>pid = %d, cmdsock = %llu", mPID, cmdsock.getValue());
@@ -247,13 +246,15 @@ bool Engine::uninit() {
                 mstat.mUsed, mstat.mTotal, mstat.mRequests, mstat.mFails);
         }
     }
-    Logger::log(ELL_INFO, "Engine::uninit>>pid = %d, main = %c, script=%llu",
-        mPID, mMain ? 'Y' : 'N', script::ScriptManager::getInstance().getMemory());
+    Logger::log(ELL_INFO, "Engine::uninit>>pid = %d, main = %c, script=%llu", mPID, mMain ? 'Y' : 'N',
+        script::ScriptManager::getInstance().getMemory());
     script::ScriptManager::getInstance().removeAll();
     Logger::flush();
+    mMapfile.flush();
     mThreadPool.stop();
     clear();
     mTlsENG.uninit();
+    mMapfile.closeAll();
     net::AppUninitTlsLib();
     return 0 == System::unloadNetLib();
 }
@@ -267,7 +268,7 @@ void Engine::run() {
                 for (usz i = 0; i < mChild.size(); i++) {
                     if (!mChild[i].mAlive && EPS_RESPAWN == mChild[i].mStatus) {
                         if (createProcess(i)) {
-                            if (!mMain) {  //fork on linux
+                            if (!mMain) { // fork on linux
                                 mProcResponCount = 0;
                                 goto GT_PROC_CHILD;
                             }
@@ -390,8 +391,7 @@ bool Engine::createProcess(usz idx) {
             pair.getSocketB().close();
         }
 #endif
-        Logger::log(
-            ELL_INFO, "Engine::createProcess>> success start pid = %d, ppid=%d", nd.mID, mPID);
+        Logger::log(ELL_INFO, "Engine::createProcess>> success start pid = %d, ppid=%d", nd.mID, mPID);
         return true;
     }
 
@@ -414,11 +414,11 @@ void Engine::initTask() {
         nd->setTimeout(mConfig.mProxy[i].mTimeout);
         nd->setBackend(mConfig.mProxy[i].mRemote);
         if (0 == nd->open(mConfig.mProxy[i].mLocal)) {
-            Logger::log(ELL_INFO, "Engine::init>>start TcpProxy=[%s->%s]",
-                mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
+            Logger::log(ELL_INFO, "Engine::init>>start TcpProxy=[%s->%s]", mConfig.mProxy[i].mLocal.getStr(),
+                mConfig.mProxy[i].mRemote.getStr());
         } else {
-            Logger::log(ELL_ERROR, "Engine::init>>fail TcpProxy=[%s->%s]",
-                mConfig.mProxy[i].mLocal.getStr(), mConfig.mProxy[i].mRemote.getStr());
+            Logger::log(ELL_ERROR, "Engine::init>>fail TcpProxy=[%s->%s]", mConfig.mProxy[i].mLocal.getStr(),
+                mConfig.mProxy[i].mRemote.getStr());
             nd->drop();
         }
     }
@@ -426,8 +426,8 @@ void Engine::initTask() {
 
     for (usz i = 0; i < mConfig.mWebsite.size(); ++i) {
         switch (mConfig.mWebsite[i].mType) {
-        case 0: //http
-        case 1: //https
+        case 0: // http
+        case 1: // https
         {
             net::Website* website = new net::Website(mConfig.mWebsite[i]);
             net::Acceptor* nd = new net::Acceptor(mLoop, net::Website::funcOnLink, website);
@@ -435,12 +435,12 @@ void Engine::initTask() {
             nd->getHandleTCP().setTimeGap(mConfig.mWebsite[i].mTimeout);
             nd->getHandleTCP().setTimeout(mConfig.mWebsite[i].mTimeout);
             if (0 == nd->open(mConfig.mWebsite[i].mLocal)) {
-                Logger::log(ELL_INFO, "Engine::init>>start website=%s,path=%s",
-                    mConfig.mWebsite[i].mLocal.getStr(), mConfig.mWebsite[i].mRootPath.c_str());
+                Logger::log(ELL_INFO, "Engine::init>>start website=%s,path=%s", mConfig.mWebsite[i].mLocal.getStr(),
+                    mConfig.mWebsite[i].mRootPath.c_str());
             } else {
-                Logger::log(ELL_ERROR, "Engine::init>>fail website=%s,path=%s",
-                    mConfig.mWebsite[i].mLocal.getStr(), mConfig.mWebsite[i].mRootPath.c_str());
-                //delete website & nd;
+                Logger::log(ELL_ERROR, "Engine::init>>fail website=%s,path=%s", mConfig.mWebsite[i].mLocal.getStr(),
+                    mConfig.mWebsite[i].mRootPath.c_str());
+                // delete website & nd;
                 nd->drop();
             }
             break;
@@ -451,7 +451,7 @@ void Engine::initTask() {
         }
     }
 
-    //mConfig.mWebsite.clear();
+    // mConfig.mWebsite.clear();
 }
 
-} //namespace app
+} // namespace app
