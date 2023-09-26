@@ -320,6 +320,9 @@
     <ClCompile Include="..\..\Source\Net\KCProtocal.cpp">
       <Filter>Source\Net</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\RingBlocks.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -630,6 +633,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\KCProtocal.h">
       <Filter>Include\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RingBlocks.h">
+      <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

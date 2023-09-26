@@ -8,15 +8,15 @@
 #include "Converter.h"
 
 
-#ifdef   DOS_WINDOWS
-#ifdef   DDEBUG
+#ifdef DOS_WINDOWS
+#ifdef DDEBUG
 #pragma comment(linker, "/subsystem:console /entry:mainCRTStartup")
-//#pragma comment(linker, "/subsystem:console /entry:mainWCRTStartup")
+// #pragma comment(linker, "/subsystem:console /entry:mainWCRTStartup")
 #else
 #pragma comment(linker, "/subsystem:console /entry:mainCRTStartup")
-//#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
-//#pragma comment(linker, "/subsystem:windows /entry:mainWCRTStartup")
-#endif  //release version
+// #pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+// #pragma comment(linker, "/subsystem:windows /entry:mainWCRTStartup")
+#endif // release version
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -45,8 +45,9 @@ s32 AppTestHttpsClient(s32 argc, s8** argv);
 s32 AppTestFile(s32 argc, s8** argv);
 #if defined(DUSE_ZLIB)
 s32 AppTestZlib(s32 argc, s8** argv);
+s32 AppTestRingBlocks(s32 argc, s8** argv);
 #endif
-} //namespace app
+} // namespace app
 
 
 
@@ -57,6 +58,7 @@ using namespace app;
 int main(int argc, char** argv) {
     printf("main>>start AntTest,argc=%d,argv[0]=%s\n", argc, argv[0]);
     if (argc < 2) {
+        printf("main>>cmds should >=2, input=%d\n", argc);
         return 0;
     }
     printf("main>>cmd=%s\n", argv[1]);
@@ -70,43 +72,44 @@ int main(int argc, char** argv) {
     s32 ret = 0;
     switch (cmd) {
     case 0:
-        //exe 0 0.0.0.0:9981 tls/tcp
+        // exe 0 0.0.0.0:9981 tls/tcp
         break;
     case 1:
-        //exe 1 0.0.0.0:9981 tls/tcp 10 5000
+        // exe 1 0.0.0.0:9981 tls/tcp 10 5000
         break;
     case 2:
-        //exe 2
+        // exe 2
         ret = 2 == argc ? AppTestDefault(argc, argv) : argc;
         break;
     case 3:
-        //exe 3
+        // exe 3
         ret = 2 == argc ? AppTestThreadPool(argc, argv) : argc;
         break;
     case 4:
-        //exe 4
+        // exe 4
         ret = 2 == argc ? AppTestRedis(argc, argv) : argc;
         break;
     case 5:
-        //exe 5
+        // exe 5
         ret = 2 == argc ? AppTestHttpsClient(argc, argv) : argc;
         break;
     case 6:
-        //exe 6 af.html 1
+        // exe 6 af.html 1
         ret = 4 == argc ? AppTestFile(argc, argv) : argc;
         break;
     case 7:
-        //exe 7 zip/unzip af.html out.gz
+        // exe 7 zip/unzip af.html out.gz
         ret = 5 == argc ? AppTestZlib(argc, argv) : argc;
         break;
     case 8:
-        //exe 8 127.0.0.1:5000 user passowrd
+        // exe 8 127.0.0.1:5000 user passowrd
         ret = 5 == argc ? AppTestDBClient(argc, argv) : argc;
         break;
     default:
         if (true) {
-            AppTestMemPool(argc, argv);
+            AppTestRingBlocks(argc, argv);
         } else {
+            AppTestMemPool(argc, argv);
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);
             AppTestThreadPool(argc, argv);

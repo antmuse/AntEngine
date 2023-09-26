@@ -63,6 +63,9 @@
     <ClCompile Include="..\..\Source\Test\TestDataBase.cpp">
       <Filter>源文件\Test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Test\TestRingBlocks.cpp">
+      <Filter>源文件\Test</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\Test\AppTicker.h">

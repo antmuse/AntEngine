@@ -84,6 +84,7 @@
     <ClCompile Include="..\..\Source\Net\Socket.cpp" />
     <ClCompile Include="..\..\Source\Net\TcpProxy.cpp" />
     <ClCompile Include="..\..\Source\Packet.cpp" />
+    <ClCompile Include="..\..\Source\RingBlocks.cpp" />
     <ClCompile Include="..\..\Source\RingBuffer.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFileHandle.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFunc.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="..\..\Include\Packet.h" />
     <ClInclude Include="..\..\Include\Queue.h" />
     <ClInclude Include="..\..\Include\RefCount.h" />
+    <ClInclude Include="..\..\Include\RingBlocks.h" />
     <ClInclude Include="..\..\Include\RingBuffer.h" />
     <ClInclude Include="..\..\Include\Script\LuaRegClass.h" />
     <ClInclude Include="..\..\Include\Script\LuaFunc.h" />

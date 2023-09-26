@@ -31,6 +31,7 @@
     <ClCompile Include="..\..\Source\Test\TestGbkUtf8.cpp" />
     <ClCompile Include="..\..\Source\Test\TestHttpsClient.cpp" />
     <ClCompile Include="..\..\Source\Test\TestRedis.cpp" />
+    <ClCompile Include="..\..\Source\Test\TestRingBlocks.cpp" />
     <ClCompile Include="..\..\Source\Test\TestThreadPool.cpp" />
     <ClCompile Include="..\..\Source\Test\TlsConnector.cpp" />
     <ClCompile Include="..\..\Source\Test\Tree2.cpp" />

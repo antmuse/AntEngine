@@ -137,7 +137,7 @@ private:
     u32 mSN;
     net::HandleUDP mUDP;
     MemPool* mMemPool;
-    TMap<NetAddress::ID, TMap<u32, LinkerUDP2*>*> mClients;
+    TMap<u32, LinkerUDP2*> mClients;
     BinaryHeap mTimeHub;    //最小堆用于管理超时事件
 };
 

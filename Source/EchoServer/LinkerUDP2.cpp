@@ -200,20 +200,14 @@ s32 NetServerUDP2::open(const String& addr) {
 
 void NetServerUDP2::closeNode(LinkerUDP2* nd) {
     if (nd) {
-        TMap<NetAddress::ID, TMap<u32, LinkerUDP2*>*>::Node* val = mClients.find(nd->getRemote().toID());
         u32 id = nd->getID();
-        TMap<u32, LinkerUDP2*>::Node* sid = val ? val->getValue()->find(id) : nullptr;
+        TMap<u32, LinkerUDP2*>::Node* sid = mClients.find(id);
         if (sid) {
-            usz cnt = val->getValue()->size();
-            Logger::log(ELL_INFO, "NetServerUDP2::closeNode>>close id=%u, remote=%s, cnt=%lu/%lu = %lu", id,
-                nd->getRemote().getStr(), cnt, mClients.size(), mTimeHub.getSize());
+            Logger::log(ELL_INFO, "NetServerUDP2::closeNode>>close id=%u, remote=%s, cnt=%lu/%lu", id,
+                nd->getRemote().getStr(), mClients.size(), mTimeHub.getSize());
             mTimeHub.remove(&sid->getValue()->getTimeNode());
             s32 dret = sid->getValue()->drop();
-            val->getValue()->remove(sid);
-            if (val->getValue()->empty()) {
-                delete val->getValue();
-                mClients.remove(val);
-            }
+            mClients.remove(sid);
         } else {
             Logger::log(
                 ELL_ERROR, "NetServerUDP2::closeNode>>not close id=%u, remote=%s", id, nd->getRemote().getStr());
@@ -227,36 +221,24 @@ void NetServerUDP2::onRead(RequestUDP* it) {
     if (it->mUsed >= 24) { // 24=IKCP_OVERHEAD
         u32 id = KCProtocal::getConv(it->getBuf());
         it->mRemote.reverse();
-        NetAddress::ID cid = it->mRemote.toID();
-        TMap<NetAddress::ID, TMap<u32, LinkerUDP2*>*>::Node* nds = mClients.find(cid);
-        TMap<u32, LinkerUDP2*>* amap = nds ? nds->getValue() : nullptr;
+        TMap<u32, LinkerUDP2*>::Node* nd = mClients.find(id);
         bool create1 = false;
-        if (amap) {
-            TMap<u32, LinkerUDP2*>::Node* nd = amap->find(id);
-            if (nd) {
-                nd->getValue()->onRead(it);
-            } else {
-                create1 = true;
-            }
+        if (nd) {
+            nd->getValue()->onRead(it);
         } else {
-            amap = new TMap<u32, LinkerUDP2*>();
-            mClients.insert(cid, amap);
             create1 = true;
         }
         if (create1) { // TODO: use password for new client
             net::LinkerUDP2* con = new net::LinkerUDP2();
             if (EE_OK == con->onLink(id, this, it)) {
-                amap->insert(id, con);
+                mClients.insert(id, con);
                 mTimeHub.insert(&con->getTimeNode());
                 con->onRead(it);
-                Logger::log(ELL_INFO, "NetServerUDP2::onRead>>new id=%u, remote=%s, cnt=%lu/%lu = %lu", id,
-                    it->mRemote.getStr(), amap->size(), mClients.size(), mTimeHub.getSize());
+                Logger::log(ELL_INFO, "NetServerUDP2::onRead>>new id=%u, remote=%s, cnt=%lu/%lu", id,
+                    it->mRemote.getStr(), mClients.size(), mTimeHub.getSize());
             } else {
                 con->drop();
-                if (amap->empty()) {
-                    delete amap;
-                    mClients.remove(cid);
-                }
+                mClients.remove(id);
                 Logger::log(ELL_ERROR, "NetServerUDP2::onRead>>fail new id=%u, remote=%s, cnt=x/%lu = %lu", id,
                     it->mRemote.getStr(), mClients.size(), mTimeHub.getSize());
             }
@@ -302,14 +284,9 @@ s32 NetServerUDP2::onTimeout(HandleTime& it) {
 void NetServerUDP2::onClose(Handle* it) {
     DASSERT(&mUDP == it && "NetServerUDP2::onClose handle");
     Logger::log(ELL_INFO, "NetServerUDP2::onClose>>grab cnt=%d", it->getGrabCount());
-    TMap<u32, LinkerUDP2*>* clis = nullptr;
-    for (TMap<NetAddress::ID, TMap<u32, LinkerUDP2*>*>::Iterator i = mClients.getIterator(); !i.atEnd(); i++) {
-        clis = (*i).getValue();
-        for (TMap<u32, LinkerUDP2*>::Iterator j = clis->getIterator(); !j.atEnd(); j++) {
-            s32 cnt = (*j).getValue()->drop();
-            DASSERT(0 == cnt);
-        }
-        delete clis; // clis->clear();
+    for (TMap<u32, LinkerUDP2*>::Iterator i = mClients.getIterator(); !i.atEnd(); i++) {
+        s32 cnt = (*i).getValue()->drop();
+        DASSERT(0 == cnt);
     }
     mClients.clear();
     drop();
