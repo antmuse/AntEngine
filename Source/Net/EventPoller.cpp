@@ -186,13 +186,18 @@ bool EventPoller::open() {
         return false;
     }
 
-    mEpollFD = ::epoll_create(0x7ffffff);
-    return 0 != mEpollFD;
+    // mEpollFD = ::epoll_create(0x7ffffff);
+    mEpollFD = ::epoll_create1(EPOLL_CLOEXEC); // O_CLOEXEC
+    if (-1 == mEpollFD) {
+        return false;
+    }
+    return mIOUR.open(mEpollFD, 256, IORING_SETUP_SQPOLL);
 }
 
 void EventPoller::close() {
-    if (mEpollFD >= 0) {
+    if (-1 != mEpollFD) {
         ::close(mEpollFD);
+        mIOUR.close();
         mEpollFD = -1;
     }
 }

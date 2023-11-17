@@ -130,22 +130,26 @@ bool Loop::run() {
                 eflag |= (EPOLLIN | EPOLLOUT);
             }
             if (mEvents[i].mData.mPointer) {
-                net::HandleTCP& han = *(net::HandleTCP*)(mEvents[i].mData.mPointer);
-                RequestFD* req;
-                if (EPOLLIN & eflag) {
-                    req = han.popReadReq();
-                    if (req) {
-                        addPending(req);
-                    } else {
-                        han.mFlag |= EHF_SYNC_READ;
+                if (&mPoller.getIOURing() == mEvents[i].mData.mPointer) {
+                    mPoller.getIOURing().updatePending();
+                } else {
+                    Handle& han = *(Handle*)(mEvents[i].mData.mPointer);
+                    RequestFD* req;
+                    if (EPOLLIN & eflag) {
+                        req = han.popReadReq();
+                        if (req) {
+                            addPending(req);
+                        } else {
+                            han.mFlag |= EHF_SYNC_READ;
+                        }
                     }
-                }
-                if (EPOLLOUT & eflag) {
-                    req = han.popWriteReq();
-                    if (req) {
-                        addPending(req);
-                    } else {
-                        han.mFlag |= EHF_SYNC_WRITE;
+                    if (EPOLLOUT & eflag) {
+                        req = han.popWriteReq();
+                        if (req) {
+                            addPending(req);
+                        } else {
+                            han.mFlag |= EHF_SYNC_WRITE;
+                        }
                     }
                 }
             } else {
@@ -677,7 +681,7 @@ s32 Loop::openHandle(Handle* it) {
             sock.close();
         } else {
             EventPoller::SEvent evt;
-            evt.mEvent = EPOLLIN | EPOLLET | EPOLLERR | EPOLLHUP;
+            evt.mEvent = EPOLLIN | EPOLLET | EPOLLERR | EPOLLHUP | EPOLLEXCLUSIVE;
             evt.mData.mPointer = nd;
             if (mPoller.add(sock, evt)) {
                 nd->mFlag |= EHF_READABLE;
@@ -846,5 +850,16 @@ void Loop::onTask(void* it) {
     }
 }
 
+
+s32 Loop::postRequest(RequestFD* it) {
+    DASSERT(it && it->mHandle);
+    switch (it->mHandle->getType()) {
+    case EHT_FILE:
+        return mPoller.getIOURing().postReq(it);
+    default:
+        break;
+    }
+    return EE_ERROR;
+}
 
 } //namespace app

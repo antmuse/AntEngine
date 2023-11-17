@@ -40,8 +40,8 @@ BIN = libAntEngine.a
 
 BIN := $(addprefix $(BUILD_DIR)/Lib/,$(BIN))
 
-OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/all
-DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/all
+OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/$(BUILD_TYPE)/AntEngine
+DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/AntEngine
 
 
 OBJS := $(addprefix $(OBJ_DIR)/,$(OBJS))
@@ -54,14 +54,14 @@ all:TEMP_DIR $(DEPS) $(OBJS) $(BIN)
 
 
 ifneq ("$(wildcard $(DEPS))","")
-	-include $(DEPS)  
+	-@include $(DEPS)  
 endif
 
 
 $(BIN):$(OBJS)
 	@echo "------------------------build $(BIN)"
 	@echo "------------------------build $(BUILD_TYPE) mode"
-	ar rcs $(BIN) $^
+	@ar rcs $(BIN) $^
 
 
 $(OBJ_DIR)/%.o:%.cpp

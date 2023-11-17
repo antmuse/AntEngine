@@ -42,8 +42,8 @@ class RequestFD;
 typedef void (*FunCloseCallback)(Handle*);
 
 /**
- * @note ´Ëº¯Êı±»µ÷ÓÃÊ±£¬´ËÊ±¼ä¾ä±ú»¹Ã»ÓĞ´ÓÊ±¼ä¹ÜÀíÆ÷ÖĞÒÆ³ö
- *       ÔÚ´Ë»Øµ÷ÖĞLoop::closeHandle(HandleTime)ºó, ²»¿É·µ»Ø0;
+ * @note æ­¤å‡½æ•°è¢«è°ƒç”¨æ—¶ï¼Œæ­¤æ—¶é—´å¥æŸ„è¿˜æ²¡æœ‰ä»æ—¶é—´ç®¡ç†å™¨ä¸­ç§»å‡º
+ *       åœ¨æ­¤å›è°ƒä¸­Loop::closeHandle(HandleTime)å, ä¸å¯è¿”å›0;
  * @return 0 if go on, else close and remove this HandleTime from time manager.
  */
 typedef s32(*FunTimeCallback)(HandleTime*);
@@ -147,6 +147,10 @@ public:
 
     s32 launchClose();
 
+    s32 getType() const {
+        return mType;
+    }
+
 protected:
 
 #if defined(DOS_ANDROID) || defined(DOS_LINUX)
@@ -189,11 +193,11 @@ public:
     ~HandleTime() { }
 
     /**
-    * @brief Ê±¼äµ¥Î»ºÁÃë
-    * @param fn Ê±¼ä»Øµ÷º¯Êı
-    * @param firstTimeGap Ê×´Î³¬Ê±Ê±¼ä(Ïà¶Ôµ±Ç°Ê±¼ä)
-    * @param gap Ê±¼ä¼ä¸ô
-    * @param repeat ´óÓÚ0ÎªÖØ¸´´ÎÊı£¬µÈÓÚ0ÔòÖ»Ò»´Î£¬Ğ¡ÓÚ0ÔòÓÀÔ¶ÖØ¸´
+    * @brief æ—¶é—´å•ä½æ¯«ç§’
+    * @param fn æ—¶é—´å›è°ƒå‡½æ•°
+    * @param firstTimeGap é¦–æ¬¡è¶…æ—¶æ—¶é—´(ç›¸å¯¹å½“å‰æ—¶é—´)
+    * @param gap æ—¶é—´é—´éš”
+    * @param repeat å¤§äº0ä¸ºé‡å¤æ¬¡æ•°ï¼Œç­‰äº0åˆ™åªä¸€æ¬¡ï¼Œå°äº0åˆ™æ°¸è¿œé‡å¤
     */
     void setTime(FunTimeCallback fn, s64 firstTimeGap, s64 gap, s32 repeat) {
         mTimeout = firstTimeGap;
@@ -247,7 +251,7 @@ public:
 protected:
     friend class Loop;
 
-    s32 mRepeat; // <0ÎªÓÀÑ­»·, >0ÎªÑ­»·´ÎÊı, 0Îª´¥·¢Ò»´Î
+    s32 mRepeat;  // <0ä¸ºæ°¸å¾ªç¯, >0ä¸ºå¾ªç¯æ¬¡æ•°, 0ä¸ºè§¦å‘ä¸€æ¬¡
     Node3 mLink;
     s64 mTimeout;
     s64 mTimeGap;

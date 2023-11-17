@@ -92,8 +92,10 @@ protected:
     String mFilename;
 
 #if defined(DOS_LINUX) || defined(DOS_ANDROID)
+#if !defined(DUSE_IO_URING)
     void stepByPool(RequestFD* it);
     void stepByLoop(RequestFD* it);
+#endif
 #endif
 };
 

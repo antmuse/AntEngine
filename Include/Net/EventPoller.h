@@ -105,6 +105,8 @@ protected:
 
 #elif defined(DOS_LINUX) || defined(DOS_ANDROID)
 
+#include "Linux/IOURing.h"
+
 namespace app {
 
 class EventPoller {
@@ -161,9 +163,13 @@ public:
 
     bool postEvent(SEvent& iEvent);
 
+    IOURing& getIOURing() {
+        return mIOUR;
+    }
 
 protected:
     s32 mEpollFD;
+    IOURing mIOUR;
 };
 
 } //namespace app

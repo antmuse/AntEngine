@@ -91,6 +91,7 @@ public:
     s32 mType;      //ERequestType
     s32 mError;     //0=success,else failed code
     u32 mStepSize;
+    u64 mOffset;
     FuncReqCallback mCall;
     s8* mData;
     u32 mAllocated;

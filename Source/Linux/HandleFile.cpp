@@ -35,43 +35,10 @@
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 namespace app {
-
-static int io_setup(u32 nr_reqs, u32* ctx) {
-    return syscall(SYS_io_setup, nr_reqs, ctx);
-}
-
-static int io_destroy(u32 ctx) {
-    return syscall(SYS_io_destroy, ctx);
-}
-
-static int io_getevents(u32 ctx, long min_nr, long nr, struct io_event* events, struct timespec* tmo) {
-    return syscall(SYS_io_getevents, ctx, min_nr, nr, events, tmo);
-}
-
-class HandleAIO {
-public:
-    HandleAIO() : mEventFD(-1) {
-    }
-    void init() {
-        mEventFD = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-        // SYS_gettid
-        // if (posix_memalign(&buf, ALIGN_SIZE, RD_WR_SIZE)) {
-        //     perror("posix_memalign");
-        //     return 5;
-        // }
-        // const usz aaa = sizeof(struct iocb);
-    }
-
-private:
-    u32 mContext;
-    s32 mEventFD;
-};
-
 
 static usz AppGetFileSize(s32 fd) {
     usz filesize = 0;
@@ -147,22 +114,26 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
     req->mError = 0;
     req->mType = ERT_WRITE;
-    req->mHandle = (Handle*)(offset); //@note use mHandle to pass offset here
+    req->mHandle = this;
+    req->mOffset = offset;
 
-    // TODO>>using thread pool for file currently, wait for improve. io_uring?
+#if defined(DUSE_IO_URING)
+    return mLoop->postRequest(req);
+#else
+    // using thread pool for file operation
     mLoop->bindFly(this);
     if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::stepByPool, this, req)) {
-        req->mHandle = this; //@note reset mHandle
         mLoop->unbindFly(this);
         return EE_ERROR;
     }
     return EE_OK;
+#endif
 }
 
 
 s32 HandleFile::read(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
-    if (req->mUsed + sizeof(offset) > req->mAllocated) {
+    if (req->mUsed >= req->mAllocated) {
         return EE_ERROR;
     }
     if (0 == (EHF_READABLE & mFlag)) {
@@ -170,25 +141,28 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
     }
     req->mError = 0;
     req->mType = ERT_READ;
-    req->mHandle = (Handle*)(offset); //@note use mHandle to pass offset here
+    req->mHandle = this;
+    req->mOffset = offset;
 
-    // TODO>>using thread pool for file currently, wait for improve. io_uring?
+#if defined(DUSE_IO_URING)
+    return mLoop->postRequest(req);
+#else
+    // using thread pool for file operation
     mLoop->bindFly(this);
     if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::stepByPool, this, req)) {
-        req->mHandle = this; //@note reset mHandle
         mLoop->unbindFly(this);
         return EE_ERROR;
     }
     return EE_OK;
+#endif
 }
 
 
-#if defined(DOS_LINUX) || defined(DOS_ANDROID)
+#if !defined(DUSE_IO_URING)
 
 // called by thread pool
 void HandleFile::stepByPool(RequestFD* it) {
-    ssz offset = (ssz)(it->mHandle);
-    it->mHandle = this; //@note reset mHandle
+    ssz offset = (ssz)(it->mOffset);
     ssz ret = -1;
     if (ERT_READ == it->mType) {
         ret = pread64(mFile, it->mData + it->mUsed, it->mAllocated - it->mUsed, offset);

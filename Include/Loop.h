@@ -141,6 +141,10 @@ public:
     void bindFly(Handle* it);
     void unbindFly(Handle* it);
 
+#if defined(DOS_LINUX) || defined(DOS_ANDROID)
+    s32 postRequest(RequestFD* it);
+#endif
+
 protected:
     void updatePending();
     u32 updateTimeHub();

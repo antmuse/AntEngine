@@ -6,6 +6,32 @@
     "ShareMemSize": 1, //[1-10 * 1024], 1MB
     "AcceptPost": 10, //[1-255]监听端口上侯命的请求数
     "ThreadPool": 3, //[1-255]
-    "Process": 3     //进程数
+    "Process": 0,     //进程数
+
+    "Website": [
+        {
+            "Lisen": "0.0.0.0:8000",
+            "Type": 0, //0=http,1=https
+            "Timeout": 30, //秒,0不超时
+            "Path": "/home/antmuse/all/code/my/AntEngine/Bin/Web/"
+        },
+        {
+            "Lisen": "0.0.0.0:8443",
+            "Type": 1, //0=http,1=https
+            "Timeout": 30, //秒,0不超时
+            "Path": "/home/antmuse/all/code/my/AntEngine/Bin/Web/",
+            "PathTLS": "/home/antmuse/all/code/my/AntEngine/Bin/Web/TLS"
+        }
+    ],
+
+    "Proxy": [
+        {
+            "Type": 0, //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
+            "MaxSpeed": 10240, //每个连接，字节每秒
+            "Timeout": 30, //秒,0不超时
+            "Lisen": "0.0.0.0:9900",
+            "Backend": "192.168.1.102:9901"
+        }
+    ]
 }
 

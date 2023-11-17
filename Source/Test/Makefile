@@ -31,8 +31,8 @@ DEPS = $(SRCS:.cpp=.d)
 LIBS = -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -llua -lssl -lcrypto -lz -lpthread -ldl
 BIN := $(addprefix $(BUILD_DIR)/Bin/,$(BIN))
 
-OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/test
-DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/test
+OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/$(BUILD_TYPE)/Test
+DEP_DIR = $(BUILD_DIR)/Bin/Temp/deps/Test
 
 
 OBJS := $(addprefix $(OBJ_DIR)/,$(OBJS))
@@ -43,7 +43,7 @@ all:TEMP_DIR $(DEPS) $(OBJS) $(BIN)
 	@echo "------------------------bin=$(BIN)"
 
 ifneq ("$(wildcard $(DEPS))","")
-	-include $(DEPS)
+	-@include $(DEPS)
 endif
 
 $(BIN):$(OBJS)
