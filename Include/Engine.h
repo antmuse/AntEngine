@@ -39,6 +39,16 @@
 
 namespace app {
 
+enum ProcessStatus {
+    EPS_INIT = 0,
+    EPS_RUNNING = 1,
+    EPS_EXITING = 2,
+    EPS_EXITED = 4,
+    EPS_RESPAWN = 8,
+
+    EPS_LAST
+};
+
 enum ECommandType {
     ECT_RESP_BIT = 0x8000,
 
@@ -49,7 +59,8 @@ enum ECommandType {
     ECT_ACTIVE_RESP = ECT_RESP_BIT | ECT_ACTIVE,
 
     ECT_TASK = 3,
-    
+    ECT_RESPAWN = 4,
+
     ECT_VERSION = 0xF001
 };
 
@@ -223,12 +234,15 @@ private:
     ThreadPool mThreadPool;
     s32 mPPID;
     s32 mPID;
+    std::atomic<s32> mProcResponCount;
+    s32 mProcStatus;
     bool mMain;
     EngineConfig mConfig;
     net::TlsContext mTlsENG;
     TVector<Process> mChild;
 
     bool createProcess();
+    bool createProcess(usz idx);
     bool runMainProcess();
     bool runChildProcess(net::Socket& readSock, net::Socket& writeSock);
 

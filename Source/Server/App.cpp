@@ -55,11 +55,10 @@ int main(int argc, char** argv) {
         }
         break;
     }
-    //DLOGG(ELL_ERROR, "my pid=%d, start...", eng.getPID());
     AppTicker tick;
     tick.start();
     eng.run();
-    Logger::log(ELL_INFO, "main>>pid=%d, exit...",eng.getPID());
+    DLOG(ELL_INFO, "main>>pid=%d, main=%s, exit...", eng.getPID(), eng.isMainProcess() ? "Yes" : "No");
     eng.uninit();
     printf("main>>stop\n");
 

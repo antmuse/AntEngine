@@ -166,7 +166,7 @@ bool Loop::run() {
     }
     updatePending();
     updateClosed();
-    return mGrabCount > 0;
+    return mGrabCount > 0 || mPoller.getIOURing().getSize();
 }
 
 
@@ -853,6 +853,9 @@ void Loop::onTask(void* it) {
 
 s32 Loop::postRequest(RequestFD* it) {
     DASSERT(it && it->mHandle);
+    if (!it || isStop()) {
+        return EE_ERROR;
+    }
     switch (it->mHandle->getType()) {
     case EHT_FILE:
         return mPoller.getIOURing().postReq(it);

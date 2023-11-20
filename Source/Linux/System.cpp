@@ -113,10 +113,12 @@ static void System_getStatus() {
         process = "unknown process";
 
         TVector<Process>& procs = Engine::getInstance().getChilds();
-        for (usz i = 0; i < procs.size(); i++) {
+        usz i = 0;
+        for (; i < procs.size(); i++) {
             if (procs[i].mID == pid) {
-                procs[i].mStatus = status;
+                procs[i].mStatus = EPS_RESPAWN;
                 procs[i].mAlive = false;
+                procs[i].mSocket.close();
                 process = "mychild";
                 break;
             }
@@ -134,10 +136,13 @@ static void System_getStatus() {
         }
 
         if (WEXITSTATUS(status) == 2) {
-            Logger::log(ELL_INFO, "%s %d exited with fatal code %d and cannot be respawned",
-                process, pid, WEXITSTATUS(status));
+            if (i < procs.size()) {
+                procs[i].mStatus = EPS_EXITED;
+            }
+            Logger::log(
+                ELL_INFO, "%s %d exited with fatal code %d and cannot be respawned", process, pid, WEXITSTATUS(status));
         } else {
-            //respawn
+            Engine::getInstance().postCommand(ECT_RESPAWN);
         }
     }
 }

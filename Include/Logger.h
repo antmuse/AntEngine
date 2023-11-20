@@ -33,17 +33,16 @@
 
 #if defined(DOS_WINDOWS)
 #define DBFILE(N) (strrchr(N,'\\')?strrchr(N,'\\')+1:N)
-#define DLOG(LV, FMT, ...)  Logger::log(LV, "%s:%d " FMT, DBFILE(__FILE__),__LINE__,__VA_ARGS__)
+#define DLOG(LV, FMT, ...) Logger::log(LV, "%s:%d " FMT, DBFILE(__FILE__), __LINE__, ##__VA_ARGS__)
 #else
-#define DLOG(LV, FMT, ...)  Logger::log(LV, "%s:%d " FMT, __BASE_FILE__,__LINE__,__VA_ARGS__)
+#define DLOG(LV, FMT, ...) Logger::log(LV, __BASE_FILE__ ":%d, " FMT, __LINE__, ##__VA_ARGS__)
 #endif
 
 #if defined(DDEBUG)
-#define DDLOG(LV, FMT, ...)  Logger::log(LV, FMT, __VA_ARGS__)
+#define DDLOG(LV, FMT, ...) Logger::log(LV, FMT, ##__VA_ARGS__)
 #else
 #define DDLOG(LV, FMT, ...)
 #endif
-
 
 
 
@@ -52,17 +51,17 @@ namespace app {
 //error code of app
 enum EErrorCode {
     EE_OK = 0,
-    EE_NO_OPEN = -1,         //δ��FD
-    EE_NO_READABLE = -2,     //FD���ɶ�
-    EE_NO_WRITEABLE = -3,    //FD����д
-    EE_CLOSING = -4,         //FD�ѹر�
-    EE_INVALID_HANDLE = -5,  //FD��Ч
-    EE_INVALID_PARAM = -6,   //������Ч
+    EE_NO_OPEN = -1,         //未打开FD
+    EE_NO_READABLE = -2,     //FD不可读
+    EE_NO_WRITEABLE = -3,    //FD不可写
+    EE_CLOSING = -4,         //FD已关闭
+    EE_INVALID_HANDLE = -5,  //FD无效
+    EE_INVALID_PARAM = -6,   //参数无效
     EE_RETRY = -7,
     EE_TIMEOUT = -8,
-    EE_INTR = -10,           //�ж�
-    EE_POSTED = -11,         //�����첽����ɹ�
-    EE_TOO_MANY_FD = -24,    //�򿪹�����, ulimit -n
+    EE_INTR = -10,           //中断
+    EE_POSTED = -11,         //发起异步请求成功
+    EE_TOO_MANY_FD = -24,    //打开过多句柄, ulimit -n
     EE_ERROR = -1
 };
 

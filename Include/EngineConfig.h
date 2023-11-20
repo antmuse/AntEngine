@@ -44,6 +44,8 @@ public:
 
     bool save(const String& cfg);
 
+    bool mDaemon;
+    u8 mPrint;
     u8 mMaxPostAccept;
     u8 mMaxThread;
     s16 mMaxProcess;
@@ -58,7 +60,7 @@ public:
         String mRootPath;
         String mPathTLS;
         net::NetAddress mLocal;
-        HashDict* mDict;         //Õ¾µã»º´æ
+        HashDict* mDict;         //cache of site
         WebsiteCfg() :
             mType(0),
             mTimeout(20*1000),

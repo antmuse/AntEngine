@@ -1,4 +1,5 @@
 {
+    "Daemon": false,
     "Print": 1, //0=disable print, 1=main process print, 2=all process print
     "LogPath": "D:/Code/My/AntEngine/Bin/Log/",
     "PidFile": "D:/Code/My/AntEngine/Bin/Log/pid.txt",

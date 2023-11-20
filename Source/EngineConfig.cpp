@@ -65,6 +65,8 @@ static DictFunctions gDictCalls = {
 
 
 EngineConfig::EngineConfig() :
+    mDaemon(false),
+    mPrint(0),
     mMaxPostAccept(10),
     mMaxThread(3),
     mMaxProcess(0),
@@ -91,6 +93,8 @@ bool EngineConfig::save(const String& cfg) {
     }
 
     Json::Value val;
+    val["Daemon"] = mDaemon;
+    val["Print"] = mPrint;
     val["LogPath"] = mLogPath.c_str();
     val["PidFile"] = mPidFile.c_str();
     val["ShareMem"] = mMemName.c_str();
@@ -135,10 +139,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     delete[] tmp;
     delete reder;
     if (ret) {
-        s32 print = val["Print"].asInt();
-        if ((mainProcess && 1 == print) || 2 == print) {
-            Logger::addPrintReceiver();
-        }
+        mDaemon = val["Daemon"].asBool();
+        mPrint = val["Print"].asInt();
         mLogPath = val["LogPath"].asCString();
         mLogPath.replace('\\', '/');
         if ('/' != mLogPath.lastChar()) {

@@ -126,7 +126,8 @@ int main(int argc, char** argv) {
 
     Engine::getInstance().postCommand(ECT_EXIT);
     eng.run();
-
+    DLOG(ELL_INFO, "Test=%s", "val");
+    DLOG(ELL_INFO, "Test exit");
     Logger::log(ELL_INFO, "main>>exit...");
     Logger::flush();
     eng.uninit();

@@ -45,6 +45,8 @@ Engine::Engine() :
     mPPID(0),
     mPID(0),
     mChild(32),
+    mProcStatus(EPS_INIT),
+    mProcResponCount(0),
     mMain(true) {
 }
 
@@ -70,31 +72,34 @@ void Engine::postCommand(s32 val) {
         cmd.finish(ECT_ACTIVE, ++cmd.gSharedSN, ECT_VERSION);
         break;
     }
+    case ECT_RESPAWN:
+    {
+        if (mMain && mConfig.mMaxProcess > 0) {
+            ++mProcResponCount;
+        }
+        return;
+    }
     default:
         Logger::log(ELL_INFO, "Engine::postCommand>>invalid cmd = %d", val);
         return;
     }
-
-    for (usz i = 0; i < mChild.size(); ++i) {
-        /** TODO: keep send is thread/process safe
-         *  @see Loop::postTask
-         */
-
-        if (sizeof(cmd) != mChild[i].mSocket.sendAll(&cmd, sizeof(cmd))) { //block send
-            Logger::log(ELL_INFO, "Engine::postCommand>>fail post cmd = %d, pid=%d", val, mChild[i].mID);
-        }
-    }
-
-    if (ECT_EXIT == val) {
+    if (mMain) {
         for (usz i = 0; i < mChild.size(); ++i) {
-            if (mChild[i].mHandle) {
-                System::waitProcess(mChild[i].mHandle);
-                mChild[i].mHandle = nullptr;
-                Logger::log(ELL_INFO, "Engine::postCommand>>process[%d] exit, pid=%d",
-                    i, mChild[i].mID);
+            /** TODO: keep send is thread/process safe
+             *  @see Loop::postTask
+             */
+
+            if (sizeof(cmd) != mChild[i].mSocket.sendAll(&cmd, sizeof(cmd))) { // block send
+                Logger::log(ELL_INFO, "Engine::postCommand>>fail post cmd = %d, pid=%d", val, mChild[i].mID);
             }
         }
-        mLoop.postTask(cmd);
+    }
+    if (ECT_EXIT == val) {
+        mProcStatus = EPS_EXITING;
+        if (!mMain || (mMain && 0 == mConfig.mMaxProcess)) {
+            Logger::log(ELL_INFO, "Engine::postCommand>> %s process exit...", mMain ? "main" : "child");
+            mLoop.postTask(cmd);
+        }
     }
 }
 
@@ -125,25 +130,29 @@ bool Engine::init(const s8* fname, bool child) {
         return false;
     }
     printf("fnm = %s\n", fname);
-    mPID = System::getPID();
-    Logger::getInstance().setPID(mPID);
-
     mMain = !child;
     AppStrConverterInit();
     initPath(fname);
-
     if (!mConfig.load(mAppPath, G_CFGFILE, mMain)) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
     }
-
+    if (mConfig.mDaemon) {
+        if (EE_OK != System::daemon()) {
+            return false;
+        }
+    }
+    mPID = System::getPID();
+    Logger::getInstance().setPID(mPID);
     MsgHeader::gSharedSN = 0;
     Timer::getTimeZone();
     System::getCoreCount();
     System::getPageSize();
     System::getDiskSectorSize();
-
     System::createPath(mConfig.mLogPath);
+    if ((mMain && 1 == mConfig.mPrint) || 2 == mConfig.mPrint) {
+        Logger::addPrintReceiver();
+    }
     Logger::addFileReceiver();
 
     script::ScriptManager::getInstance();
@@ -250,27 +259,67 @@ bool Engine::uninit() {
 }
 
 void Engine::run() {
+    if (mMain && mConfig.mMaxProcess > 0) {
+        static std::chrono::milliseconds gap(100);
+        while (EPS_RUNNING == mProcStatus) {
+            if (mProcResponCount > 0) {
+                --mProcResponCount;
+                for (usz i = 0; i < mChild.size(); i++) {
+                    if (!mChild[i].mAlive && EPS_RESPAWN == mChild[i].mStatus) {
+                        if (createProcess(i)) {
+                            if (!mMain) {  //fork on linux
+                                mProcResponCount = 0;
+                                goto GT_PROC_CHILD;
+                            }
+                            Logger::log(
+                                ELL_INFO, "Engine::run>> success respawn process[%lu] , pid=%d", i, mChild[i].mID);
+                        }
+                    }
+                }
+            } else {
+                std::this_thread::sleep_for(gap); // TODO: wait...
+            }
+        }
+        std::this_thread::sleep_for(gap);
+        for (usz i = 0; i < mChild.size(); ++i) {
+            if (mChild[i].mHandle) {
+                System::waitProcess(mChild[i].mHandle);
+                mChild[i].mHandle = nullptr;
+                Logger::log(ELL_INFO, "Engine::run>> process[%d] exit, pid=%d", i, mChild[i].mID);
+            }
+        }
+        return;
+    }
+
+GT_PROC_CHILD:
+    // if have no child processes, the main process is the only worker.
     while (mLoop.run()) {
     }
 }
 
 bool Engine::step() {
+    DASSERT(mMain && 0 == mConfig.mMaxProcess); // engine was used on client side.
     return mLoop.run();
 }
 
 bool Engine::runMainProcess() {
+    if (mConfig.mMaxProcess > 0) {
+        mProcStatus = EPS_RUNNING;
+        return true;
+    }
     String unpath = Engine::getInstance().getConfig().mLogPath;
     unpath += System::getPID();
     unpath += ".unpath";
 
     net::SocketPair pair;
     if (!pair.open(unpath.c_str())) {
-        Logger::log(ELL_ERROR, "Engine::runMainProcess>> fail");
+        Logger::log(ELL_ERROR, "Engine::runMainProcess>> fail to open SocketPair");
         return false;
     }
     mThreadPool.start(mConfig.mMaxThread);
     bool ret = mLoop.start(pair.getSocketB(), pair.getSocketA());
     if (ret) {
+        mProcStatus = EPS_RUNNING;
         initTask();
     } else {
         Logger::log(ELL_ERROR, "Engine::runMainProcess>> start loop fail");
@@ -283,6 +332,7 @@ bool Engine::runChildProcess(net::Socket& cmdsock, net::Socket& write) {
     mThreadPool.start(mConfig.mMaxThread);
     bool ret = mLoop.start(cmdsock, write);
     if (ret) {
+        mProcStatus = EPS_RUNNING;
         initTask();
     } else {
         Logger::log(ELL_ERROR, "Engine::runChildProcess>> start loop fail");
@@ -290,45 +340,69 @@ bool Engine::runChildProcess(net::Socket& cmdsock, net::Socket& write) {
     return ret;
 }
 
+
 bool Engine::createProcess() {
     bool ret = true;
+    mChild.resize(mConfig.mMaxProcess);
+    for (s16 i = 0; i < mConfig.mMaxProcess; ++i) {
+        mChild[i].mID = 0;
+        mChild[i].mAlive = false;
+        mChild[i].mHandle = nullptr;
+        mChild[i].mStatus = EPS_INIT;
+    }
+    for (s16 i = 0; mMain && i < mConfig.mMaxProcess; ++i) {
+        if (!createProcess(i)) {
+            ret = false;
+        }
+    }
+    return ret;
+}
+
+
+bool Engine::createProcess(usz idx) {
+    if (idx >= mChild.size()) {
+        return false;
+    }
+
     String unpath = Engine::getInstance().getConfig().mLogPath;
     unpath += System::getPID();
     unpath += ".unpath";
 
-    Process nd;
-    mChild.reallocate(mConfig.mMaxProcess);
+    Process& nd = mChild[idx];
     net::SocketPair pair;
-    for (s16 i = 0; i < mConfig.mMaxProcess; ++i) {
-        if (pair.open(unpath.c_str())) {
-            nd.mSocket = pair.getSocketA();
-            nd.mID = System::createProcess(pair.getSocketB().getValue(), nd.mHandle);
-            nd.mStatus = 1;
+    if (pair.open(unpath.c_str())) {
+        nd.mStatus = EPS_RUNNING;
+        nd.mAlive = true;
+        nd.mSocket = pair.getSocketA();
+        nd.mID = System::createProcess(pair.getSocketB().getValue(), nd.mHandle);
 #if defined(DOS_LINUX)
-            if (0 == nd.mID) {//child
-                // pair.getSocketA().close();
-                mPID = System::getPID();
-                Logger::getInstance().setPID(mPID);
-                runChildProcess(pair.getSocketB(), pair.getSocketA());
-                mMain = false;
-                return true;
-            } else {
-                pair.getSocketB().close();
-                if (nd.mID < 0) { //error
-                    pair.close();
-                    continue;
-                }
-            }
-#endif
-            mChild.pushBack(nd);
-            Logger::log(ELL_INFO, "Engine::createProcess>>pid = %d, cmdsock = %llu", nd.mID, nd.mSocket.getValue());
+        if (0 == nd.mID) { // child
+            mMain = false;
+            // pair.getSocketA().close();
+            mPID = System::getPID();
+            Logger::getInstance().setPID(mPID);
+            runChildProcess(pair.getSocketB(), pair.getSocketA());
+            return true;
         } else {
-            Logger::log(ELL_ERROR, "Engine::init>>start Process[%d] fail", (s32)i);
-            ret = false;
-            break;
+            if (nd.mID < 0) { // error
+                goto GT_PROC_FAIL;
+            }
+            pair.getSocketB().close();
         }
+#endif
+        Logger::log(
+            ELL_INFO, "Engine::createProcess>> success start pid = %d, ppid=%d", nd.mID, mPID);
+        return true;
     }
-    return ret;
+
+GT_PROC_FAIL:
+    Logger::log(ELL_ERROR, "Engine::createProcess>> fail to create Process[%u] fail", idx);
+    nd.mID = 0;
+    nd.mHandle = nullptr;
+    nd.mStatus = EPS_EXITED;
+    nd.mAlive = false;
+    pair.close();
+    return false;
 }
 
 

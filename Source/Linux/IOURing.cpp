@@ -49,8 +49,18 @@
 #define __NR_io_uring_register 427
 #endif
 
-
 namespace app {
+
+// Magic offsets for the application to mmap the data it needs
+const usz IORING_OFF_SQ_RING = 0;
+const usz IORING_OFF_CQ_RING = 0x8000000ULL;
+const usz IORING_OFF_SQES = 0x10000000ULL;
+const usz IORING_OFF_PBUF_RING = 0x80000000ULL;
+const usz IORING_OFF_PBUF_SHIFT = 16;
+const usz IORING_OFF_MMAP_MASK = 0xf8000000ULL;
+
+
+const u32 G_MAX_WAIT_REQ = 2000;
 
 struct CQRingOffsets {
     u32 head;
@@ -214,10 +224,9 @@ bool IOURing::open(s32 epollfd, u32 entries, u32 flags) {
     maxlen = sqlen < cqlen ? cqlen : sqlen;
     sqelen = params.sq_entries * sizeof(URingSQE);
 
-    sq = (s8*)mmap(0, maxlen, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ringfd, 0); // 0=IORING_OFF_SQ_RING
+    sq = (s8*)mmap(0, maxlen, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ringfd, IORING_OFF_SQ_RING);
 
-    sqe = (s8*)mmap(0, sqelen, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ringfd,
-        0x10000000ull); // 0x10000000ull=IORING_OFF_SQES
+    sqe = (s8*)mmap(0, sqelen, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, ringfd, IORING_OFF_SQES);
 
     if (sq == MAP_FAILED || sqe == MAP_FAILED) {
         goto GT_INIT_FAIL;
@@ -253,6 +262,8 @@ bool IOURing::open(s32 epollfd, u32 entries, u32 flags) {
     mRingFD = ringfd;
     mFlyRequest = 0;
     mFlags = 0;
+    mWaitPostSize = 0;
+    mWaitPostQueue = nullptr;
 
 
     // need (kernel_version >= 5.15.0)
@@ -286,8 +297,9 @@ void IOURing::close() {
 }
 
 
-void IOURing::submit() {
-    std::atomic_store_explicit(reinterpret_cast<std::atomic<u32>*>(mTailSQ), *mTailSQ + 1, std::memory_order_release);
+void IOURing::wakeupThreadSQ() {
+    /* std::atomic_store_explicit(reinterpret_cast<std::atomic<u32>*>(mTailSQ), *mTailSQ + 1,
+     * std::memory_order_release);*/
 
     u32 flags = std::atomic_load_explicit(reinterpret_cast<std::atomic<u32>*>(mFlagsSQ), std::memory_order_acquire);
     if (flags & IORING_SQ_NEED_WAKEUP) {
@@ -304,48 +316,67 @@ void* IOURing::getSQE() {
     if (mRingFD == -1) {
         return nullptr;
     }
-    URingSQE* sqe;
-    u32 head;
-    u32 tail;
-    u32 mask;
-    u32 slot;
-    head = std::atomic_load_explicit(reinterpret_cast<std::atomic<u32>*>(mHeadSQ), std::memory_order_acquire);
-    tail = *mTailSQ;
-    mask = mMaskSQ;
+
+    u32 head = std::atomic_load_explicit(reinterpret_cast<std::atomic<u32>*>(mHeadSQ), std::memory_order_acquire);
+    u32 tail = *mTailSQ;
+    u32 mask = mMaskSQ;
 
     if ((head & mask) == ((tail + 1) & mask)) {
         return nullptr; // No room in ring buffer. TODO: maybe flush it?
     }
-    slot = tail & mask;
-    sqe = reinterpret_cast<URingSQE*>(mSQE);
+    u32 slot = tail & mask;
+    URingSQE* sqe = reinterpret_cast<URingSQE*>(mSQE);
     sqe = &sqe[slot];
     memset(sqe, 0, sizeof(*sqe));
     return sqe;
 }
 
 
+void IOURing::postQueue() {
+    if (!mWaitPostQueue) {
+        return;
+    }
+    HandleFile* handle;
+    URingSQE* sqe;
+    RequestFD* req;
+    // u32 cnt = 0;
+    while (mWaitPostQueue) {
+        sqe = reinterpret_cast<URingSQE*>(getSQE());
+        if (!sqe) {
+            break;
+        }
+        req = AppPopRingQueueHead_1(mWaitPostQueue);
+        handle = reinterpret_cast<HandleFile*>(req->mHandle);
+        --mWaitPostSize;
+        mFlyRequest++;
+        //++cnt;
+        sqe->user_data = (u64)req;
+        sqe->addr = (u64)req->mData;
+        sqe->fd = handle->getHandle();
+        sqe->len = req->mAllocated;
+        sqe->off = req->mOffset; // default set offset = -1
+        sqe->opcode = (ERT_READ == req->mType ? IORING_OP_READ : IORING_OP_WRITE);
+        std::atomic_store_explicit(
+            reinterpret_cast<std::atomic<u32>*>(mTailSQ), *mTailSQ + 1, std::memory_order_release);
+    }
+    wakeupThreadSQ();
+}
+
+
 s32 IOURing::postReq(RequestFD* req) {
-    URingSQE* sqe = reinterpret_cast<URingSQE*>(getSQE());
-    if (!sqe) {
+    if (mWaitPostSize >= G_MAX_WAIT_REQ) {
         return EE_RETRY;
     }
     HandleFile* handle = reinterpret_cast<HandleFile*>(req->mHandle);
     handle->getLoop()->bindFly(handle);
-    mFlyRequest++;
-    sqe->user_data = (u64)req;
-    sqe->addr = (u64)req->mData;
-    sqe->fd = handle->getHandle();
-    sqe->len = req->mAllocated;
-    sqe->off = req->mOffset; // default set offset = -1
-    sqe->opcode = (ERT_READ == req->mType ? IORING_OP_READ : IORING_OP_WRITE);
-
-    submit();
+    AppPushRingQueueTail_1(mWaitPostQueue, req);
+    ++mWaitPostSize;
+    postQueue();
     return EE_OK;
 }
 
 
 void IOURing::updatePending() {
-    s32 nevents = 0;
     u32 head = *mHeadCQ;
     u32 tail = std::atomic_load_explicit(reinterpret_cast<std::atomic<u32>*>(mTailCQ), std::memory_order_acquire);
     u32 mask = mMaskCQ;
@@ -369,7 +400,6 @@ void IOURing::updatePending() {
         req->mCall(req);
         HandleFile* handle = reinterpret_cast<HandleFile*>(req->mHandle);
         handle->getLoop()->unbindFly(handle);
-        ++nevents;
     }
 
     std::atomic_store_explicit(reinterpret_cast<std::atomic<u32>*>(mHeadCQ), tail, std::memory_order_release);
@@ -387,6 +417,7 @@ void IOURing::updatePending() {
             Logger::log(ELL_CRITICAL, "io_uring_enter(getevents)"); // Can't happen
         }
     }
+    postQueue();
 }
 
 

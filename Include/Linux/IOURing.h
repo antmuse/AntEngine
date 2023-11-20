@@ -131,7 +131,7 @@ public:
      * @brief open a io_uring and add it in epoll if (\p flags & IORING_SETUP_SQPOLL).
      *
      * @param epollfd the epoll FD
-     * @param entries nodes of uring
+     * @param entries max SQE of uring, will be up to power of 2.
      * @param flags ctrl bits, @see IORingSetupFlag
      * @return true if success, else failed.
      */
@@ -145,6 +145,14 @@ public:
 
     s32 getRingFD() const {
         return mRingFD;
+    }
+
+    u32 getFlyRequest() const {
+        return mFlyRequest;
+    }
+
+    u32 getSize() const {
+        return mFlyRequest + mWaitPostSize;
     }
 
 private:
@@ -166,9 +174,12 @@ private:
     s32 mRingFD;
     u32 mFlyRequest;
     u32 mFlags;
+    u32 mWaitPostSize;         // count of RequestFDs in \p mWaitPostQueue
+    RequestFD* mWaitPostQueue; // point to tail,mWaitPostQueue->mNext is head
 
     void* getSQE();
-    void submit();
+    void wakeupThreadSQ();
+    void postQueue();
 };
 
 } // namespace app
