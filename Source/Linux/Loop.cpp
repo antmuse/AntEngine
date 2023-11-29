@@ -571,7 +571,7 @@ void Loop::addClose(Handle* it) {
 
 s32 Loop::closeHandle(Handle* it) {
     DASSERT(it);
-    if (it->isClosing()) {
+    if (it->isClosing() || !it->isOpen()) {
         return EE_CLOSING;
     }
     it->mFlag |= EHF_CLOSING;
@@ -704,9 +704,20 @@ s32 Loop::openHandle(Handle* it) {
             Logger::log(ELL_ERROR, "Loop::openHandle>>addr=%s,tcp.con unblock, ecode=%d", nd->mRemote.getStr(), ret);
             sock.close();
         } else {
-            if (nd->mCallTime) {
-                nd->mTimeout += Timer::getTime();
-                mTimeHub.insert(&nd->mLink);
+            EventPoller::SEvent evt;
+            evt.mEvent = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR | EPOLLHUP;
+            evt.mData.mPointer = nd;
+            if (mPoller.add(nd->getSock(), evt)) {
+                nd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
+                if (nd->mCallTime) {
+                    nd->mTimeout += Timer::getTime();
+                    mTimeHub.insert(&nd->mLink);
+                }
+            } else {
+                ret = System::getAppError();
+                Logger::log(ELL_ERROR, "Loop::openHandle>>addr=%s,tcp.conn add, sock=%d, ecode=%d",
+                    nd->mRemote.getStr(), nd->getSock().getValue(), ret);
+                nd->getSock().close();
             }
         }
         break;

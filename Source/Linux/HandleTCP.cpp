@@ -25,7 +25,6 @@
 
 #include "Net/HandleTCP.h"
 #if defined(DOS_ANDROID) || defined(DOS_LINUX)
-#include <sys/epoll.h>
 #include "Linux/Request.h"
 #endif
 #include "Loop.h"
@@ -121,46 +120,35 @@ s32 HandleTCP::accept(RequestAccept* it) {
 
 s32 HandleTCP::connect(RequestFD* it) {
     DASSERT(it);
-    it->mType = ERT_CONNECT;
-    it->mHandle = this;
     if (0 == (EHF_OPEN & mFlag)) {
         it->mError = EE_NO_OPEN;
         return EE_NO_OPEN;
     }
+    it->mType = ERT_CONNECT;
+    it->mHandle = this;
 
     if (mWriteQueue) {
+        DLOG(ELL_ERROR, "HandleTCP::connect>> write queue is not null");
         return EE_ERROR;
     }
 
     it->mError = 0;
     mLoop->bindFly(this);
 
-    if (0 != mSock.connect(mRemote)) {
+    if (EE_OK == mSock.connect(mRemote)) {
+        // success right now
+        mLoop->addPending(it);
+    } else {
         s32 err = System::getAppError();
         if (EE_POSTED == err) {
-            EventPoller::SEvent evt;
-            evt.mEvent = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR | EPOLLHUP;
-            evt.mData.mPointer = this;
-            if (mLoop->getEventPoller().add(mSock, evt)) {
-                addWritePendingTail(it);
-                return EE_OK;
-            }
-            err = System::getAppError();
-        }
-        it->mError = err;
-    } else { //success now
-        EventPoller::SEvent evt;
-        evt.mEvent = EPOLLIN | EPOLLOUT | EPOLLET | EPOLLERR | EPOLLHUP;
-        evt.mData.mPointer = this;
-        if (mLoop->getEventPoller().add(mSock, evt)) {
-            mLoop->addPending(it);
+            addWritePendingTail(it);
             return EE_OK;
+        } else {
+            it->mError = err;
+            mLoop->closeHandle(this);
         }
-        it->mError = System::getAppError();
     }
 
-    mLoop->closeHandle(this);
-    mLoop->addPending(it);
     return EE_OK;
 }
 
