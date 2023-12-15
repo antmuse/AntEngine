@@ -80,6 +80,9 @@ public:
     static void setGlobalVal(lua_State* vm, const s8* key, const s8* val, usz vlen = 0);
     static void setGlobalVal(lua_State* vm, const s8* key, ssz val);
     static void setGlobalVal(lua_State* vm, const s8* key, f64 val);
+    static void setGlobalVal(lua_State* vm, const s8* key, void* val);
+
+    static void setUpVal(lua_State* vm, const s8* key, s32 funcIdx, s32 popUps);
 
     // Create new table and set _G field to itself.
     static void createGlobalTable(lua_State* vm, s32 narr = 0, s32 nrec = 0);
@@ -88,6 +91,7 @@ public:
 
     static void popParam(lua_State* vm, s32 iSum);
 
+    static void pushTable(lua_State* vm, const s8* key, const s8* val);
     static void pushTable(lua_State* vm, const s8* key, void* val);
     static void pushTable(lua_State* vm, const s8* key, usz len, void* val);
     static void pushTable(lua_State* vm, const s8* key, usz klen, const s8* val, usz vlen);

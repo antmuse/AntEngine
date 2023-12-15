@@ -59,9 +59,9 @@ s32 LinkerUDP2::onTimeout(u32 val) {
     }
     if (rdsz < 0) {
         if (EE_RETRY == rdsz) {
-            if (mTimeExt > 0) {
-                if (val - mTimeExt > 1000 * 15) {
-                    mProto.clear();
+            if (0 != mTimeExt) {
+                s32 diff = val - mTimeExt;
+                if (diff > 15000 || diff < 15000) {
                     mSev->closeNode(this);
                     return EE_ERROR;
                 }

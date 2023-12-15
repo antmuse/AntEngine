@@ -40,6 +40,12 @@ namespace script {
  */
 extern int LuaLog(lua_State* iState);
 
+//callback function for err
+extern int LuaErrorFunc(lua_State* vm);
+
+extern int LuaPanic(lua_State* vm);
+
+extern void LuaDumpStack(lua_State* vm);
 
 /**
  * @brief  构造函数: 颜色

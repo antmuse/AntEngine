@@ -11,8 +11,7 @@ namespace app {
 static const s32 G_BLOCK_HEAD_SIZE = 6;
 
 HttpEvtLua::HttpEvtLua(const StringView& file) :
-    mReaded(0), mRefVM(LUA_NOREF), mFileName(file), mEvtFlags(0), mLuaUserData(nullptr), mSubVM(nullptr), mMsg(nullptr),
-    mBody(nullptr) {
+    mReaded(0), mFileName(file), mEvtFlags(0), mMsg(nullptr), mBody(nullptr) {
 
     mReqs.mCall = HttpEvtLua::funcOnRead;
     // mReqs.mUser = this;
@@ -23,70 +22,46 @@ HttpEvtLua::~HttpEvtLua() {
 }
 
 s32 HttpEvtLua::onSent(net::HttpMsg& msg) {
-    // go on to send body here
-    script::ScriptManager& eng = script::ScriptManager::getInstance();
-    if (!eng.getThread(mRefVM)) {
-        return EE_ERROR;
-    }
-
-    const s32 subcnt = lua_gettop(mSubVM);
-    s32 ret = lua_getglobal(mSubVM, "OnSent");
-    s32 nret;
-    ret = mScript.resumeThread(mSubVM, 0, nret);
+    script::ScriptManager::resumeThread(mLuaThread);
     return EE_OK;
 }
 
 s32 HttpEvtLua::onOpen(net::HttpMsg& msg) {
     mBody = &msg.getCacheOut();
     net::Website* site = msg.getHttpLayer()->getWebsite();
-    if (!site || mSubVM) {
+    if (!site || mLuaThread.mSubVM) {
         return EE_ERROR;
     }
     mEvtFlags = EHF_OPEN;
     mReaded = 0;
     script::ScriptManager& eng = script::ScriptManager::getInstance();
-    s32 subcnt = lua_gettop(eng.getRootVM());
-    mSubVM = eng.createThread(mRefVM);
-    subcnt = lua_gettop(eng.getRootVM());
-    if (!mSubVM || !mScript.load(mSubVM, eng.getScriptPath(), mFileName, false, true)) {
-        eng.deleteThread(mSubVM, mRefVM);
-        return EE_ERROR;
-    }
-    subcnt = lua_gettop(eng.getRootVM());
-    if (!mScript.exec(mSubVM)) {
-        eng.deleteThread(mSubVM, mRefVM);
-        return EE_ERROR;
-    }
-    if (!mScript.getLoaded(mSubVM, mFileName)) {
-        lua_pop(mSubVM, 1);
-        return EE_ERROR;
-    }
-    subcnt = lua_gettop(eng.getRootVM());
-    subcnt = lua_gettop(mSubVM);
-    creatCurrContext();
-    subcnt = lua_gettop(mSubVM);
 
-    s32 ret = lua_getglobal(mSubVM, "OnOpen");
-    s32 nret;
-    ret = mScript.resumeThread(mSubVM, 0, nret);
-    if (EE_OK == ret) {
-        lua_settop(mSubVM, -1);
-        eng.deleteThread(mSubVM, mRefVM);
+    mLuaThread.mSubVM = eng.createThread();
+    if (!mLuaThread.mSubVM || !mScript.load(mLuaThread.mSubVM, site->getConfig().mRootPath, mFileName, false, false)) {
+        eng.deleteThread(mLuaThread.mSubVM);
+        mEvtFlags = EHF_CLOSE;
+        return EE_ERROR;
+    }
+    creatCurrContext();
+    eng.resumeThread(mLuaThread);
+    if (EE_OK == mLuaThread.mStatus) {
+        eng.deleteThread(mLuaThread.mSubVM);
+        mLuaThread.mStatus = EE_CLOSING;
+        mEvtFlags = EHF_CLOSING;
         return EE_OK;
     }
-    if (EE_POSTED == ret) {
+    if (EE_RETRY == mLuaThread.mStatus) {
         msg.grab();
         grab();
         mMsg = &msg;
         return EE_OK;
     }
+    mEvtFlags = EHF_CLOSE;
     return EE_ERROR;
 }
 
 s32 HttpEvtLua::onClose() {
     mEvtFlags |= EHF_CLOSE;
-    if (!mLuaUserData) {
-    }
     return EE_OK;
 }
 
@@ -101,8 +76,7 @@ void HttpEvtLua::onClose(Handle* it) {
     }
     if (mEvtFlags) {
         if (1 == getRefCount()) {
-            script::ScriptManager::getInstance().deleteThread(mSubVM, mRefVM);
-            mLuaUserData = nullptr;
+            script::ScriptManager::getInstance().deleteThread(mLuaThread.mSubVM);
         }
         drop();
     }
@@ -112,7 +86,7 @@ void HttpEvtLua::onRead(RequestFD* it) {
     if (it->mError) {
         mEvtFlags = true;
         mMsg->setStationID(net::ES_RESP_BODY_DONE);
-        Logger::log(ELL_ERROR, "HttpEvtLua::onRead>>err file=%p", mLuaUserData);
+        Logger::log(ELL_ERROR, "HttpEvtLua::onRead>>err file=%p", 0);
         return;
     }
     if (it->mUsed > 0) {
@@ -152,7 +126,7 @@ void HttpEvtLua::onRead(RequestFD* it) {
 }
 
 s32 HttpEvtLua::onBodyPart(net::HttpMsg& msg) {
-    if (!mLuaUserData) {
+    if (!0) {
         return EE_ERROR;
     }
     return launchRead();
@@ -177,16 +151,12 @@ s32 HttpEvtLua::launchRead() {
 }
 
 void HttpEvtLua::creatCurrContext() {
-    script::Script::createGlobalTable(mSubVM, 0, 0);
-    script::Script::pushTable(mSubVM, "curr_ctx", sizeof("curr_ctx"), this);
-    script::Script::pushTable(mSubVM, "curr_name", sizeof("curr_name"), "curr_vname", sizeof("curr_vname"));
-    script::Script::popParam(mSubVM, 1); //pop table
+    lua_createtable(mLuaThread.mSubVM, 0, 1);
+    script::Script::pushTable(mLuaThread.mSubVM, "sBrief", "this is current context of lua coroutine");
+    script::Script::pushTable(mLuaThread.mSubVM, "sCurrCtx", sizeof("sCurrCtx"), this);
+    script::Script::pushTable(mLuaThread.mSubVM, "sCurrName", sizeof("sCurrName"), "curr_vname", sizeof("curr_vname"));
+    lua_setglobal(mLuaThread.mSubVM, "sCurr"); // set and pop table
 }
 
-void HttpEvtLua::pushCurrParam() {
-    lua_pushlstring(mSubVM, "curr_front_flag", sizeof("curr_front_flag") - 1);
-    lua_pushinteger(mSubVM, mEvtFlags);
-    lua_rawset(mSubVM, -2);
-}
 
 } // namespace app

@@ -26,9 +26,7 @@ public:
 
 private:
     // lua
-    s32 mRefVM;
-    lua_State* mSubVM;
-    void** mLuaUserData;
+    script::LuaThread mLuaThread;
     script::Script mScript;
 
     String mFileName;
@@ -40,7 +38,6 @@ private:
     u16 mEvtFlags;
 
     void creatCurrContext();
-    void pushCurrParam();
     void onRead(RequestFD* it);
     void onClose(Handle* it);
     s32 launchRead();

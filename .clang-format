@@ -30,7 +30,7 @@ BinPackArguments: true
 BinPackParameters: true
 # 大括号换行，只有当BreakBeforeBraces设置为Custom时才有效
 BraceWrapping:
-  AfterCaseLabel:  false
+  AfterCaseLabel:  true
   AfterClass:      false
   AfterControlStatement: Never
   AfterEnum:       false

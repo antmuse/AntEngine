@@ -27,26 +27,31 @@
 
 #include "Nocopy.h"
 #include "TMap.h"
+#include "ThreadPool.h"
 #include "Script/Script.h"
 
 namespace app {
 namespace script {
+
+class LuaThread final {
+public:
+    lua_State* mSubVM;
+    s32 mRef;
+    s32 mParamCount;
+    s32 mStatus;
+    s32 mRetCount;
+    FuncTask mCaller;
+    void* mUserData;
+    LuaThread();
+    ~LuaThread();
+    void operator()();
+};
 
 class ScriptManager : public Nocopy {
 public:
     static ScriptManager& getInstance();
 
     lua_State* getRootVM() const;
-
-    void pushParam(s32 prm);
-    void pushParam(s8* prm);
-    void pushParam(void* pNode);
-
-    /**
-    *@brief pop state
-    *@param iSum pop iSum parameters out
-    */
-    void popParam(s32 iSum);
 
     /**
     * @param fileName relative filename of the file to load.
@@ -94,15 +99,15 @@ public:
 
     bool loadFirstScript();
 
-    // gc
     usz getMemory();
+    s32 makeGC();
 
-    lua_State* createThread(s32& ref);
-    void deleteThread(lua_State*& vm, s32& ref);
-    bool getThread(s32 ref);
+    lua_State* createThread();
+    void deleteThread(lua_State*& vm);
+    void getThread(lua_State* vm);
+    static void resumeThread(LuaThread& co);
 
 private:
-    s32 mParamCount;
     lua_State* mRootVM;
     TMap<String, Script*> mAllScript;
     String mScriptPath;
@@ -110,6 +115,7 @@ private:
     ScriptManager();
     virtual ~ScriptManager();
     void initialize();
+    void uninit();
 };
 
 

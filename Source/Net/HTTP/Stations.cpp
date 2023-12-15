@@ -5,7 +5,7 @@
 #include "Net/HTTP/HttpEvtLua.h"
 #include "Net/HTTP/Website.h"
 
-//def str view
+// def str view
 #define DSTRV(V) V, sizeof(V) - 1
 
 namespace app {
@@ -24,13 +24,13 @@ s32 StationPath::check(HttpMsg* msg) {
     requrl.replace('\\', '/');
 
     if (requrl.find("/../") >= 0) {
-        //TODO fix this path
+        // TODO fix this path
         msg->setStatus(403);
         msg->setStationID(ES_ERROR);
         return ES_ERROR;
     }
 
-    
+
     return EE_OK;
 }
 
@@ -40,7 +40,7 @@ s32 StationPath::onMsg(HttpMsg* msg) {
         return EE_ERROR;
     }
 
-    //default page
+    // default page
     if (msg->getURL().get() == "/") {
         msg->getURL().append("index.html", sizeof("index.html") - 1);
         msg->getURL().parser();
@@ -49,7 +49,7 @@ s32 StationPath::onMsg(HttpMsg* msg) {
     StringView requrl = msg->getURL().getPath();
 
     if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
-        requrl.set(requrl.mData + 5, requrl.mLen - 5);
+        //requrl.set(requrl.mData + 5, requrl.mLen - 5);
         HttpEventer* evt = new HttpEvtLua(requrl);
         msg->setEvent(evt);
         evt->drop();
@@ -57,6 +57,10 @@ s32 StationPath::onMsg(HttpMsg* msg) {
         //
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
         HttpEventer* evt = new HttpFileRead();
+        msg->setEvent(evt);
+        evt->drop();
+    } else if (requrl.equalsn("/up/", sizeof("/up/") - 1)) {
+        HttpEventer* evt = new HttpFileSave();
         msg->setEvent(evt);
         evt->drop();
     } else {
@@ -72,7 +76,7 @@ s32 StationPath::onMsg(HttpMsg* msg) {
     svv = msg->getHeadIn().get(svv);
     if (svv.mLen > 0) {
         svv.set("Range", sizeof("Range") - 1);
-        //msg->getHeadOut().add()
+        // msg->getHeadOut().add()
     }
 
     return EE_OK;
@@ -85,9 +89,8 @@ s32 StationReqHead::onMsg(HttpMsg* msg) {
     msg->getHeadOut().writeKeepAlive(msg->isKeepAlive());
 
     if (msg->isChunked()) {
-        //msg->getHeadIn().clear();
+        // msg->getHeadIn().clear();
     } else {
-
     }
 
     return EE_OK;
@@ -100,7 +103,6 @@ s32 StationBody::onMsg(HttpMsg* msg) {
     }
 
     if (msg->isChunked()) {
-
     }
     return EE_OK;
 }
@@ -116,16 +118,16 @@ s32 StationBodyDone::onMsg(HttpMsg* msg) {
     val.set(DSTRV("*"));
     hed.add(key, val);
 
-    //key.set(DSTRV("Content-Type"));
-    //val.set(DSTRV("text/html;charset=utf-8"));
-    //hed.add(key, val);
+    // key.set(DSTRV("Content-Type"));
+    // val.set(DSTRV("text/html;charset=utf-8"));
+    // hed.add(key, val);
 
     hed.writeChunked();
 
     msg->writeStatus(200);
     msg->dumpHeadOut();
     msg->writeOutBody("\r\n", 2);
-    //msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
+    // msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
 
     HttpEventer* evt = msg->getEvent();
     if (!evt || EE_OK != evt->onOpen(*msg)) {
@@ -148,8 +150,8 @@ s32 StationBodyDone::onMsg(HttpMsg* msg) {
 //+public headers
 s32 StationRespHead::onMsg(HttpMsg* msg) {
     DASSERT(msg);
-    
-    //s32 bsz = msg->getCacheOut().getSize();
+
+    // s32 bsz = msg->getCacheOut().getSize();
     if (!msg->getHttpLayer()->sendResp(msg)) {
         return EE_ERROR;
     }
@@ -160,14 +162,14 @@ s32 StationRespHead::onMsg(HttpMsg* msg) {
 
 s32 StationRespBody::onMsg(HttpMsg* msg) {
     DASSERT(msg);
-    
+
     s32 bsz = msg->getCacheOut().getSize();
     // if (0 == bsz) {
     //     msg->setStationID(ES_RESP_BODY_DONE);
     //     return EE_OK;
     // }
-    
-    if (bsz>0 && !msg->getHttpLayer()->sendResp(msg)) {
+
+    if (bsz > 0 && !msg->getHttpLayer()->sendResp(msg)) {
         return EE_ERROR;
     }
 
@@ -189,7 +191,7 @@ s32 StationRespBodyDone::onMsg(HttpMsg* msg) {
 s32 StationClose::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
-    //msg->setEvent(nullptr);
+    // msg->setEvent(nullptr);
     return EE_OK;
 }
 
@@ -197,16 +199,16 @@ s32 StationClose::onMsg(HttpMsg* msg) {
 s32 StationError::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
-    //msg->getHeadOut().clear();
+    // msg->getHeadOut().clear();
     msg->getCacheOut().reset();
     static const s8* ebody = "<html>\n"
-        "<head>\n"
-        u8"<title> ���� </title>\n"
-        "</head>\n"
-        "<body>\n"
-        u8"<hr><br>*_*<br><hr>"
-        "</body>\n"
-        "</html>";
+                             "<head>\n"
+                             u8"<title>ERROR</title>\n"
+                             "</head>\n"
+                             "<body>\n"
+                             u8"<hr><br>*_*<br><hr>"
+                             "</body>\n"
+                             "</html>";
     static const usz esz = strlen(ebody);
 
     s8 tmp[128];
@@ -219,5 +221,5 @@ s32 StationError::onMsg(HttpMsg* msg) {
     return msg->getHttpLayer()->sendResp(msg) ? EE_OK : EE_ERROR;
 }
 
-} //namespace net
-} //namespace app
+} // namespace net
+} // namespace app

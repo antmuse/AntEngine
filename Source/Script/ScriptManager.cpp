@@ -8,7 +8,7 @@
 namespace app {
 namespace script {
 
-static const s8* G_LUA_THREAD = "G_LUA_THREAD";
+static const void* const G_LUA_THREAD = "GLUA_THREAD_TABLE";
 
 static const s8* G_LOAD_INFO = "--just for test\n"
                                "local ver = GVersion\n"
@@ -32,11 +32,38 @@ static s32 LuaWriter(lua_State* state, const void* p, usz sz, void* user) {
     return 0;
 }
 
+
+/**
+ * LuaThread
+ */
+LuaThread::LuaThread() :
+    mSubVM(nullptr), mRef(LUA_NOREF), mParamCount(0), mRetCount(0), mStatus(0), mCaller(nullptr), mUserData(nullptr) {
+}
+LuaThread::~LuaThread() {
+}
+void LuaThread::operator()() {
+    if (mCaller) {
+        mCaller(mUserData);
+    }
+}
+
+
+
 ScriptManager::ScriptManager() {
     initialize();
 }
 
 ScriptManager::~ScriptManager() {
+    uninit();
+}
+
+ScriptManager& ScriptManager::getInstance() {
+    static ScriptManager ret;
+    return ret;
+}
+
+
+void ScriptManager::uninit() {
     removeAll();
     if (mRootVM) {
         lua_close(mRootVM);
@@ -44,10 +71,6 @@ ScriptManager::~ScriptManager() {
     }
 }
 
-ScriptManager& ScriptManager::getInstance() {
-    static ScriptManager ret;
-    return ret;
-}
 
 void ScriptManager::initialize() {
     mScriptPath = Engine::getInstance().getAppPath();
@@ -100,9 +123,12 @@ void ScriptManager::initialize() {
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
 
-    lua_pushstring(mRootVM, G_LUA_THREAD);
+    // register table for lua thread(grab,drop)
+    lua_pushlightuserdata(mRootVM, const_cast<void*>(G_LUA_THREAD));
     lua_newtable(mRootVM);
     lua_rawset(mRootVM, LUA_REGISTRYINDEX);
+
+    lua_atpanic(mRootVM, LuaPanic);
 
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
@@ -112,6 +138,9 @@ usz ScriptManager::getMemory() {
     return lua_gc(mRootVM, LUA_GCCOUNT, 0) * 1024ULL;
 }
 
+s32 ScriptManager::makeGC() {
+    return lua_gc(mRootVM, LUA_GCCOLLECT);
+}
 
 bool ScriptManager::loadFirstScript() {
     Script nd;
@@ -139,26 +168,6 @@ bool ScriptManager::loadFirstScript() {
 
 lua_State* ScriptManager::getRootVM() const {
     return mRootVM;
-}
-
-void ScriptManager::pushParam(s32 prm) {
-    ++mParamCount;
-    lua_pushnumber(mRootVM, prm);
-}
-
-void ScriptManager::pushParam(s8* prm) {
-    ++mParamCount;
-    lua_pushstring(mRootVM, prm);
-}
-
-void ScriptManager::pushParam(void* pNode) {
-    ++mParamCount;
-    lua_pushlightuserdata(mRootVM, pNode);
-}
-
-void ScriptManager::popParam(s32 iSum) {
-    lua_pop(mRootVM, iSum);
-    --mParamCount;
 }
 
 bool ScriptManager::include(const String& fileName) {
@@ -234,58 +243,79 @@ bool ScriptManager::remove(const String& name) {
     return true;
 }
 
-lua_State* ScriptManager::createThread(s32& ref) {
-    /* 创建Lua协程，返回的新lua_State跟原有的lua_State共享所有的全局对象（如表），
-     * 但是有一个独立的执行栈。 协程依赖垃圾回收销毁 */
-    lua_State* ret = lua_newthread(mRootVM);
-    if (!ret) {
-        ref = LUA_NOREF;
-        return nullptr;
-    }
+lua_State* ScriptManager::createThread() {
+    s32 cnt = lua_gettop(mRootVM);
 
-    /* 将lua虚拟机VM栈上的入口函数闭包移到新创建的协程栈上，
-       这样新协程就有了虚拟机已经解析完毕的代码了。*/
-    // lua_xmove(mRootVM, ret, 1);
+    // 1.new thread
+    lua_State* vm = lua_newthread(mRootVM);
 
-    const s32 cnt = lua_gettop(mRootVM);
-
-    lua_pushstring(mRootVM, G_LUA_THREAD);
+    // 2.reg table
+    lua_pushlightuserdata(mRootVM, const_cast<void*>(G_LUA_THREAD));
     lua_rawget(mRootVM, LUA_REGISTRYINDEX);
-    lua_pushvalue(mRootVM, cnt);
-    ref = luaL_ref(mRootVM, -2); // pop 1
-    if (LUA_NOREF == ref) {
-        lua_settop(mRootVM, cnt - 1);
-        Logger::logError("ScriptManager::createThread, LUA_NOREF = %p", ret);
-        return nullptr;
-    }
-    lua_pop(mRootVM, 1);
-    DASSERT(cnt == lua_gettop(mRootVM));
-    return ret;
+
+    // 3.key
+    lua_pushlightuserdata(mRootVM, static_cast<void*>(vm));
+
+    // 4.value (the vm)
+    lua_pushvalue(mRootVM, -3);
+
+    // grab coroutine, and pop 2: key,value
+    lua_settable(mRootVM, -3);
+
+    lua_settop(mRootVM, cnt);
+    // LuaDumpStack(mRootVM);
+    // LuaDumpStack(vm);
+
+    // lua_xmove(mRootVM, ret, 1);
+    return vm;
 }
 
-void ScriptManager::deleteThread(lua_State*& vm, s32& ref) {
-    if (vm) {
-        const s32 cnt = lua_gettop(mRootVM);
-        lua_pushstring(mRootVM, G_LUA_THREAD);
-        lua_rawget(mRootVM, LUA_REGISTRYINDEX);
-        luaL_unref(mRootVM, -1, ref);
-        lua_settop(mRootVM, cnt); // pop table
+void ScriptManager::deleteThread(lua_State*& vm) {
+    if (!vm) {
+        return;
     }
+    s32 cnt = lua_gettop(mRootVM);
 
-    ref = LUA_NOREF;
+    // 1.reg table
+    lua_pushlightuserdata(mRootVM, const_cast<void*>(G_LUA_THREAD));
+    lua_rawget(mRootVM, LUA_REGISTRYINDEX);
+
+    // 3.key
+    lua_pushlightuserdata(mRootVM, static_cast<void*>(vm));
+
+    // 4.value
+    lua_pushnil(mRootVM);
+
+    // drop coroutine, and pop 2: key,value
+    lua_settable(mRootVM, -3);
+
+    lua_settop(mRootVM, cnt);
+    // ref = LUA_NOREF;
     vm = nullptr;
+
+    // lua_close(vm);  //don't close
+    // root VM not close, just gc collect object
+    cnt = makeGC();
+    printf("deleteThread: GC=%d\n", cnt);
 }
 
-bool ScriptManager::getThread(s32 ref) {
-    if (LUA_NOREF != ref) {
-        s32 cnt = lua_gettop(mRootVM);
-        lua_pushstring(mRootVM, G_LUA_THREAD);
-        lua_rawget(mRootVM, LUA_REGISTRYINDEX);
-        lua_pushinteger(mRootVM, ref);
-        lua_rawget(mRootVM, -2);
-        return true;
-    }
-    return false;
+void ScriptManager::getThread(lua_State* vm) {
+    LuaDumpStack(vm);
+
+    // 1.reg table
+    lua_pushlightuserdata(mRootVM, const_cast<void*>(G_LUA_THREAD));
+    lua_rawget(mRootVM, LUA_REGISTRYINDEX);
+
+    // 2.key
+    lua_pushlightuserdata(mRootVM, static_cast<void*>(vm));
+
+    lua_gettable(mRootVM, -2);
+    LuaDumpStack(vm);
+}
+
+
+void ScriptManager::resumeThread(LuaThread& co) {
+    co.mStatus = Script::resumeThread(co.mSubVM, co.mParamCount, co.mRetCount);
 }
 
 } // namespace script

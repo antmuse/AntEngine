@@ -1,5 +1,6 @@
 ﻿#include "Script/Script.h"
 #include "Script/HLua.h"
+#include "Script/LuaFunc.h"
 #include "Logger.h"
 #include "Engine.h"
 #include "FileReader.h"
@@ -219,19 +220,22 @@ bool Script::execFunc(lua_State* vm, const s8* funcName, s32 nResults, const s8*
 
 
 s32 Script::resumeThread(lua_State* vm, s32 argc, s32& ret_cnt) {
-    const s32 cnt = lua_gettop(vm);
-    ret_cnt = 0;
     s32 ret = lua_resume(vm, NULL, argc, &ret_cnt);
+    if (ret_cnt != 0) {
+        DLOG(ELL_ERROR, "LuaThread resume unexpected, ret_cnt=%d, vm=%p", ret_cnt, vm);
+    }
     switch (ret) {
+    case LUA_YIELD:
+        return EE_RETRY;
     case LUA_OK:
         return EE_OK;
-    case LUA_YIELD:
-        return EE_POSTED;
     default:
         break;
     }
-    Logger::logError("Script::resumeThread, fail ret=%d, err=%s", ret, lua_tostring(vm, -1));
-    lua_settop(vm, cnt);
+
+    DLOG(ELL_ERROR, "LuaThread resume err=%d, ret_cnt=%d, vm=%p", ret, ret_cnt, vm);
+    LuaDumpStack(vm);
+    lua_pop(vm, ret_cnt);
     return EE_ERROR;
 }
 
@@ -254,18 +258,28 @@ void Script::setGlobalVal(lua_State* vm, const s8* key, f64 val) {
     lua_setglobal(vm, key);
 }
 
+void Script::setGlobalVal(lua_State* vm, const s8* key, void* val) {
+    lua_pushlightuserdata(vm, val);
+    lua_setglobal(vm, key);
+}
+
+void Script::setUpVal(lua_State* vm, const s8* key, s32 funcIdx, s32 popUps) {
+    lua_setupvalue(vm, funcIdx, popUps);
+    lua_setglobal(vm, key);
+}
+
 void Script::createGlobalTable(lua_State* vm, s32 narr, s32 nrec) {
-    //Create new table and set _G field to itself.
+    // Create new table and set _G field to itself.
     lua_createtable(vm, narr, nrec + 1);
     lua_pushvalue(vm, -1);
     lua_setfield(vm, -2, "_G");
     // printf("top.type = %s\n", lua_typename(vm, lua_type(vm, -1)));
 
-    //make new env inheriting main thread's globals table
-    lua_createtable(vm, 0, 1);   //the metatable for the new env
+    // make new env inheriting main thread's globals table
+    lua_createtable(vm, 0, 1); // the metatable for the new env
     lua_setfield(vm, -2, "__index");
     lua_pushvalue(vm, -1);
-    lua_setmetatable(vm, -2);    //setmetatable({}, {__index = _G})
+    lua_setmetatable(vm, -2); // setmetatable({}, {__index = _G})
     // lua_setfenv(vm, -2);         //set new running env for the code
 }
 
@@ -280,6 +294,12 @@ void Script::createArray(lua_State* vm, const s8** arr, ssz cnt) {
 void Script::pushTable(lua_State* vm, const s8* key, void* val) {
     lua_pushstring(vm, key);
     lua_pushlightuserdata(vm, val);
+    lua_rawset(vm, -3);
+}
+
+void Script::pushTable(lua_State* vm, const s8* key, const s8* val) {
+    lua_pushstring(vm, key);
+    lua_pushstring(vm, val);
     lua_rawset(vm, -3);
 }
 

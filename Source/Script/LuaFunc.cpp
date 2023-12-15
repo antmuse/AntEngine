@@ -25,14 +25,73 @@ int LuaLog(lua_State* vm) {
     // Log(Info, "msg");
     if (2 == cnt && lua_isinteger(vm, 1) && lua_isstring(vm, 2)) {
         cnt = static_cast<u32>(lua_tointeger(vm, 1));
-        Logger::log(static_cast<ELogLevel>(cnt < ELL_COUNT ? cnt : ELL_CRITICAL),
-            "LuaEng> %s", lua_tostring(vm, 2));
+        Logger::log(static_cast<ELogLevel>(cnt < ELL_COUNT ? cnt : ELL_CRITICAL), "LuaEng> %s", lua_tostring(vm, 2));
         return 0;
     }
     Logger::logError("LuaEng> invalid log param, cnt=%u", cnt);
     return 0;
 }
 
+int LuaPanic(lua_State* vm) {
+    const s8* errmsg = "none";
+    size_t elen = 4;
+    if (lua_type(vm, -1) == LUA_TSTRING) {
+        errmsg = (s8*)lua_tolstring(vm, -1, &elen);
+    }
+    Logger::logCritical("LuaEng panic vm=%p, emsg=%.*s", vm, (s32)elen, errmsg);
+    Logger::flush();
+    return 0;
+}
+
+
+int LuaErrorFunc(lua_State* vm) {
+    lua_Debug debug = {};
+    s32 frame = 0;
+    while (lua_getstack(vm, frame, &debug)) {
+        if (lua_type(vm, -1) != LUA_TSTRING) {
+            Logger::logCritical("LuaEngErr vm=%p, frame=%d, line=%d, NotStrErr", vm, frame, debug.currentline);
+            continue;
+        }
+        Logger::logCritical("LuaEngErr vm=%p, frame=%d, line=%d, emsg=%s, eshort=%s", vm, frame, debug.currentline,
+            lua_tostring(vm, -1), debug.short_src);
+        ++frame;
+    }
+    return 0;
+}
+
+
+void LuaDumpStack(lua_State* vm) {
+    s32 top = lua_gettop(vm);
+    printf("VM = %p, cnt = %d, DumpStack:\n", vm, top);
+    for (s32 i = 1; i <= top; i++) {
+        printf("\t%d\t%s\t", i, luaL_typename(vm, i));
+        switch (lua_type(vm, i)) {
+        case LUA_TNUMBER:
+            printf("\t%g\n", lua_tonumber(vm, i));
+            break;
+        case LUA_TSTRING:
+            printf("\t%s\n", lua_tostring(vm, i));
+            break;
+        case LUA_TBOOLEAN:
+            printf("\t%s\n", (lua_toboolean(vm, i) ? "true" : "false"));
+            break;
+        case LUA_TNIL:
+            printf("\t%s\n", "nil");
+            break;
+        case LUA_TUSERDATA:
+        {
+            luaL_getmetafield(vm, i, "__name");
+            const char* name = lua_tostring(vm, -1);
+            printf("\t%s\n", name);
+            lua_pop(vm, 1);
+            break;
+        }
+        default:
+            printf("\t%p\n", lua_topointer(vm, i));
+            break;
+        }
+    }
+}
 
 /**
  * @brief  构造函数: 颜色
@@ -77,9 +136,7 @@ int LuaEngInfo(lua_State* vm) {
 
 
 LUALIB_API luaL_Reg LuaEngLib[] = {
-    {"exit", LuaEngExit},
-    {"showInfo", LuaEngInfo},
-    {NULL, NULL}    //sentinel
+    {"exit", LuaEngExit}, {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
 };
 
 
@@ -95,13 +152,13 @@ int LuaInclude(lua_State* vm) {
         return 0;
     }
 
-    const s8* fnm = lua_tostring(vm, 1); //relative path
+    const s8* fnm = lua_tostring(vm, 1); // relative path
     if (!fnm || '\0' == fnm[0]) {
         Logger::logError("LuaEng> LuaInclude fail=empty");
         return 0;
     }
 
-    //load
+    // load
     ScriptManager& eng = ScriptManager::getInstance();
     if (!eng.include(fnm)) {
         Logger::logError("LuaEng> LuaInclude fail=%s", fnm);
@@ -112,14 +169,14 @@ int LuaInclude(lua_State* vm) {
 
 
 // regist class as a global table
-void LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
-    const s8* className, const s8* namespac) {
+void LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz, const s8* className, const s8* namespac) {
     DASSERT(func && funcsz && className);
 
     luaL_newmetatable(vm, className);
     s32 metatable = lua_gettop(vm);
-    lua_pushvalue(vm, -1);            //repush metatable pointer
-    lua_setfield(vm, -2, "__index");  //pop 1
+
+    lua_pushvalue(vm, -1);           // repush metatable pointer
+    lua_setfield(vm, -2, "__index"); // pop 1
 
     /*
     lua_pushstring(vm, "__gc");
@@ -167,9 +224,9 @@ void LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
             }
         }
     }
-    lua_pop(vm, 1);  //pop metatable
+    lua_pop(vm, 1); // pop metatable
     DASSERT(0 == lua_gettop(vm));
 }
 
-}//namespace script
-}//namespace app
+} // namespace script
+} // namespace app

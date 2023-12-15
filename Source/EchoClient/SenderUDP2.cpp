@@ -109,12 +109,9 @@ void SenderUDP2::onRead(RequestUDP* it) {
     if (it->mUsed > 0) {
         mTimeExt = 0;
         StringView dat = it->getReadBuf();
-        s32 ecode = mProto.importRaw(dat.mData, dat.mLen);
-        if (ecode < 0) {
-            err = EE_ERROR;
-        }
+        err = mProto.importRaw(dat.mData, dat.mLen);
     }
-    if (EE_OK == err) {
+    if (EE_OK == it->mError) {
         it->mUsed = 0;
         if (EE_OK != readIF(it)) {
             RequestUDP::delRequest(it);
@@ -123,7 +120,7 @@ void SenderUDP2::onRead(RequestUDP* it) {
         }
         onReadKCP();
     } else {
-        Logger::log(ELL_ERROR, "SenderUDP2::onRead>>read=%u, ecode=%d", it->mUsed, it->mError);
+        Logger::log(ELL_ERROR, "SenderUDP2::onRead>>read=%u, ecode=%d", it->mUsed, err);
         RequestUDP::delRequest(it);
     }
 }
