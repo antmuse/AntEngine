@@ -110,7 +110,7 @@ s32 LuaReqGetAllocated(lua_State* vm) {
     return 1;
 }
 
-LUALIB_API luaL_Reg LuaLibReq[] = {
+luaL_Reg LuaLibReq[] = {
     {"new", LuaReqNew},
     {"del", LuaReqDel},
     {"__gc", LuaReqDel},
@@ -125,8 +125,7 @@ LUALIB_API luaL_Reg LuaLibReq[] = {
 
 
 s32 LuaRegRequest(lua_State* vm) {
-    LuaRegistClass(vm, LuaLibReq, DSIZEOF(LuaLibReq), G_LUA_REQ, nullptr);
-    return 0;
+    return LuaRegistClass(vm, LuaLibReq, DSIZEOF(LuaLibReq), G_LUA_REQ, nullptr);
 }
 
 

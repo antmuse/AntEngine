@@ -103,7 +103,7 @@ s32 LuaFileRead(lua_State* vm) {
     return 1;
 }
 
-LUALIB_API luaL_Reg LuaLibFile[] = {
+luaL_Reg LuaLibFile[] = {
     {"new", LuaFileNew},
     {"__gc", LuaFileClose},
     {"open", LuaFileOpen},
@@ -116,8 +116,7 @@ LUALIB_API luaL_Reg LuaLibFile[] = {
 
 
 s32 LuaRegFile(lua_State* vm) {
-    LuaRegistClass(vm, LuaLibFile, DSIZEOF(LuaLibFile), G_LUA_FILE, nullptr);
-    return 0;
+    return LuaRegistClass(vm, LuaLibFile, DSIZEOF(LuaLibFile), G_LUA_FILE, nullptr);
 }
 
 

@@ -32,8 +32,9 @@
 namespace app {
 namespace script {
 
-extern s32 LuaRegRequest(lua_State* val);
-extern s32 LuaRegFile(lua_State* val);
+extern s32 LuaRegRequest(lua_State* vm);
+extern s32 LuaRegFile(lua_State* vm);
+extern s32 LuaRegColor(lua_State* vm);
 
 }//namespace script
 }//namespace app

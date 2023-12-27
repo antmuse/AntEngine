@@ -91,9 +91,6 @@ void ScriptManager::initialize() {
     lua_settable(mRootVM, -3); // pop 2
     lua_pop(mRootVM, 1);       // pop package
 
-    // base data struct
-    lua_register(mRootVM, "Color", LuaColor);
-
     // global fuctions
     lua_register(mRootVM, "Log", LuaLog);
     lua_register(mRootVM, "Include", LuaInclude);
@@ -119,6 +116,7 @@ void ScriptManager::initialize() {
 
     LuaRegRequest(mRootVM);
     LuaRegFile(mRootVM);
+    LuaRegColor(mRootVM);
 
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
@@ -241,6 +239,42 @@ bool ScriptManager::remove(const String& name) {
     delete nd->getValue();
     mAllScript.remove(nd);
     return true;
+}
+
+void ScriptManager::setENV(lua_State* vm, bool popCTX, const s8* ctx_name) {
+    luaL_checktype(vm, -1, LUA_TFUNCTION); // func of coroutine
+
+    ctx_name = (ctx_name && ctx_name[0]) ? ctx_name : "VContext";
+    lua_createtable(vm, 0, 2); // 1. ctx_table
+    s32 cnt = lua_gettop(vm);
+
+    /* create a new env
+     * env = {}
+     * env["_G"] = env
+     * env.metatable = new table {__index = _G}
+     */
+    lua_createtable(vm, 0, 2); // 2. env
+    lua_pushvalue(vm, -1);
+    lua_setfield(vm, -2, "_G");
+
+    lua_createtable(vm, 0, 1); // 3. new table for the new env
+    // lua_pushnil(vm);
+    lua_pushglobaltable(vm);
+    lua_setfield(vm, -2, "__index");
+
+    lua_setmetatable(vm, -2); // env.metatable = new table, pop1: new table
+
+    lua_pushvalue(vm, cnt);         // repush ctx table
+    lua_setfield(vm, -2, ctx_name); // set ctx_name = ctx
+
+    // stack: func/ctx_table/env
+    const char* err = lua_setupvalue(vm, -3, 1); // pop1: env
+    printf("setENV: up value name = %s\n", err);
+
+    if (popCTX) {
+        lua_pop(vm, 1); // pop1: ctx_table
+    }
+    // LuaDumpStack(vm);
 }
 
 lua_State* ScriptManager::createThread() {

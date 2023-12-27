@@ -323,6 +323,12 @@
     <ClCompile Include="..\..\Source\RingBlocks.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Color.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Script\LuaColor.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -635,6 +641,9 @@
       <Filter>Include\Net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\RingBlocks.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Color.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>

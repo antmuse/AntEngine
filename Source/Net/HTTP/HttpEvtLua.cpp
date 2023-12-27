@@ -151,21 +151,15 @@ s32 HttpEvtLua::launchRead() {
 }
 
 void HttpEvtLua::creatCurrContext() {
-    luaL_checktype(mLuaThread.mSubVM, -1, LUA_TFUNCTION); // func of coroutine
+    // set context for coroutine
+    script::ScriptManager::setENV(mLuaThread.mSubVM, false); // don't pop context_table
+    lua_pushlightuserdata(mLuaThread.mSubVM, mLuaThread.mSubVM);
+    lua_setfield(mLuaThread.mSubVM, -2, "vVM");
+    lua_pushstring(mLuaThread.mSubVM, "This is the global ctx table");
+    lua_setfield(mLuaThread.mSubVM, -2, "vBrief");
+    script::Script::pushTable(mLuaThread.mSubVM, "vName", "HttpEvtLua");
+    lua_pop(mLuaThread.mSubVM, 1); // pop context_table
     // script::LuaDumpStack(mLuaThread.mSubVM);
-    s32 top = lua_gettop(mLuaThread.mSubVM);
-
-    lua_getupvalue(mLuaThread.mSubVM, -1, 1); // 1.up_table
-
-    lua_pushstring(mLuaThread.mSubVM, "VCurr"); // 2.key
-
-    lua_createtable(mLuaThread.mSubVM, 0, 1); // 3.value
-    script::Script::pushTable(mLuaThread.mSubVM, "mBrief", "This is current context of lua coroutine");
-    script::Script::pushTable(mLuaThread.mSubVM, "mCtxPtr", sizeof("mCtxPtr"), this);
-    script::Script::pushTable(mLuaThread.mSubVM, "mCurrName", sizeof("mCurrName"), "HttpEvtLua", sizeof("HttpEvtLua"));
-
-    lua_rawset(mLuaThread.mSubVM, -3); // set and pop2: key,val
-    lua_settop(mLuaThread.mSubVM, top); // pop1: up_table
 }
 
 

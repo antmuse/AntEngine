@@ -38,36 +38,24 @@ namespace script {
  * @param 2:     msg
  * @return 0
  */
-extern int LuaLog(lua_State* iState);
+extern s32 LuaLog(lua_State* iState);
 
 //callback function for err
-extern int LuaErrorFunc(lua_State* vm);
+extern s32 LuaErrorFunc(lua_State* vm);
 
-extern int LuaPanic(lua_State* vm);
+extern s32 LuaPanic(lua_State* vm);
 
-extern void LuaDumpStack(lua_State* vm);
+extern s32 LuaDumpStack(lua_State* vm);
 
-/**
- * @brief  构造函数: 颜色
- * @param 1 红
- * @param 2 绿
- * @param 3 蓝
- * @param 4 透明度
- * @return 颜色
- */
-extern int LuaColor(lua_State* iState);
+extern s32 LuaRandom(lua_State* iState);
 
+extern s32 LuaEngInfo(lua_State* iState);
 
-extern int LuaRandom(lua_State* iState);
+extern s32 LuaInclude(lua_State* iState);
 
-extern int LuaEngInfo(lua_State* iState);
-extern int LuaEngExit(lua_State* iState);
+extern s32 LuaOpenEngLib(lua_State* iState);
 
-extern int LuaOpenEngLib(lua_State* iState);
-
-extern int LuaInclude(lua_State* iState);
-
-extern void LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
+extern s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
     const s8* className, const s8* namespac = nullptr);
 
 }//namespace script

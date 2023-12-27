@@ -105,6 +105,9 @@ public:
     lua_State* createThread();
     void deleteThread(lua_State*& vm);
     void getThread(lua_State* vm);
+
+    static void setENV(lua_State* vm, bool pop_ctx = true, const s8* ctx_name = "VContext");
+
     static void resumeThread(LuaThread& co);
 
 private:

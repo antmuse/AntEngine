@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\Source\CodecBase64.cpp" />
     <ClCompile Include="..\..\Source\CheckCRC.cpp" />
     <ClCompile Include="..\..\Source\CheckSum.cpp" />
+    <ClCompile Include="..\..\Source\Color.cpp" />
     <ClCompile Include="..\..\Source\db\ConnectConfig.cpp" />
     <ClCompile Include="..\..\Source\db\Database.cpp" />
     <ClCompile Include="..\..\Source\db\Connector.cpp" />
@@ -86,6 +87,7 @@
     <ClCompile Include="..\..\Source\Packet.cpp" />
     <ClCompile Include="..\..\Source\RingBlocks.cpp" />
     <ClCompile Include="..\..\Source\RingBuffer.cpp" />
+    <ClCompile Include="..\..\Source\Script\LuaColor.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFileHandle.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFunc.cpp" />
     <ClCompile Include="..\..\Source\Script\Script.cpp" />
@@ -122,6 +124,7 @@
     <ClInclude Include="..\..\Include\CheckCRC.h" />
     <ClInclude Include="..\..\Include\CheckSum.h" />
     <ClInclude Include="..\..\Include\CodecBase64.h" />
+    <ClInclude Include="..\..\Include\Color.h" />
     <ClInclude Include="..\..\Include\Config.h" />
     <ClInclude Include="..\..\Include\Converter.h" />
     <ClInclude Include="..\..\Include\db\ConnectConfig.h" />
