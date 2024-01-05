@@ -9,6 +9,8 @@ CMakeFiles
 
 
 # files
+.tags
+cscope*.out
 .vscode/*.log
 Depend/*.o
 Bin/*.o
@@ -24,5 +26,4 @@ Build/*/*.user
 Build/*.opendb
 CMakeCache.txt
 *.cmake
-
 

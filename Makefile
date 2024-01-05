@@ -56,7 +56,7 @@ clean:
 
 
 tags:
-	ctags -R *
+	ctags -f ./.tags -R .
 
 
 help:
