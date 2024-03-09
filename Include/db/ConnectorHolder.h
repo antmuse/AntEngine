@@ -9,7 +9,7 @@ namespace app {
 namespace db {
 
 /**
- * @brief ½ö½öÊÇÒ»¸öConnector´úÀíÀà£¬È·±£Îö¹¹Ê±½«Connector·µ»Ø¸øDBÁ¬½Ó³Ø
+ * @brief ä»…ä»…æ˜¯ä¸€ä¸ªConnectorä»£ç†ç±»ï¼Œç¡®ä¿ææ„æ—¶å°†Connectorè¿”å›ç»™DBè¿æ¥æ± 
  */
 class ConnectorHolder {
     friend class ConnectorPool;

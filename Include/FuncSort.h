@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_FUNCSORT_H
@@ -31,18 +31,18 @@
 namespace app {
 
 
-template<class T>
+template <class T>
 inline bool AppCompareLess(const T& left, const T& right) {
     return (left < right);
 }
 
-template<class T>
+template <class T>
 inline bool AppCompareMore(const T& left, const T& right) {
     return (left > right);
 }
 
 
-template<class T>
+template <class T>
 inline void AppSelectSort(T* iArray, usz iSize, bool (*cmper)(const T&, const T&) = AppCompareLess<T>) {
     if (nullptr == iArray || iSize < 2) {
         return;
@@ -66,8 +66,8 @@ inline void AppSelectSort(T* iArray, usz iSize, bool (*cmper)(const T&, const T&
 }
 
 
-//Sinks an element into the heap.
-template<class T>
+// Sinks an element into the heap.
+template <class T>
 inline void AppHeapSink(T* array, ssz element, ssz max, bool (*cmper)(const T&, const T&) = AppCompareLess<T>) {
     T tmp;
     while ((element << 1) < max) { // there is a left child
@@ -76,7 +76,7 @@ inline void AppHeapSink(T* array, ssz element, ssz max, bool (*cmper)(const T&, 
             j = j + 1; // take right child
         }
         if (cmper(array[element], array[j])) {
-            tmp = array[j]; //swap elements
+            tmp = array[j]; // swap elements
             array[j] = array[element];
             array[element] = tmp;
             element = j;
@@ -91,7 +91,7 @@ inline void AppHeapSink(T* array, ssz element, ssz max, bool (*cmper)(const T&, 
  * @brief 堆排序
  * 没有额外的内存浪费，算法在最坏情况下执行O(n*log n)
  */
-template<class T>
+template <class T>
 inline void AppHeapSort(T* iArray, ssz iSize, bool (*cmper)(const T&, const T&) = AppCompareLess<T>) {
     if (iSize < 2 || nullptr == iArray) {
         return;
@@ -122,7 +122,7 @@ inline void AppHeapSort(T* iArray, ssz iSize, bool (*cmper)(const T&, const T&) 
 /**
  * @brief 递归的快速排序，元素不多时(<=256)退化为选择排序
  */
-template<class T>
+template <class T>
 void AppQuickSort(T* iData, usz iSize, bool (*cmper)(const T&, const T&) = AppCompareLess<T>) {
     if (iSize < 2 || nullptr == iData) {
         return;
@@ -136,12 +136,12 @@ void AppQuickSort(T* iData, usz iSize, bool (*cmper)(const T&, const T&) = AppCo
     usz end = iSize - 1;
     T dig = iData[pos];
 
-    //printf("step>> pos = %d, dig = %d\n",  pos, dig);
+    // printf("step>> pos = %d, dig = %d\n",  pos, dig);
 
     while (start < end) {
         for (; start < pos; ++start) {
             if (cmper(dig, iData[start])) {
-                //printf("move [%d] to [%d]\n", start, pos);
+                // printf("move [%d] to [%d]\n", start, pos);
                 iData[pos] = iData[start];
                 pos = start;
                 break;
@@ -149,13 +149,13 @@ void AppQuickSort(T* iData, usz iSize, bool (*cmper)(const T&, const T&) = AppCo
         }
         for (; end > pos; --end) {
             if (cmper(iData[end], dig)) {
-                //printf("move [%d] to [%d]\n", end, pos);
+                // printf("move [%d] to [%d]\n", end, pos);
                 iData[pos] = iData[end];
                 pos = end;
                 break;
             }
         }
-    }//while
+    } // while
 
     iData[pos] = dig;
 
@@ -169,5 +169,4 @@ void AppQuickSort(T* iData, usz iSize, bool (*cmper)(const T&, const T&) = AppCo
 
 } // end namespace app
 
-#endif //APP_FUNCSORT_H
-
+#endif // APP_FUNCSORT_H

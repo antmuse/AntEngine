@@ -13,8 +13,8 @@ class Task;
 using FuncDBTask = void (*)(Task*, Connector*);
 
 /**
- * @brief ·â×°DBÇëÇóÊı¾İ
- * ¿ÉÊ¹ÓÃTask::ArgÊµÏÖ×Ö·û×ªÒå
+ * @brief å°è£…DBè¯·æ±‚æ•°æ®
+ * å¯ä½¿ç”¨Task::Argå®ç°å­—ç¬¦è½¬ä¹‰
  */
 class Task {
     friend class Connector;
@@ -23,11 +23,11 @@ class Task {
 public:
 
     /**
-    * @brief Arg½á¹¹£¬ÓÃÓÚ¹¹ÔìÁ÷Ê½ÈÎÎñ,×Ô¶¯ÍÆ¶ÏÊÇ·ñĞèÒª×ªÒå¡£
+    * @brief Argç»“æ„ï¼Œç”¨äºæ„é€ æµå¼ä»»åŠ¡,è‡ªåŠ¨æ¨æ–­æ˜¯å¦éœ€è¦è½¬ä¹‰ã€‚
     */
     struct Arg {
         /**
-         * @param TÀàĞÍÎªstringÊ±½«×Ô¶¯×ªÒå¡£
+         * @param Tç±»å‹ä¸ºstringæ—¶å°†è‡ªåŠ¨è½¬ä¹‰ã€‚
          */
         template <typename T>
         Arg(const T& param);
@@ -49,16 +49,16 @@ public:
     Task& operator=(Task&&) noexcept = default;
 
     /**
-     * @brief ×·¼ÓÎŞĞè×ªÒåµÄÃüÁî
-     * @param tpart ÃüÁî, ²»Ìá¹©×Ô¶¯×ªÒå
+     * @brief è¿½åŠ æ— éœ€è½¬ä¹‰çš„å‘½ä»¤
+     * @param tpart å‘½ä»¤, ä¸æä¾›è‡ªåŠ¨è½¬ä¹‰
      * @return A reference to this task.
      */
     template <typename T>
     Task& operator<<(const T& param);
 
     /**
-     * @brief ×·¼ÓÃüÁî
-     * @param tpart ÃüÁî, ArgÌá¹©stringÀàĞÍµÄ×Ô¶¯×ªÒå
+     * @brief è¿½åŠ å‘½ä»¤
+     * @param tpart å‘½ä»¤, Argæä¾›stringç±»å‹çš„è‡ªåŠ¨è½¬ä¹‰
      * @return A reference to this task.
      */
     Task& operator<<(Arg tpart);
@@ -75,7 +75,7 @@ public:
 
 private:
     /**
-     * ÄÚ²¿½á¹¹£¬ÀàËÆÓÚArg£¬µ«²»Ö´ĞĞ×ªÒåÇÒ²»ÍÆ¶ÏÊÇ·ñĞèÒª×ªÒå¡£
+     * å†…éƒ¨ç»“æ„ï¼Œç±»ä¼¼äºArgï¼Œä½†ä¸æ‰§è¡Œè½¬ä¹‰ä¸”ä¸æ¨æ–­æ˜¯å¦éœ€è¦è½¬ä¹‰ã€‚
      */
     struct TaskPart {
         TaskPart(std::string value, bool requires_escaping);
@@ -93,8 +93,8 @@ private:
     }
 
     /**
-     * @brief ºÏ²¢ËùÓĞÈÎÎñµÄÃüÁîĞĞ
-     * @param funcescape ×ªÒåº¯Êı
+     * @brief åˆå¹¶æ‰€æœ‰ä»»åŠ¡çš„å‘½ä»¤è¡Œ
+     * @param funcescape è½¬ä¹‰å‡½æ•°
      * @return the final commands
      */
     template <typename FuncEscape>

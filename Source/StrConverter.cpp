@@ -319,5 +319,24 @@ usz AppWcharToUTF8(const wchar_t* in, s8* out, const usz len) {
 #endif
 }
 
+
+usz AppBuf2ToHex(const void* src, usz insize, s8* dest, usz osize) {
+    DASSERT(src && dest && osize);
+    const static u8 hextab[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    usz ret = 0;
+    if (src && dest && osize > 0) {
+        const u8* buf = static_cast<const u8*>(src);
+        while (ret + 2 < osize && insize > 0) {
+            *dest++ = hextab[(*buf) & 0xF];
+            *dest++ = hextab[((*buf++) & 0xF0) >> 4];
+            ret <<= 1;
+            --insize;
+        }
+        *dest = 0;
+    }
+    return ret;
+}
+
+
 } // end namespace app
 

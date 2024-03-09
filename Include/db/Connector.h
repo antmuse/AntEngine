@@ -1,5 +1,5 @@
 #ifndef APP_DB_CONNECTOR_H
-#define	APP_DB_CONNECTOR_H
+#define APP_DB_CONNECTOR_H
 
 #include "db/ConnectConfig.h"
 #include "Logger.h"
@@ -34,7 +34,7 @@ class Connector {
     friend Database;
 
 public:
-    Connector* mNext; //inner use only
+    Connector* mNext; // inner use only
 
     Connector() = delete;
     ~Connector();
@@ -60,7 +60,7 @@ public:
     std::string getError() const;
 
     /// Has this MySQL client had an error?
-    bool isError()const {
+    bool isError() const {
         return mHaveError;
     }
 
@@ -92,7 +92,7 @@ private:
     /**
      * @brief
      * @param timeout in seconds
-    */
+     */
     Connector(ConnectorPool& query_pool, const ConnectConfig& connection);
 
     /**
@@ -147,7 +147,7 @@ private:
     std::string mFinalRequest;
 };
 
-} //namespace db
-} //namespace app
+} // namespace db
+} // namespace app
 
-#endif //APP_DB_CONNECTOR_H
+#endif // APP_DB_CONNECTOR_H

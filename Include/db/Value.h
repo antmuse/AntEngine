@@ -24,12 +24,12 @@ public:
     bool isValid() const;
 
     /**
-     * @brief ×ª»»Ê§°Ü½«·µ»ØÄ¬ÈÏÖµ.
+     * @brief è½¬æ¢å¤±è´¥å°†è¿”å›é»˜è®¤å€¼.
      *
      * It is also safe to always call asStrView() since the
      * MySQL server will always return the data as char[].
      *
-     * @return ×ª»»Öµ.
+     * @return è½¬æ¢å€¼.
      * @{
      */
     StringView asStrView() const;

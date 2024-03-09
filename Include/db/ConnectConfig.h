@@ -1,5 +1,5 @@
 #ifndef APP_DB_CONNECTCONFIG_H
-#define	APP_DB_CONNECTCONFIG_H
+#define APP_DB_CONNECTCONFIG_H
 
 #include "Config.h"
 #include <string>
@@ -18,9 +18,8 @@ public:
      * @param database The database to use upon connecting (optional).
      * @param flags database client flags (optional).
      */
-    ConnectConfig(std::string host, u16 port,
-        std::string user, std::string password,
-        std::string database = "", u64 flags = 0);
+    ConnectConfig(
+        std::string host, u16 port, std::string user, std::string password, std::string database = "", u64 flags = 0);
 
     /**
      * Creates connection information for which database server to connect to.
@@ -30,26 +29,37 @@ public:
      * @param database The database to use upon connecting (optional).
      * @param flags database client flags (optional).
      */
-    ConnectConfig(std::string uxsock, std::string user, std::string password,
-        std::string database = "", u64 flags = 0);
+    ConnectConfig(std::string uxsock, std::string user, std::string password, std::string database = "", u64 flags = 0);
 
-    const std::string& getHost() const { return mHost; }
+    const std::string& getHost() const {
+        return mHost;
+    }
 
-    u16 getPort() const { return mPort; }
+    u16 getPort() const {
+        return mPort;
+    }
 
     /**
      * @return The database unix-uxsock.
      */
-    const std::string& getUnixSocket() const { return mUnixSock; }
+    const std::string& getUnixSocket() const {
+        return mUnixSock;
+    }
 
 
-    const std::string& getUser() const { return mUser; }
+    const std::string& getUser() const {
+        return mUser;
+    }
 
 
-    const std::string& getPassword() const { return mPassword; }
+    const std::string& getPassword() const {
+        return mPassword;
+    }
 
 
-    const std::string& getDatabase() const { return mDatabase; }
+    const std::string& getDatabase() const {
+        return mDatabase;
+    }
 
 
     /**
@@ -58,7 +68,9 @@ public:
      * 但使用存储过程时,是在同一字符串中执行多条语句,
      * 所以该参数需要带上mysql::CLIENT_MULTI_STATEMENTS
      */
-    u64 getClientFlags() const { return mClientFlags; }
+    u64 getClientFlags() const {
+        return mClientFlags;
+    }
 
 private:
     std::string mHost;
@@ -70,7 +82,7 @@ private:
     u64 mClientFlags;
 };
 
-} //namespace db
-} //namespace app
+} // namespace db
+} // namespace app
 
-#endif //APP_DB_CONNECTCONFIG_H
+#endif // APP_DB_CONNECTCONFIG_H

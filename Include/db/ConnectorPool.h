@@ -15,7 +15,7 @@ class Database;
 
 
 /**
-* @brief Êı¾İ¿âÁ¬½Ó³Ø
+* @brief æ•°æ®åº“è¿æ¥æ± 
 */
 class ConnectorPool {
     friend Database;
@@ -51,12 +51,12 @@ private:
 
 
     /**
-    * @brief ½«Á¬½Ó»¹»ØÊı¾İ¿âÁ¬½Ó³Ø
+    * @brief å°†è¿æ¥è¿˜å›æ•°æ®åº“è¿æ¥æ± 
     */
     void push(Connector* con);
 
     /**
-    * @return ·µ»Ø¹Ø±ÕµÄÁ¬½ÓÊıÁ¿
+    * @return è¿”å›å…³é—­çš„è¿æ¥æ•°é‡
     */
     usz close();
 };
