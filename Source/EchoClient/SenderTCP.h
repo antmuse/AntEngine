@@ -14,7 +14,7 @@ public:
 
     ~SenderTCP();
 
-    //@param cnt ·¢ËÍ´ÎÊı
+    //@param cnt å‘é€æ¬¡æ•°
     void setMaxMsg(s32 cnt);
 
     s32 open(const String& addr, bool tls);

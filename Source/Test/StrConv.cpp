@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,7 +51,7 @@ void AppTestStrConv() {
 }
 
 void AppTestBase64() {
-    //base64 = "YmFzZTY0dGVzdA=="
+    // base64 = "YmFzZTY0dGVzdA=="
     const s8* src = "base64test";
     const s32 strsize = (s32)strlen(src);
     s32 esize = CodecBase64::getEncodeCacheSize(strsize);
@@ -67,23 +67,31 @@ void AppTestBase64() {
     delete[] decode;
 }
 
-void AppTestMD5() {
+void AppTestMD5(s32 argc, s8** argv) {
     EncoderMD5 md5;
-    //md5 = "9567E4269E9974E8B28C2F903037F501"
+    // md5 = "9567E4269E9974E8B28C2F903037F501"
     const s8* src = "base64test";
     const s32 strsize = (s32)strlen(src);
     md5.add(src, strsize);
     ID128 resID;
     md5.finish(resID);
     u8* res = (u8*)&resID;
-    printf("str[%d] = %s, md5=", strsize, src);
+    printf("str[%d] = %s\n", strsize, src);
+    printf("buf = %lld,%lld\nmd5 = 0x", resID.mLow, resID.mHigh);
     for (s32 i = 0; i < EncoderMD5::GMD5_LENGTH; ++i) {
         printf("%.2X", res[i]);
     }
     printf("\n");
+
+    s8 hex[EncoderMD5::GMD5_LENGTH * 2 + 1];
+    AppBufToHex(&resID, EncoderMD5::GMD5_LENGTH, hex, sizeof(hex));
+    printf("AppBufToHex = 0x%s\n", hex);
+    resID.clear();
+    AppHexToBuf(hex, sizeof(hex) - 1, &resID, sizeof(resID));
+    printf("re_buf = %lld,%lld\n", resID.mLow, resID.mHigh);
 }
 
-//String::find()性能测试
+// String::find()性能测试
 void AppTestStrFind(s32 cnt) {
     const s32 mx = 2;
     ssz pos[mx];
@@ -104,8 +112,7 @@ void AppTestStrFind(s32 cnt) {
     }
     s64 tm1 = Timer::getRelativeTime();
     for (s32 i = 0; i < mx; ++i) {
-        printf("String::find>>src len=%llu, pos[%d] = %lld, %s\n",
-            stdsrc[i].getLen(), i, pos[i],
+        printf("String::find>>src len=%llu, pos[%d] = %lld, %s\n", stdsrc[i].getLen(), i, pos[i],
             pos[i] < 0 ? "-" : stdsrc[i].c_str() + pos[i]);
     }
     f32 spd = (f32)(tm1 - tm0);
@@ -244,10 +251,10 @@ void AppTestVector() {
     }
     printf("\n");
 
-    //AppSelectSort(arr.getPointer(), arr.size());
-    //printf("select sorted arr\n\t");
-    //AppPrintIntVector(arr.getPointer(), arr.size());
-    //printf("\n");
+    // AppSelectSort(arr.getPointer(), arr.size());
+    // printf("select sorted arr\n\t");
+    // AppPrintIntVector(arr.getPointer(), arr.size());
+    // printf("\n");
 
     s32 nd = arr[arr.size() >> 1];
     s64 pos = arr.linearSearch(nd);
@@ -302,7 +309,7 @@ void AppTestVector() {
             mStr = new s8[16];
             snprintf(mStr, 16, "%s", it.mStr);
         }
-        VNode(VNode&& it)noexcept {
+        VNode(VNode&& it) noexcept {
             mStr = it.mStr;
             it.mStr = nullptr;
         }
@@ -312,16 +319,17 @@ void AppTestVector() {
             }
             return *this;
         }
-        VNode& operator=(VNode&& it)noexcept {
+        VNode& operator=(VNode&& it) noexcept {
             if (mStr != it.mStr) {
                 mStr = it.mStr;
                 it.mStr = nullptr;
             }
             return *this;
         }
-        const s8* getDat()const {
+        const s8* getDat() const {
             return mStr;
         }
+
     private:
         s8* mStr;
     };
@@ -331,7 +339,7 @@ void AppTestVector() {
     vnds.resize(20);
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
     vnds.quickErase(2);
-    vnds.erase(8,4);
+    vnds.erase(8, 4);
     printf("size=%llu,G_BUILD_CNT=%d\n", vnds.size(), G_BUILD_CNT);
     {
         VNode my[20];
@@ -361,9 +369,9 @@ void AppTestVector() {
         TVector<VNode>& vvv2 = *(new TVector<VNode>());
         vvv2.resize(3);
         vvv2 = vnds;
-        delete& vvv2;
+        delete &vvv2;
     }
-    delete& vnds;
+    delete &vnds;
     printf("mem check, G_BUILD_CNT=%d\n", G_BUILD_CNT);
 
 
@@ -383,8 +391,8 @@ void AppTestVector() {
 }
 
 #if defined(DUSE_ZLIB)
-//7 zip Log/ff.ico Log/ff.gz
-//7 unzip Log/ff.gz Log/ff.ico
+// 7 zip Log/ff.ico Log/ff.gz
+// 7 unzip Log/ff.gz Log/ff.ico
 s32 AppTestZlib(s32 argc, s8** argv) {
     FileReader rfile;
     if (!rfile.openFile(argv[3])) {
@@ -400,11 +408,10 @@ s32 AppTestZlib(s32 argc, s8** argv) {
     std::vector<s8> output;
     s8 tmp[1024];
 
-    if ('z' == argv[2][0]) {//zip
+    if ('z' == argv[2][0]) { // zip
         s32 level = true ? Z_BEST_COMPRESSION : Z_NO_COMPRESSION;
         EncoderGzip comp(level);
-        for (usz rdsz = rfile.read(tmp, sizeof(tmp));
-            rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
+        for (usz rdsz = rfile.read(tmp, sizeof(tmp)); rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
             comp.compress(output, tmp, rdsz);
             if (output.size()) {
                 wfile.write(output.data(), output.size());
@@ -416,12 +423,11 @@ s32 AppTestZlib(s32 argc, s8** argv) {
             wfile.write(output.data(), output.size());
             output.clear();
         }
-    } else {//unzip
+    } else { // unzip
         size_t limit = 2LL * 1024 * 1024 * 1024;
         DecoderGzip decomp(limit);
-        
-        for (usz rdsz = rfile.read(tmp, sizeof(tmp));
-            rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
+
+        for (usz rdsz = rfile.read(tmp, sizeof(tmp)); rdsz > 0; rdsz = rfile.read(tmp, sizeof(tmp))) {
             decomp.decompress(output, tmp, rdsz);
             if (output.size()) {
                 wfile.write(output.data(), output.size());
@@ -441,7 +447,7 @@ s32 AppTestZlib(s32 argc, s8** argv) {
     printf("out file size = %llu\n", wfile.getFileSize());
     return 0;
 }
-#endif //DUSE_ZLIB
+#endif // DUSE_ZLIB
 
 
-} //namespace app
+} // namespace app

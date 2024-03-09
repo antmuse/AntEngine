@@ -76,8 +76,8 @@ usz AppUCS2ToUTF8(const u16* src, s8* dest, usz osize);
 
 /**
  * @return len of the hex str, exclude the tail '\0'. */
-usz AppBuf2ToHex(const void* src, usz insize, s8* dest, usz osize);
-
+usz AppBufToHex(const void* src, usz insize, s8* dest, usz osize);
+usz AppHexToBuf(const s8* src, usz insize, void* dest, usz osize);
 
 void AppStrConverterInit();
 usz AppUTF8ToGBK(const s8* from, s8* out, usz outsz);

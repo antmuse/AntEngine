@@ -12,8 +12,8 @@ void AppStrNormalizeGBK(s8* text, u32 options);
 void AppStrNormalizeUTF8(s8* text, u32 options);
 
 s32 AppTestStrConvGBKU8(s32 argc, s8** argv) {
-    const s8* utf8 = u8"ÎÒÊÇutf-8×Ö·û£¡";
-    const s8* gbk = "ÎÒÊÇGBK×Ö·û£¡";
+    const s8* utf8 = u8"æˆ‘æ˜¯utf-8å­—ç¬¦ï¼";
+    const s8* gbk = "æˆ‘æ˜¯GBKå­—ç¬¦ï¼";
     usz utf8_len = strlen(utf8);
     usz gbk_len = strlen(utf8);
     usz utf8buffer_len = utf8_len * 3 + 1;
@@ -28,7 +28,7 @@ s32 AppTestStrConvGBKU8(s32 argc, s8** argv) {
     printf("utf8: %s,%llu \t gbkbuffer: %s,%llu\n", utf8, utf8_len, gbkbuffer, gbkbuffer_len);
     printf("gbk: %s,%llu \t utf8buffer: %s,%llu\n", gbk, gbk_len, utf8buffer, utf8buffer_len);
 
-    memcpy(gbkbuffer, "‡øˆA", sizeof("‡øˆA"));
+    memcpy(gbkbuffer, "åœ‹åœ“", sizeof("åœ‹åœ“"));
     printf("gbk: %s\n", gbkbuffer);
     AppStrNormalizeGBK(gbkbuffer, 8);
     printf("gbk: %s\n", gbkbuffer);

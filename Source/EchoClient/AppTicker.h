@@ -19,12 +19,12 @@ enum EPackType {
     EPT_VERSION = 0xF001
 };
 
-//ĞÄÌø°ü
+//å¿ƒè·³åŒ…
 struct PackActive : MsgHeader {
     void pack(u32 sn) {
         finish(EPT_ACTIVE, sn, EPT_VERSION);
     }
-    //ĞÄÌø°üÏìÓ¦
+    //å¿ƒè·³åŒ…å“åº”
     void packResp(u32 sn) {
         finish(EPT_ACTIVE_RESP, sn, EPT_VERSION);
     }

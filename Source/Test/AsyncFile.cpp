@@ -9,7 +9,7 @@ AsyncFile::AsyncFile() :
     , mPack(1024)
     , mAsyncSize(0) {
     mHandleFile.setClose(EHT_FILE, AsyncFile::funcOnClose, this);
-    //35ÃëÄÚÃ»´¦ÀíÍê³ÉÊ±£¬ÔÚAsyncFile::onTimeout¹Ø±ÕmHandleFile
+    //35ç§’å†…æ²¡å¤„ç†å®Œæˆæ—¶ï¼Œåœ¨AsyncFile::onTimeoutå…³é—­mHandleFile
     mHandleFile.setTime(AsyncFile::funcOnTime, 35 * 1000, 20 * 1000, -1);
 }
 
@@ -90,7 +90,7 @@ void AsyncFile::onRead(RequestFD* it) {
         //printf("AsyncFile::onRead>>%.*s\n", (s32)dat.mLen, dat.mData);
     } else {
         //EOF
-        //Ê¹ÓÃFILE_FLAG_NO_BUFFERINGÊ±,¶ÁÈ¡Ê±ËùÉèÆ«ÒÆÁ¿ÕýºÃÔÚÎÄ¼þÎ²ÇÒÎÄ¼þ´óÐ¡Îª´ÅÅÌÉÈÇøÕûÊý±¶Ê±£¬ecode = 10022
+        //ä½¿ç”¨FILE_FLAG_NO_BUFFERINGæ—¶,è¯»å–æ—¶æ‰€è®¾åç§»é‡æ­£å¥½åœ¨æ–‡ä»¶å°¾ä¸”æ–‡ä»¶å¤§å°ä¸ºç£ç›˜æ‰‡åŒºæ•´æ•°å€æ—¶ï¼Œecode = 10022
         //Logger::log(ELL_ERROR, "AsyncFile::onRead>>read EOF, ecode=%d", it->mError);
         RequestFD::delRequest(it);
     }

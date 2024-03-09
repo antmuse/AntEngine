@@ -31,7 +31,7 @@ void AppTestTree2heap();
 void AppTestStrConv();
 void AppTestDict();
 void AppTestBase64();
-void AppTestMD5();
+void AppTestMD5(s32 argc, s8** argv);
 void AppTestStr(s32 argc, s8** argv);
 void AppTestVector();
 void AppTestRBTreeMap();
@@ -107,8 +107,9 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestRingBlocks(argc, argv);
+            AppTestMD5(argc, argv);
         } else {
+            AppTestRingBlocks(argc, argv);
             AppTestMemPool(argc, argv);
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);
@@ -116,7 +117,6 @@ int main(int argc, char** argv) {
             AppTestNetAddress();
             AppTestVector();
             AppTestRBTreeMap();
-            AppTestMD5();
             AppTestBase64();
             AppTestDict();
             AppTestTree2heap();
