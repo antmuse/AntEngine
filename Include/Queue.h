@@ -100,6 +100,7 @@ public:
         if (block) {
             flag = (1 | 2);
         } else {
+            flag = 0;
             mMutexWrite.lock();
             mConditionRead.notify_one();
             mConditionWrite.notify_all();
