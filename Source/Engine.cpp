@@ -241,7 +241,7 @@ bool Engine::uninit() {
 
         u32 cnt = mpool.getStateCount();
         for (u32 i = 0; i < cnt; i++) {
-            MemStat& mstat = *(mpool.mStats + i);
+            MemStat& mstat = *(mpool.getStats() + i);
             Logger::log(ELL_INFO, "Engine::uninit>>share mem[%u][used/total=%lu/%lu, req=%lu, fail=%lu]", i,
                 mstat.mUsed, mstat.mTotal, mstat.mRequests, mstat.mFails);
         }

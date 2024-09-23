@@ -646,6 +646,9 @@
     <ClInclude Include="..\..\Include\Color.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\ReadWriteLock.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Depend\jsoncpp\LICENSE">

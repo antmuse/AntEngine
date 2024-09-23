@@ -146,7 +146,7 @@ void MemSlabPool::initSlab() {
 }
 
 u32 MemSlabPool::getStateCount() {
-    return G_PageSizeShift - mMinShift;
+    return static_cast<u32>(G_PageSizeShift - mMinShift);
 }
 
 usz MemSlabPool::getPageAddr(MemPage* page) {

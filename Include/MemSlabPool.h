@@ -30,6 +30,9 @@ public:
     void initSlabSize();
 
     u32 getStateCount();
+    MemStat* getStats() {
+        return mStats;
+    }
 
     void* allocMem(usz size);
     void* allocMemNolock(usz size);
@@ -38,8 +41,9 @@ public:
     void freeMem(void* p);
     void freeMemNolock(void* p);
 
+private:
     usz mTotalSize;
-    Spinlock mLock;    //TODO>>use RWLock?
+    Spinlock mLock;
     usz  mMinSize;     //最小8
     usz  mMinShift;    //最小3，mMinSize = 1<<mMinShift
     MemPage* mPages;
@@ -51,7 +55,6 @@ public:
     u8* mEndPos;          //原始内存尾地址
     u32 mLogNoMem : 1;
 
-private:
     void initSlab();
     MemPage* allocPages(usz pages);
     void freePages(MemPage* page, usz pages);

@@ -43,6 +43,7 @@ s32 AppTestRedis(s32 argc, s8** argv);
 s32 AppTestDefault(s32 argc, s8** argv);
 s32 AppTestHttpsClient(s32 argc, s8** argv);
 s32 AppTestFile(s32 argc, s8** argv);
+s32 AppTestReadWriteLock(s32 argc, s8** argv);
 #if defined(DUSE_ZLIB)
 s32 AppTestZlib(s32 argc, s8** argv);
 s32 AppTestRingBlocks(s32 argc, s8** argv);
@@ -107,8 +108,9 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestMD5(argc, argv);
+            AppTestReadWriteLock(argc, argv);
         } else {
+            AppTestMD5(argc, argv);
             AppTestRingBlocks(argc, argv);
             AppTestMemPool(argc, argv);
             AppTestStr(argc, argv);

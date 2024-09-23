@@ -27,31 +27,35 @@
 #define APP_CSPINLOCK_H
 
 #include <atomic>
+#include <thread>
 #include "Nocopy.h"
 
 namespace app {
 
 /**
 * @brief a spinlock base on atomic operations.
-* @note Do't use spinlock on mononuclear CPU, or havy calculation tasks.
 * Spinlock is not recursive lock.
 */
 class Spinlock : public Nocopy {
 public:
+    static const s32 MAX_RETRY_TIMES = 6;
+
     Spinlock() :mValue(0) {
     }
 
     ~Spinlock() {
     }
 
-    /**
-    * @note It's a busing CPU wait when spin.
-    */
     void lock() {
+        s32 retry_times = 0;
         s32 val = 0;
         while (!mValue.compare_exchange_strong(val, 1)) {
-            //busy waiting
             val = 0;
+            // @note useless to retry on mononuclear CPU
+            if (++retry_times == MAX_RETRY_TIMES) {
+                std::this_thread::yield();
+                retry_times = 0;
+            }
         }
     }
 
