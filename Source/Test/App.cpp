@@ -33,6 +33,7 @@ void AppTestDict();
 void AppTestBase64();
 void AppTestMD5(s32 argc, s8** argv);
 void AppTestStr(s32 argc, s8** argv);
+void AppTestSimplifyPath(s32 argc, s8** argv);
 void AppTestVector();
 void AppTestRBTreeMap();
 s32 AppTestThreadPool(s32 argc, s8** argv);
@@ -108,6 +109,7 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
+            AppTestSimplifyPath(argc, argv);
             AppTestReadWriteLock(argc, argv);
         } else {
             AppTestMD5(argc, argv);
