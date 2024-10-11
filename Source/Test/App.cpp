@@ -109,15 +109,14 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
+            AppTestThreadPool(argc, argv);
             AppTestSimplifyPath(argc, argv);
-            AppTestReadWriteLock(argc, argv);
         } else {
             AppTestMD5(argc, argv);
             AppTestRingBlocks(argc, argv);
             AppTestMemPool(argc, argv);
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);
-            AppTestThreadPool(argc, argv);
             AppTestNetAddress();
             AppTestVector();
             AppTestRBTreeMap();
@@ -127,6 +126,7 @@ int main(int argc, char** argv) {
             AppTestStrConv();
             AppTestSystem(argc, argv);
             AppTestMemPool(argc, argv);
+            AppTestReadWriteLock(argc, argv);
         }
         break;
     }
