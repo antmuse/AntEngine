@@ -1,30 +1,29 @@
 #build lib
 
-CC = gcc
-CXX = g++
-CXX_FLAGS = -std=c++11 -m64 
+CC := gcc
+CXX := g++
+CXX_FLAGS := -std=c++11 -m64 
 
 ifeq ($(DEBUG),true)
 	CXX_FLAGS += -ggdb -O0
-	BUILD_TYPE = debug
+	BUILD_TYPE := debug
 else ifeq ($(DEBUG),false)
 	CXX_FLAGS += -ggdb -O3
-	BUILD_TYPE = releaseSymbol
+	BUILD_TYPE := releaseSymbol
 else
 	CXX_FLAGS += -O3
-	BUILD_TYPE = release
+	BUILD_TYPE := release
 endif
 
 # include paths
-INC_DIR = -I$(BUILD_DIR)/Include \
-		  -I$(BUILD_DIR)/Depend/http_parser \
+INC_DIR := -I$(BUILD_DIR)/Include \
 		  -I$(BUILD_DIR)/Depend/jsoncpp \
 		  -I$(BUILD_DIR)/Depend/openssl \
 		  -I$(BUILD_DIR)/Depend/lua/src \
 		  -I/usr/include/mysql \
 
 
-SRCS = $(wildcard *.cpp)
+SRCS := $(wildcard *.cpp)
 SRCS += $(wildcard Linux/*.cpp)
 SRCS += $(wildcard Net/*.cpp)
 SRCS += $(wildcard db/*.cpp)
@@ -34,10 +33,10 @@ SRCS += $(wildcard Net/RedisClient/*.cpp)
 SRCS += $(wildcard ../Depend/http_parser/*.cpp)
 SRCS += $(wildcard ../Depend/jsoncpp/*.cpp)
 
-OBJS = $(SRCS:.cpp=.o)
-DEPS = $(SRCS:.cpp=.d)
-BIN = libAntEngine.a
+OBJS := $(SRCS:.cpp=.o)
+DEPS := $(SRCS:.cpp=.d)
 
+BIN = libAntEngine.a
 BIN := $(addprefix $(BUILD_DIR)/Lib/,$(BIN))
 
 OBJ_DIR = $(BUILD_DIR)/Bin/Temp/objs/$(BUILD_TYPE)/AntEngine
@@ -53,27 +52,26 @@ all:TEMP_DIR $(DEPS) $(OBJS) $(BIN)
 	@echo "------------------------bin=$(BIN)"
 
 
-ifneq ("$(wildcard $(DEPS))","")
-	-@include $(DEPS)  
-endif
-
-
 $(BIN):$(OBJS)
 	@echo "------------------------build $(BIN)"
 	@echo "------------------------build $(BUILD_TYPE) mode"
 	@ar rcs $(BIN) $^
 
 
+ifneq ("$(wildcard $(DEPS))","")
+	-@include $(DEPS)  
+endif
+
 $(OBJ_DIR)/%.o:%.cpp
-	$(CXX) $(CXX_FLAGS) $(INC_DIR) -o $@ -c $(filter %.cpp,$^)
+	#$(CXX) $(CXX_FLAGS) $(INC_DIR) -o $@ -c $(filter %.cpp,$^)
+	$(CXX) $(CXX_FLAGS) $(INC_DIR) -o $@ -c $<
 
 
 $(DEP_DIR)/%.d:%.cpp
 	$(CXX) $(INC_DIR) -MM $^ -MF $@
 
 TEMP_DIR:
-	#$(shell mkdir -p $(OBJ_DIR))
-	#$(shell mkdir -p $(OBJ_DIR)/Net)
+	#objs dir
 	$(shell mkdir -p $(OBJ_DIR)/Linux)
 	$(shell mkdir -p $(OBJ_DIR)/db)
 	$(shell mkdir -p $(OBJ_DIR)/Script)
@@ -81,8 +79,7 @@ TEMP_DIR:
 	$(shell mkdir -p $(OBJ_DIR)/Net/RedisClient)
 	$(shell mkdir -p $(OBJ_DIR)/../Depend/http_parser)
 	$(shell mkdir -p $(OBJ_DIR)/../Depend/jsoncpp)
-	#$(shell mkdir -p $(DEP_DIR))
-	#$(shell mkdir -p $(DEP_DIR)/Net)
+	#deps dir
 	$(shell mkdir -p $(DEP_DIR)/Linux)
 	$(shell mkdir -p $(DEP_DIR)/db)
 	$(shell mkdir -p $(DEP_DIR)/Script)
