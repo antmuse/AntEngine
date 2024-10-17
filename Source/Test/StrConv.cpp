@@ -119,6 +119,35 @@ void AppTestStrFind(s32 cnt) {
     printf("String::find>>%llums/%d, speed=%.2fms\n\n\n\n", tm1 - tm0, cnt, spd / mx);
 }
 
+void AppTestSimplifyPath(s32 argc, s8** argv) {
+     const s8* egs[] = {
+        "/.",
+        "/..",
+        "/../.",
+        "/./..",
+        "/home/./././yes/../../ink/filesp/./cores",
+        "y/v/../../../ink/fs././cores"
+        "myfile/vals1..ok/test..",
+        "//./win/././//he...///mp3.sd/../",
+        "/home/user/../Pictures",
+        "/.../a/../b/c/../d/./",
+        "/a/./b/../../c/",
+        "/a//b////c/d//././/..",
+        "/home/foo/.ssh/../.ssh2/authorized_keys/",
+        "yes/../../ink/filesp/./cores",
+        "C:/App/qv..q\\..\\not-support-win-path\\.\\.\\end\\chunk\\.\\..\\..",
+        "C:\\App/..qq./././///flush\\\\\\\\/my/./../../",
+        "D:\\files\\..\\\\..\\..//\\end/ink"
+    };
+    const s32 mx = DSIZEOF(egs);
+    String val(128);
+    for (s32 i = 0; i < mx; ++i) {
+        val = egs[i];
+        printf("src [%.2d] = %s\n", i, val.c_str());
+        val.resize(AppSimplifyPath(const_cast<s8*>(val.c_str()), val.c_str() + val.size()));
+        printf("dest[%.2d] = %s\n\n", i, val.c_str());
+    }
+}
 
 void AppTestStr(s32 argc, s8** argv) {
     AppTestStrFind(argc > 2 ? App10StrToS32(argv[2]) : 1);

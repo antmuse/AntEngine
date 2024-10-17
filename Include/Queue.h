@@ -98,9 +98,9 @@ public:
     void setBlock(bool block) {
         std::atomic<s32>& flag = *reinterpret_cast<std::atomic<s32>*>(&mBlockFlag);
         if (block) {
-            flag = (1 | 2);
+            flag.store(1 | 2);
         } else {
-            flag = 0;
+            flag.store(0);
             mMutexWrite.lock();
             mConditionRead.notify_one();
             mConditionWrite.notify_all();
@@ -111,9 +111,9 @@ public:
     void setBlockRead(bool block) {
         std::atomic<s32>& flag = *reinterpret_cast<std::atomic<s32>*>(&mBlockFlag);
         if (block) {
-            flag |= 1;
+            flag.fetch_or(1);
         } else {
-            flag &= ~1;
+            flag.fetch_and(~1);
             mMutexRead.lock();
             mConditionRead.notify_one();
             mMutexRead.unlock();
@@ -123,9 +123,9 @@ public:
     void setBlockWrite(bool block) {
         std::atomic<s32>& flag = *reinterpret_cast<std::atomic<s32>*>(&mBlockFlag);
         if (block) {
-            flag |= 2;
+            flag.fetch_or(2);
         } else {
-            flag &= ~2;
+            flag.fetch_and(~2);
             mMutexWrite.lock();
             mConditionWrite.notify_all();
             mMutexWrite.unlock();

@@ -33,6 +33,7 @@ void AppTestDict();
 void AppTestBase64();
 void AppTestMD5(s32 argc, s8** argv);
 void AppTestStr(s32 argc, s8** argv);
+void AppTestSimplifyPath(s32 argc, s8** argv);
 void AppTestVector();
 void AppTestRBTreeMap();
 s32 AppTestThreadPool(s32 argc, s8** argv);
@@ -108,14 +109,14 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestReadWriteLock(argc, argv);
+            AppTestThreadPool(argc, argv);
+            AppTestSimplifyPath(argc, argv);
         } else {
             AppTestMD5(argc, argv);
             AppTestRingBlocks(argc, argv);
             AppTestMemPool(argc, argv);
             AppTestStr(argc, argv);
             AppTestStrConvGBKU8(argc, argv);
-            AppTestThreadPool(argc, argv);
             AppTestNetAddress();
             AppTestVector();
             AppTestRBTreeMap();
@@ -125,6 +126,7 @@ int main(int argc, char** argv) {
             AppTestStrConv();
             AppTestSystem(argc, argv);
             AppTestMemPool(argc, argv);
+            AppTestReadWriteLock(argc, argv);
         }
         break;
     }

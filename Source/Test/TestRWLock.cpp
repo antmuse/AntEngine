@@ -2,7 +2,9 @@
 #include <thread>
 #include <iostream>
 #include <mutex>
+#if defined(DUSE_CPP17)
 #include <shared_mutex>
+#endif
 #include "Engine.h"
 #include "Loop.h"
 #include "ReadWriteLock.h"
@@ -11,14 +13,16 @@ namespace app {
 
 // g++ main.cpp -lpthread -std=c++17
 
-std::atomic<s64> i = 0;
-std::atomic<s64> s = 0;
-int64_t count = 1 * 1000 * 1000;
+std::atomic<s64> i(0);
+std::atomic<s64> s(0);
+s32 count = 1 * 1000 * 1000;
 
+#if defined(DUSE_CPP17)
 // c++17
 typedef std::shared_lock<std::shared_mutex> read_lock;
 typedef std::unique_lock<std::shared_mutex> write_lock;
 std::shared_mutex sm;
+#endif
 
 ReadWriteLock rwlk;
 

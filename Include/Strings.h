@@ -141,6 +141,66 @@ static ssz AppSundayFind(const T* txt, ssz txtLen, const P* pattern, ssz patLen)
 }
 
 
+DFINLINE bool AppIsPathDelimiter(s32 v) {
+    return '/' == v || '\\' == v;
+}
+
+/**
+ * @return length after simplified.
+ */
+template <typename T>
+static usz AppSimplifyPath(T* str, const T* const end) {
+    DASSERT(str);
+    T* dest = str;
+    T* curr = str;
+    while (curr < end) {
+        if (AppIsPathDelimiter(*curr)) {
+            *curr = '/';
+            if (curr + 1 == end) {
+                *dest++ = '/';
+                break;
+            }
+            if (AppIsPathDelimiter(curr[1])) {
+                ++curr;
+                //*curr = '/';
+                continue;
+            }
+            if ('.' == curr[1]) {
+                if (curr + 2 == end) {
+                    *dest++ = '/';
+                    break;
+                }
+                if (AppIsPathDelimiter(curr[2])) { // case:  /./
+                    curr += 2;
+                    //*curr = '/';
+                    continue;
+                }
+                if ('.' == curr[2] && (curr + 3 == end || AppIsPathDelimiter(curr[3]))) { // case: /../
+                    if (dest > str) {
+                        --dest;
+                        if (dest[0] == '/') {
+                            --dest;
+                        }
+                        while (dest > str && dest[0] != '/') {
+                            --dest;
+                        }
+                    }
+                    if (curr + 3 == end) {
+                        *dest++ = '/';
+                        break;
+                    }
+                    curr += 3;
+                    //*curr = '/';
+                    continue;
+                }
+            }
+        }
+        *dest++ = *curr++;
+    } // while
+    return dest - str;
+}
+
+
 /**
 * @brief
 * 此类不管理任何内存
@@ -214,6 +274,10 @@ public:
 
     void toUpper() {
         AppStr2Upper(mData, mLen);
+    }
+
+    void simplifyPath() {
+        mLen = AppSimplifyPath(mData, mData + mLen);
     }
 
     T* mData;
@@ -599,6 +663,14 @@ public:
         return false;
     }
 
+    void simplifyPath() {
+        mLen = AppSimplifyPath(mBuffer, mBuffer + mLen);
+        mBuffer[mLen] = 0;
+    }
+
+    void resize(usz val) {
+        setLen(val);
+    }
 
     void setLen(usz val) {
         if (val >= mAllocated) {
