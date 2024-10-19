@@ -15,12 +15,14 @@ else
 	BUILD_TYPE := release
 endif
 
+BUILD_DIR:=../..
+
 # include paths
 INC_DIR := -I$(BUILD_DIR)/Include \
-		  -I$(BUILD_DIR)/Depend/jsoncpp \
-		  -I$(BUILD_DIR)/Depend/openssl \
-		  -I$(BUILD_DIR)/Depend/lua/src \
-		  -I/usr/include/mysql \
+		   -I$(BUILD_DIR)/Depend/jsoncpp \
+		   -I$(BUILD_DIR)/Depend/openssl \
+		   -I$(BUILD_DIR)/Depend/lua/src \
+		   -I/usr/include/mysql \
 
 
 BIN  := $(BUILD_DIR)/Bin/HttpClient.bin
@@ -29,11 +31,10 @@ OBJS := $(SRCS:.cpp=.o)
 DEPS := $(SRCS:.cpp=.d)
 LIBS := -L$(BUILD_DIR)/Lib -lAntEngine -lmysqlclient -llua -lssl -lcrypto -lz -lpthread -ldl
 
-OBJ_DIR := $(BUILD_DIR)/Bin/Temp/objs/$(BUILD_TYPE)/HttpClient
-DEP_DIR := $(BUILD_DIR)/Bin/Temp/deps/HttpClient
+OBJ_DIR := $(BUILD_DIR)/Bin/Temp/$(BUILD_TYPE)/HttpClient
 
 OBJS := $(addprefix $(OBJ_DIR)/,$(OBJS))
-DEPS := $(addprefix $(DEP_DIR)/,$(DEPS))
+DEPS := $(addprefix $(OBJ_DIR)/,$(DEPS))
 
 #------------------------------------------------------
 all:TEMP_DIR $(DEPS) $(OBJS) $(BIN)
@@ -45,16 +46,16 @@ $(BIN):$(OBJS)
 	$(CXX) $(CXX_FLAGS) -o $@ $^ $(LIBS)
 
 ifneq ("$(wildcard $(DEPS))","")
-	-@include $(DEPS)
+sinclude $(DEPS)
 endif
 
 $(OBJ_DIR)/%.o:%.cpp
 	$(CXX) $(CXX_FLAGS) $(INC_DIR) -o $@ -c $<
 
 
-$(DEP_DIR)/%.d:%.cpp
-	$(CXX) $(INC_DIR) -MM $^ -MF $@
+$(OBJ_DIR)/%.d:%.cpp
+	@echo -n "$(@D)/" > $@
+	g++ $(INC_DIR) -MM $^ >> $@
 
 TEMP_DIR:
-	mkdir -p $(OBJ_DIR)/HttpClient
-	mkdir -p $(DEP_DIR)/HttpClient
+	mkdir -p $(OBJ_DIR)

@@ -41,8 +41,7 @@ all:path
 
 .PHONY: path
 path:
-	$(shell mkdir -p "$(BUILD_DIR)/Lib")
-
+	mkdir -p $(BUILD_DIR)/Lib
 
 
 .PHONY: clean

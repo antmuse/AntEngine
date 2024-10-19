@@ -10,20 +10,21 @@ CMakeFiles
 
 # files
 .tags
-cscope*.out
-.vscode/*.log
-Depend/*.o
-Bin/*.o
-Bin/*.bin
-Bin/*.dll
-Bin/*.pdb
-Bin/*.exe
-Bin/*.iobj
-Bin/*.ipdb
-Bin/*.ilk
-Build/*.db
-Build/*/*.user
-Build/*.opendb
 CMakeCache.txt
+*.o
+*.d
+*.a
+*.lib
+*.bin
+*.dll
+*.pdb
+*.exe
+*.log
+*.iobj
+*.ipdb
+*.ilk
+*.db
+*.user
 *.cmake
-
+*.opendb
+cscope*.out
