@@ -58,7 +58,7 @@ public:
         if (it) {
             it->grab();
         }
-        mTCP.getLink().mParent = (Node3*)it; //借用时间堆mLink上指针，存iUser
+        mTCP.getLink().mParent = (Node3*)it; //鍊熺敤鏃堕棿鍫唌Link涓婃寚閽堬紝瀛榠User
     }
 
 

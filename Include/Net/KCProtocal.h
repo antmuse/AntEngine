@@ -111,18 +111,18 @@ public:
 private:
     struct SegmentKCP {
         Node2 mLinkNode;
-        u32 mConvID;     // conversation, »á»°ĞòºÅ: ½ÓÊÕµ½µÄÊı¾İ°üÓë·¢ËÍµÄÒ»ÖÂ²Å½ÓÊÕ´ËÊı¾İ°ü
-        u32 mCMD;        // command, Ö¸ÁîÀàĞÍ: ´ú±íÕâ¸öSegmentµÄÀàĞÍ
-        u32 mFragment;   // ·Ö¶ÎĞòºÅ
-        u32 mWindow;     // ´°¿Ú´óĞ¡
-        u32 mTimestamp;  // ·¢ËÍµÄÊ±¼ä´Á
-        u32 mSN;         // sequence number, segmentĞòºÅ
-        u32 mUNA;        // unacknowledged, µ±Ç°Î´ÊÕµ½µÄĞòºÅ: ¼´´ú±íÕâ¸öĞòºÅÖ®Ç°µÄ°ü¾ùÊÕµ½
-        u32 mDataSize;   // Êı¾İ³¤¶È
-        u32 mResendTime; // ÖØ·¢µÄÊ±¼ä´Á
-        u32 mRTO;        // ³¬Ê±ÖØ´«µÄÊ±¼ä¼ä¸ô
-        u32 mFastACK;    // ackÌø¹ıµÄ´ÎÊı£¬ÓÃÓÚ¿ìËÙÖØ´«
-        u32 mSegXmit;    // ·¢ËÍµÄ´ÎÊı(¼´ÖØ´«µÄ´ÎÊı)
+        u32 mConvID;     // conversation, ä¼šè¯åºå·: æ¥æ”¶åˆ°çš„æ•°æ®åŒ…ä¸å‘é€çš„ä¸€è‡´æ‰æ¥æ”¶æ­¤æ•°æ®åŒ…
+        u32 mCMD;        // command, æŒ‡ä»¤ç±»å‹: ä»£è¡¨è¿™ä¸ªSegmentçš„ç±»å‹
+        u32 mFragment;   // åˆ†æ®µåºå·
+        u32 mWindow;     // çª—å£å¤§å°
+        u32 mTimestamp;  // å‘é€çš„æ—¶é—´æˆ³
+        u32 mSN;         // sequence number, segmentåºå·
+        u32 mUNA;        // unacknowledged, å½“å‰æœªæ”¶åˆ°çš„åºå·: å³ä»£è¡¨è¿™ä¸ªåºå·ä¹‹å‰çš„åŒ…å‡æ”¶åˆ°
+        u32 mDataSize;   // æ•°æ®é•¿åº¦
+        u32 mResendTime; // é‡å‘çš„æ—¶é—´æˆ³
+        u32 mRTO;        // è¶…æ—¶é‡ä¼ çš„æ—¶é—´é—´éš”
+        u32 mFastACK;    // ackè·³è¿‡çš„æ¬¡æ•°ï¼Œç”¨äºå¿«é€Ÿé‡ä¼ 
+        u32 mSegXmit;    // å‘é€çš„æ¬¡æ•°(å³é‡ä¼ çš„æ¬¡æ•°)
         s8 mData[1];
 
         s8* encode2Buf(s8* out) const;
@@ -147,63 +147,63 @@ private:
 
     ///////////////////////////////////////////////////////////////////////////
 
-    u32 mConvID; // »á»°ID
-    u32 mMTU;    // ×î´ó´«Êäµ¥Ôª
-    u32 mMSS;    // ×î´ó·ÖÆ¬´óĞ¡
-    u32 mState;  // Á¬½Ó×´Ì¬£¨0xFFFFFFFF±íÊ¾¶Ï¿ªÁ¬½Ó£©
+    u32 mConvID; // ä¼šè¯ID
+    u32 mMTU;    // æœ€å¤§ä¼ è¾“å•å…ƒ
+    u32 mMSS;    // æœ€å¤§åˆ†ç‰‡å¤§å°
+    u32 mState;  // è¿æ¥çŠ¶æ€ï¼ˆ0xFFFFFFFFè¡¨ç¤ºæ–­å¼€è¿æ¥ï¼‰
 
-    u32 mSendUNA;       // µÚÒ»¸öÎ´È·ÈÏµÄ°ü
-    u32 mSendNextSN;    // ´ı·¢ËÍ°üµÄĞòºÅ
-    u32 mReceiveNextSN; // ´ı½ÓÊÕÏûÏ¢µÄĞòºÅ
+    u32 mSendUNA;       // ç¬¬ä¸€ä¸ªæœªç¡®è®¤çš„åŒ…
+    u32 mSendNextSN;    // å¾…å‘é€åŒ…çš„åºå·
+    u32 mReceiveNextSN; // å¾…æ¥æ”¶æ¶ˆæ¯çš„åºå·
 
-    u32 mRecentTime;  // ÔİÎŞÓÃ
-    u32 mLaskAckTime; // ÔİÎŞÓÃ
-    u32 mSsthresh;    // ÓµÈû´°¿ÚµÄãĞÖµ,ÒÔ°üÎªµ¥Î»£¨TCPÒÔ×Ö½ÚÎªµ¥Î»£©
+    u32 mRecentTime;  // æš‚æ— ç”¨
+    u32 mLaskAckTime; // æš‚æ— ç”¨
+    u32 mSsthresh;    // æ‹¥å¡çª—å£çš„é˜ˆå€¼,ä»¥åŒ…ä¸ºå•ä½ï¼ˆTCPä»¥å­—èŠ‚ä¸ºå•ä½ï¼‰
 
-    s32 mRX_rttval; // ack½ÓÊÕrtt¸¡¶¯Öµ
-    s32 mRX_srtt;   // ack½ÓÊÕrttÆ½»¬Öµ(smoothed)
-    s32 mRX_RTO;    // ÓÉack½ÓÊÕÑÓ³Ù¼ÆËã³öÀ´µÄ¸´Ô­Ê±¼ä
-    s32 mRX_MinRTO; // ×îĞ¡¸´Ô­Ê±¼ä
+    s32 mRX_rttval; // ackæ¥æ”¶rttæµ®åŠ¨å€¼
+    s32 mRX_srtt;   // ackæ¥æ”¶rttå¹³æ»‘å€¼(smoothed)
+    s32 mRX_RTO;    // ç”±ackæ¥æ”¶å»¶è¿Ÿè®¡ç®—å‡ºæ¥çš„å¤åŸæ—¶é—´
+    s32 mRX_MinRTO; // æœ€å°å¤åŸæ—¶é—´
 
     u32 mSendWindowSize;
     u32 mReceiveWindowSize;
 
-    u32 mRemoteRecvWindowSize; // Ô¶¶Ë½ÓÊÕ´°¿Ú´óĞ¡
-    u32 mCongestionWindowSize; // ÓµÈû´°¿Ú´óĞ¡Congestion window size
-    // Ì½²é±äÁ¿£¬IKCP_ASK_TELL±íÊ¾¸æÖªÔ¶¶Ë´°¿Ú´óĞ¡¡£IKCP_ASK_SEND±íÊ¾ÇëÇóÔ¶¶Ë¸æÖª´°¿Ú´óĞ¡
+    u32 mRemoteRecvWindowSize; // è¿œç«¯æ¥æ”¶çª—å£å¤§å°
+    u32 mCongestionWindowSize; // æ‹¥å¡çª—å£å¤§å°Congestion window size
+    // æ¢æŸ¥å˜é‡ï¼ŒIKCP_ASK_TELLè¡¨ç¤ºå‘ŠçŸ¥è¿œç«¯çª—å£å¤§å°ã€‚IKCP_ASK_SENDè¡¨ç¤ºè¯·æ±‚è¿œç«¯å‘ŠçŸ¥çª—å£å¤§å°
     u32 mProbe;
 
-    u32 mCurrent;       // µ±Ç°µÄÊ±¼ä´Á
-    u32 mInterval;      // ÄÚ²¿flushË¢ĞÂ¼ä¸ô
-    u32 mNextFlushTime; // ÏÂ´ÎflushË¢ĞÂÊ±¼ä´Á
+    u32 mCurrent;       // å½“å‰çš„æ—¶é—´æˆ³
+    u32 mInterval;      // å†…éƒ¨flushåˆ·æ–°é—´éš”
+    u32 mNextFlushTime; // ä¸‹æ¬¡flushåˆ·æ–°æ—¶é—´æˆ³
     u32 mXmit;
 
-    u32 mRecvBufCount;   // ½ÓÊÕ»º´æÖĞÏûÏ¢ÊıÁ¿
-    u32 mSendBufCount;   // ·¢ËÍ»º´æÖĞÏûÏ¢ÊıÁ¿
-    u32 mRecvQueueCount; // ½ÓÊÕ¶ÓÁĞÖĞÏûÏ¢ÊıÁ¿
-    u32 mSendQueueCount; // ·¢ËÍ¶ÓÁĞÖĞÏûÏ¢ÊıÁ¿
-    u32 mNoDelay;        // ÊÇ·ñÆô¶¯ÎŞÑÓ³ÙÄ£Ê½
+    u32 mRecvBufCount;   // æ¥æ”¶ç¼“å­˜ä¸­æ¶ˆæ¯æ•°é‡
+    u32 mSendBufCount;   // å‘é€ç¼“å­˜ä¸­æ¶ˆæ¯æ•°é‡
+    u32 mRecvQueueCount; // æ¥æ”¶é˜Ÿåˆ—ä¸­æ¶ˆæ¯æ•°é‡
+    u32 mSendQueueCount; // å‘é€é˜Ÿåˆ—ä¸­æ¶ˆæ¯æ•°é‡
+    u32 mNoDelay;        // æ˜¯å¦å¯åŠ¨æ— å»¶è¿Ÿæ¨¡å¼
 
-    // ÊÇ·ñµ÷ÓÃ¹ıupdateº¯ÊıµÄ±êÊ¶(ĞèÒªÉÏ²ã²»¶ÏµÄµ÷ÓÃKCProtocal::updateºÍKCProtocal::checkÀ´Çı¶¯kcpµÄÊÕ·¢¹ı³Ì)
+    // æ˜¯å¦è°ƒç”¨è¿‡updateå‡½æ•°çš„æ ‡è¯†(éœ€è¦ä¸Šå±‚ä¸æ–­çš„è°ƒç”¨KCProtocal::updateå’ŒKCProtocal::checkæ¥é©±åŠ¨kcpçš„æ”¶å‘è¿‡ç¨‹)
     u32 mUpdated;
 
-    u32 mNextProbeTime;   // ÏÂ´ÎÌ½²é´°¿ÚµÄÊ±¼ä´Á
-    u32 mProbeWait;       // Ì½²é´°¿ÚĞèÒªµÈ´ıµÄÊ±¼ä
-    u32 mDeadLink;        // ×î´óÖØ´«´ÎÊı
-    u32 mIncr;            // ¿É·¢ËÍµÄ×î´óÊı¾İÁ¿
-    Node2 mSendQueue;     // ·¢ËÍÏûÏ¢µÄ¶ÓÁĞ
-    Node2 mReceiveQueue;  // ½ÓÊÕÏûÏ¢µÄ¶ÓÁĞ
-    Node2 mSendBuffer;    // ·¢ËÍÏûÏ¢µÄ»º´æ
-    Node2 mReceiveBuffer; // ½ÓÊÕÏûÏ¢µÄ»º´æ
-    u32* mListACK;        // ´ı·¢ËÍµÄackÁĞ±í
-    u32 mAckCount;        // mListACKÖĞackµÄÊıÁ¿£¬Ã¿¸öackÔÚmListACKÖĞ´æ´¢ts£¬snÁ½¸öÁ¿
-    u32 mAckBlock;        // 2µÄ±¶Êı£¬±êÊ¶mListACK×î´ó¿ÉÈİÄÉµÄackÊıÁ¿
+    u32 mNextProbeTime;   // ä¸‹æ¬¡æ¢æŸ¥çª—å£çš„æ—¶é—´æˆ³
+    u32 mProbeWait;       // æ¢æŸ¥çª—å£éœ€è¦ç­‰å¾…çš„æ—¶é—´
+    u32 mDeadLink;        // æœ€å¤§é‡ä¼ æ¬¡æ•°
+    u32 mIncr;            // å¯å‘é€çš„æœ€å¤§æ•°æ®é‡
+    Node2 mSendQueue;     // å‘é€æ¶ˆæ¯çš„é˜Ÿåˆ—
+    Node2 mReceiveQueue;  // æ¥æ”¶æ¶ˆæ¯çš„é˜Ÿåˆ—
+    Node2 mSendBuffer;    // å‘é€æ¶ˆæ¯çš„ç¼“å­˜
+    Node2 mReceiveBuffer; // æ¥æ”¶æ¶ˆæ¯çš„ç¼“å­˜
+    u32* mListACK;        // å¾…å‘é€çš„ackåˆ—è¡¨
+    u32 mAckCount;        // mListACKä¸­ackçš„æ•°é‡ï¼Œæ¯ä¸ªackåœ¨mListACKä¸­å­˜å‚¨tsï¼Œsnä¸¤ä¸ªé‡
+    u32 mAckBlock;        // 2çš„å€æ•°ï¼Œæ ‡è¯†mListACKæœ€å¤§å¯å®¹çº³çš„ackæ•°é‡
     void* mUser;          // KCProtocal nevel use this param,just callback
     s8* mBuffer;
-    s32 mFastResend; // ´¥·¢¿ìËÙÖØ´«µÄÖØ¸´ack¸öÊı
+    s32 mFastResend; // è§¦å‘å¿«é€Ÿé‡ä¼ çš„é‡å¤ackä¸ªæ•°
     s32 mFastAckLimit;
-    s32 mNoCongestionWindow; // È¡ÏûÓµÈû¿ØÖÆ
-    s32 mStream;             // ÊÇ·ñ²ÉÓÃÁ÷´«ÊäÄ£Ê½
+    s32 mNoCongestionWindow; // å–æ¶ˆæ‹¥å¡æ§åˆ¶
+    s32 mStream;             // æ˜¯å¦é‡‡ç”¨æµä¼ è¾“æ¨¡å¼
     s32 mLogMask;
     KcpSendRawCall mCallSendRaw;
     MemPool* mMemPool;

@@ -80,7 +80,7 @@ public:
     }
 
     /**
-    *@brief ÊÕËõÈİÁ¿Ê¹Æä²»³¬¹ımaximum.
+    *@brief æ”¶ç¼©å®¹é‡ä½¿å…¶ä¸è¶…è¿‡maximum.
     *@param maximum The max cache size.
     */
     void shrink(usz maximum);
@@ -123,9 +123,9 @@ public:
     usz writeU32(u32 ch);
 
     /**
-    *@brief ´ÓÍ·²¿ÇåÀíÖ¸¶¨×Ö½ÚÊı.Ê£Óà×Ö½ÚÊıÇ°ÒÆ
-    *@param iSize É¾³ı×Ö½ÚÊı.
-    *@return Ê£Óà×Ö½ÚÊı.
+    *@brief ä»å¤´éƒ¨æ¸…ç†æŒ‡å®šå­—èŠ‚æ•°.å‰©ä½™å­—èŠ‚æ•°å‰ç§»
+    *@param iSize åˆ é™¤å­—èŠ‚æ•°.
+    *@return å‰©ä½™å­—èŠ‚æ•°.
     */
     usz clear(usz iSize = (-1));
 

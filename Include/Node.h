@@ -32,9 +32,9 @@
 namespace app {
 
 /*
-* @brief ½«½áµã¼ÓÈëÑ­»·µ¥Á´±íÎ²²¿
-* @param que, ¶ÓÁĞÎ²½áµã
-* @param it, Èë¶Ó½áµã
+* @brief å°†ç»“ç‚¹åŠ å…¥å¾ªç¯å•é“¾è¡¨å°¾éƒ¨
+* @param que, é˜Ÿåˆ—å°¾ç»“ç‚¹
+* @param it, å…¥é˜Ÿç»“ç‚¹
 */
 template<class T>
 DFINLINE void AppPushRingQueueTail_1(T*& que, T* it) {
@@ -49,9 +49,9 @@ DFINLINE void AppPushRingQueueTail_1(T*& que, T* it) {
 
 
 /*
-* @brief ½«½áµã¼ÓÈëÑ­»·µ¥Á´±íÍ·²¿
-* @param que, ¶ÓÁĞÎ²½áµã
-* @param it, Èë¶Ó½áµã
+* @brief å°†ç»“ç‚¹åŠ å…¥å¾ªç¯å•é“¾è¡¨å¤´éƒ¨
+* @param que, é˜Ÿåˆ—å°¾ç»“ç‚¹
+* @param it, å…¥é˜Ÿç»“ç‚¹
 */
 template<class T>
 DFINLINE void AppPushRingQueueHead_1(T*& que, T* it) {
@@ -66,9 +66,9 @@ DFINLINE void AppPushRingQueueHead_1(T*& que, T* it) {
 
 
 /*
-* @brief ½«Ñ­»·µ¥Á´±íÍ·²¿³ö¶Ó
-* @param que, ¶ÓÁĞÎ²½áµã
-* @return ³ö¶Ó½áµã»ònull
+* @brief å°†å¾ªç¯å•é“¾è¡¨å¤´éƒ¨å‡ºé˜Ÿ
+* @param que, é˜Ÿåˆ—å°¾ç»“ç‚¹
+* @return å‡ºé˜Ÿç»“ç‚¹æˆ–null
 */
 template<class T>
 DFINLINE T* AppPopRingQueueHead_1(T*& que) {

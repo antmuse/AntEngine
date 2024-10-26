@@ -63,12 +63,12 @@ public:
     }
 
     /**
-    * @param offset д����ʼ��
+    * @param offset offset of file
     */
     s32 write(RequestFD* it, usz offset = 0);
 
     /**
-    * @param offset ��ȡ��ʼ��
+    * @param offset offset of file
     */
     s32 read(RequestFD* it, usz offset = 0);
 
@@ -82,7 +82,7 @@ public:
     */
     s32 open(const String& fname, s32 flag = 1);
 
-    //�ضϻ���չ�ļ�
+    //truncate file
     bool setFileSize(usz fsz);
 
 protected:
