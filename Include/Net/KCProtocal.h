@@ -103,6 +103,10 @@ public:
         return mConvID;
     }
 
+    void setID(u32 id) {
+        mConvID = id;
+    }
+
     u32 getMaxSupportedMsgSize() const;
 
     // read conv

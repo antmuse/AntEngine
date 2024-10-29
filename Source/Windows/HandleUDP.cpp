@@ -65,9 +65,12 @@ s32 HandleUDP::open(RequestUDP* it, const NetAddress* remote, const NetAddress* 
                 Logger::log(ELL_ERROR, "HandleUDP::open>>reusePort, addr=%s, ecode=%d", mLocal.getStr(), ret);
             }
         }
+        if (EE_OK == ret && 0 != mSock.setNoConnResetUDP()) {
+            Logger::log(ELL_ERROR, "HandleUDP::open>>setNoConnResetUDP, addr=%s, ecode=%d", mLocal.getStr(), ret);
+        }
         if (EE_OK == ret && 0 != mSock.bind(mLocal)) {
             ret = System::getAppError();
-            Logger::log(ELL_ERROR, "HandleUDP::open>>bind, addr=%s, ecode=%d", mRemote.getStr(), ret);
+            Logger::log(ELL_ERROR, "HandleUDP::open>>bind, addr=%s, ecode=%d", mLocal.getStr(), ret);
         }
         if (!local) {
             mSock.getLocalAddress(mLocal);

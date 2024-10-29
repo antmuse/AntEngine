@@ -303,6 +303,12 @@ public:
 
     bool openSeniorTCP(bool ipv6 = false);
 
+    /**
+     *@brief set the SIO_UDP_CONNRESET for windows
+     *@return 0 if success, else failed.
+     */
+    s32 setNoConnResetUDP();
+
 #if defined(DOS_WINDOWS)
     /**
     *@brief Update socket by accept socket.
