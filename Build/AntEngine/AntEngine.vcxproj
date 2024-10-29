@@ -100,6 +100,7 @@
     <ClCompile Include="..\..\Source\HashSIP.cpp" />
     <ClCompile Include="..\..\Source\StrConverter.cpp" />
     <ClCompile Include="..\..\Source\Engine.cpp" />
+    <ClCompile Include="..\..\Source\Windows\Futex.cpp" />
     <ClCompile Include="..\..\Source\Windows\HandleFile.cpp" />
     <ClCompile Include="..\..\Source\Windows\HandleTCP.cpp" />
     <ClCompile Include="..\..\Source\Windows\Loop.cpp" />

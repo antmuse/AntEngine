@@ -66,7 +66,7 @@ s32 HandleUDP::open(RequestUDP* it, const NetAddress* remote, const NetAddress* 
             }
         }
         if (EE_OK == ret && 0 != mSock.setNoConnResetUDP()) {
-            Logger::log(ELL_ERROR, "HandleUDP::open>>setNoConnResetUDP, addr=%s, ecode=%d", mLocal.getStr(), ret);
+            Logger::log(ELL_ERROR, "HandleUDP::open>>setNoConnResetUDP, addr=%s, ecode=%d", mLocal.getStr(), System::getAppError());
         }
         if (EE_OK == ret && 0 != mSock.bind(mLocal)) {
             ret = System::getAppError();

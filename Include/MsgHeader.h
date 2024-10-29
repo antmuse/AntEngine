@@ -72,15 +72,8 @@ struct MsgHeader {
         mItem = item;
         mOffset = offset;
         mSize = getIndexSize() + mOffset;
+        mSN = 0;
         memset(((s8*)this) + sizeof(MsgHeader), 0, mSize - sizeof(MsgHeader));
-    }
-
-    s8* getPayload()const {
-        return ((s8*)this) + sizeof(*this);
-    }
-
-    u32 getPayloadSize()const {
-        return mSize - sizeof(*this);
     }
 
     Item& getNode(u16 idx)const {

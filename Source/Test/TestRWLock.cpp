@@ -8,6 +8,7 @@
 #include "Engine.h"
 #include "Loop.h"
 #include "ReadWriteLock.h"
+#include "Futex.h"
 
 namespace app {
 
@@ -68,5 +69,32 @@ s32 AppTestReadWriteLock(s32 argc, s8** argv) {
     printf("AppTestReadWriteLock>>stop\n");
     return 0;
 }
+
+
+
+s32 AppTestFutex(s32 argc, s8** argv) {
+    Futex fut;
+    int cnt = 10;
+
+    std::thread rrr([&]() {
+        for (int i = 0; i < cnt; ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            printf("---------222 fut unlock ok: %d\n", i);
+            fut.unlock();
+        }
+    });
+
+    std::thread www([&]() {
+        for (int i = 0; i < cnt; ++i) {
+            fut.lock();
+            printf("111 fut lock ok: %d\n", i);
+        }
+    });
+
+    www.join();
+    rrr.join();
+    return 0;
+}
+
 
 } // namespace app

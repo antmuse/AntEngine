@@ -20,6 +20,7 @@
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "Synchronization.lib") //futex
 #endif
 
 
@@ -45,6 +46,7 @@ s32 AppTestDefault(s32 argc, s8** argv);
 s32 AppTestHttpsClient(s32 argc, s8** argv);
 s32 AppTestFile(s32 argc, s8** argv);
 s32 AppTestReadWriteLock(s32 argc, s8** argv);
+s32 AppTestFutex(s32 argc, s8** argv);
 #if defined(DUSE_ZLIB)
 s32 AppTestZlib(s32 argc, s8** argv);
 s32 AppTestRingBlocks(s32 argc, s8** argv);
@@ -109,9 +111,10 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
+            AppTestFutex(argc, argv);
+        } else {
             AppTestThreadPool(argc, argv);
             AppTestSimplifyPath(argc, argv);
-        } else {
             AppTestMD5(argc, argv);
             AppTestRingBlocks(argc, argv);
             AppTestMemPool(argc, argv);
