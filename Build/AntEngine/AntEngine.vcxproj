@@ -100,6 +100,7 @@
     <ClCompile Include="..\..\Source\HashSIP.cpp" />
     <ClCompile Include="..\..\Source\StrConverter.cpp" />
     <ClCompile Include="..\..\Source\Engine.cpp" />
+    <ClCompile Include="..\..\Source\Windows\Futex.cpp" />
     <ClCompile Include="..\..\Source\Windows\HandleFile.cpp" />
     <ClCompile Include="..\..\Source\Windows\HandleTCP.cpp" />
     <ClCompile Include="..\..\Source\Windows\Loop.cpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="..\..\Include\HashFunctions.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h" />
     <ClInclude Include="..\..\Include\ReadWriteLock.h" />
     <ClInclude Include="..\..\Include\Logger.h" />
     <ClInclude Include="..\..\Include\Loop.h" />

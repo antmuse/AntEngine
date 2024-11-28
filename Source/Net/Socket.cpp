@@ -99,6 +99,15 @@ bool Socket::close() {
     return true;
 }
 
+s32 Socket::setNoConnResetUDP() {
+#if defined(DOS_WINDOWS)
+    BOOL bEnalbeConnRestError = FALSE;
+    DWORD dwBytesReturned = 0;
+    return WSAIoctl(mSocket, SIO_UDP_CONNRESET, &bEnalbeConnRestError, sizeof(bEnalbeConnRestError), NULL, 0,
+        &dwBytesReturned, NULL, NULL);
+#endif
+    return 0;
+}
 
 bool Socket::closeReceive() {
     return 0 == ::shutdown(mSocket, ESHUT_RECEIVE);
@@ -473,7 +482,6 @@ void* Socket::mFunctionDisconnect = nullptr;
 void* Socket::mFunctionAccept = nullptr;
 void* Socket::mFunctionAcceptSockAddress = nullptr;
 
-static void* mFunctionAcceptSockAddress;
 s32 Socket::updateByAccepter(const Socket& sockListen) {
     netsocket it = sockListen.getValue();
     return setsockopt(mSocket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (s8*)&it, sizeof(it));

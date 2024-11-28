@@ -88,8 +88,8 @@ inline void AppHeapSink(T* array, ssz element, ssz max, bool (*cmper)(const T&, 
 
 
 /**
- * @brief ¶ÑÅÅĞò
- * Ã»ÓĞ¶îÍâµÄÄÚ´æÀË·Ñ£¬Ëã·¨ÔÚ×î»µÇé¿öÏÂÖ´ĞĞO(n*log n)
+ * @brief å †æ’åº
+ * æ²¡æœ‰é¢å¤–çš„å†…å­˜æµªè´¹ï¼Œç®—æ³•åœ¨æœ€åæƒ…å†µä¸‹æ‰§è¡ŒO(n*log n)
  */
 template <class T>
 inline void AppHeapSort(T* iArray, ssz iSize, bool (*cmper)(const T&, const T&) = AppCompareLess<T>) {
@@ -120,7 +120,7 @@ inline void AppHeapSort(T* iArray, ssz iSize, bool (*cmper)(const T&, const T&) 
 
 
 /**
- * @brief µİ¹éµÄ¿ìËÙÅÅĞò£¬ÔªËØ²»¶àÊ±(<=256)ÍË»¯ÎªÑ¡ÔñÅÅĞò
+ * @brief é€’å½’çš„å¿«é€Ÿæ’åºï¼Œå…ƒç´ ä¸å¤šæ—¶(<=256)é€€åŒ–ä¸ºé€‰æ‹©æ’åº
  */
 template <class T>
 void AppQuickSort(T* iData, usz iSize, bool (*cmper)(const T&, const T&) = AppCompareLess<T>) {

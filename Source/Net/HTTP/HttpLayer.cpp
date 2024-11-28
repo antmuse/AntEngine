@@ -1,29 +1,5 @@
-﻿/***************************************************************************************************
- * MIT License
- *
- * Copyright (c) 2021 antmuse@live.cn/antmuse@qq.com
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
-***************************************************************************************************/
-
-
-#include "Net/HTTP/HttpLayer.h"
+﻿#include "Net/HTTP/HttpLayer.h"
+#include "Net/HTTP/HttpParserDef.h"
 #include "Net/HTTP/Website.h"
 #include "Net/Acceptor.h"
 #include "Loop.h"
@@ -32,19 +8,16 @@
 namespace app {
 namespace net {
 
+u32 HttpLayer::GMAX_HEAD_SIZE = HTTP_MAX_HEADER_SIZE;
 
 HttpLayer::HttpLayer(EHttpParserType tp) :
-    mPType(tp),
-    mWebsite(nullptr),
-    mMsg(nullptr),
-    mHttpError(HPE_OK),
-    mHTTPS(true) {
+    mPType(tp), mWebsite(nullptr), mMsg(nullptr), mHttpError(HPE_OK), mHTTPS(true) {
     clear();
 }
 
 
 HttpLayer::~HttpLayer() {
-    //onClose();
+    // onClose();
 }
 
 
@@ -65,7 +38,7 @@ s32 HttpLayer::get(const String& gurl) {
 
     StringView host = mMsg->getURL().getHost();
     NetAddress addr(mMsg->getURL().getPort());
-    s8 shost[256];  //255, Maximum host name defined in RFC 1035
+    s8 shost[256]; // 255, Maximum host name defined in RFC 1035
     snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
     addr.setDomain(shost);
 
@@ -89,7 +62,7 @@ void HttpLayer::msgBegin() {
     if (mMsg) {
         mHttpError = HPE_CB_MsgBegin;
         postClose();
-        return; //error
+        return; // error
     }
 
     mMsg = new HttpMsg(this);
@@ -251,24 +224,23 @@ s32 TestHttpReceive(HttpLayer& mMsg) {
     tlen = strlen(str4);
     used = parseBuf(str4, tlen);*/
 
-    const s8* test =
-        "POST /fs/upload HTTP/1.1\r\n"
-        "Content-Length: 18\r\n"
-        "Content-Type: multipart/form-data; boundary=vksoun\r\n"
-        "Connection: Keep-Alive\r\n"
-        "Cookie: Mailbox=yyyy@qq.com\r\n"
-        "\r\n"
-        "--vksoun\r\n" //boundary
-        "Content-Disposition: form-data; name=\"fieldName\"; filename=\"filename.txt\"\r\n"
-        "\r\n"
-        "msgPart1"
-        "\r\n"
-        "--vksoun\r\n" //boundary
-        "Content-Type: text/plain\r\n"
-        "\r\n"
-        "--vksoun-"
-        "\r\n\r\n"
-        "--vksoun--"  //boundary tail
+    const s8* test = "POST /fs/upload HTTP/1.1\r\n"
+                     "Content-Length: 18\r\n"
+                     "Content-Type: multipart/form-data; boundary=vksoun\r\n"
+                     "Connection: Keep-Alive\r\n"
+                     "Cookie: Mailbox=yyyy@qq.com\r\n"
+                     "\r\n"
+                     "--vksoun\r\n" // boundary
+                     "Content-Disposition: form-data; name=\"fieldName\"; filename=\"filename.txt\"\r\n"
+                     "\r\n"
+                     "msgPart1"
+                     "\r\n"
+                     "--vksoun\r\n" // boundary
+                     "Content-Type: text/plain\r\n"
+                     "\r\n"
+                     "--vksoun-"
+                     "\r\n\r\n"
+                     "--vksoun--" // boundary tail
         ;
     tlen = strlen(test);
     used = mMsg.parseBuf(test, tlen);
@@ -335,7 +307,8 @@ bool HttpLayer::onLink(RequestFD* it) {
     } else {
         mWebsite = nullptr;
         RequestFD::delRequest(nd);
-        Logger::log(ELL_ERROR, "HttpLayer::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(), mTCP.getLocal().getStr(), ret);
+        Logger::log(ELL_ERROR, "HttpLayer::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(),
+            mTCP.getLocal().getStr(), ret);
     }
     return EE_OK == ret;
 }
@@ -373,7 +346,7 @@ void HttpLayer::onRead(RequestFD* it) {
     const s8* dat = it->getBuf();
     ssz datsz = it->mUsed;
     if (0 == datsz) {
-        parseBuf(dat, 0); //make the http-msg-finish callback
+        parseBuf(dat, 0); // make the http-msg-finish callback
     } else {
         ssz parsed = 0;
         ssz stepsz;
@@ -381,27 +354,29 @@ void HttpLayer::onRead(RequestFD* it) {
             stepsz = parseBuf(dat + parsed, datsz);
             parsed += stepsz;
             if (stepsz < datsz) {
-                break; //leftover
+                break; // leftover
             }
             datsz -= stepsz;
         }
         it->clearData((u32)parsed);
 
         if (0 == it->getWriteSize()) {
-            //可能受到超长header攻击或其它错误
+            // 可能受到超长header攻击或其它错误
             Logger::logError("HttpLayer::onRead>>remote=%s, msg overflow", mTCP.getRemote().getStr());
             postClose();
         } else {
             if (0 == mHttpError && EE_OK == readIF(it)) {
                 return;
             }
-            Logger::logError("HttpLayer::onRead>>remote=%s, parser err=%d=%s", mTCP.getRemote().getStr(), mHttpError, getErrStr());
+            Logger::logError(
+                "HttpLayer::onRead>>remote=%s, parser err=%d=%s", mTCP.getRemote().getStr(), mHttpError, getErrStr());
         }
     }
 
-    //del req
+    // del req
 #if defined(DDEBUG)
-    printf("HttpLayer::onRead>>del req, read=%lld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError, getErrStr());
+    printf("HttpLayer::onRead>>del req, read=%lld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError,
+        getErrStr());
 #endif
     RequestFD::delRequest(it);
 }
@@ -413,29 +388,20 @@ void HttpLayer::postClose() {
 
 
 
-
-
-
-
-
-
-
-
 /////////////////////////
-u32 HttpLayer::GMAX_HEAD_SIZE = HTTP_MAX_HEADER_SIZE;
 
 #ifndef ULLONG_MAX
-#define ULLONG_MAX ((u64) -1) /* 2^64-1 */
+#define ULLONG_MAX ((u64)-1) /* 2^64-1 */
 #endif
 
-#define COUNT_HEADER_SIZE(V)                                         \
-do {                                                                 \
-  nread += (u32)(V);                                                 \
-  if (UNLIKELY(nread > GMAX_HEAD_SIZE)) {                            \
-    mHttpError = (HPE_HEADER_OVERFLOW);                              \
-    goto GT_ERROR;                                                   \
-  }                                                                  \
-} while (0)
+#define COUNT_HEADER_SIZE(V)                                                                                           \
+    do {                                                                                                               \
+        nread += (u32)(V);                                                                                             \
+        if (UNLIKELY(nread > GMAX_HEAD_SIZE)) {                                                                        \
+            mHttpError = (HPE_HEADER_OVERFLOW);                                                                        \
+            goto GT_ERROR;                                                                                             \
+        }                                                                                                              \
+    } while (0)
 
 
 #define PROXY_CONNECTION "proxy-connection"
@@ -454,7 +420,7 @@ do {                                                                 \
 
 #define MLT_PART "multipart"
 #define MLT_PART_MIXED "multipart/mixed"
-#define MLT_PART_FORM  "multipart/form-data"
+#define MLT_PART_FORM "multipart/form-data"
 
 
 static const s8* GHTTP_METHOD_STRS[] = {
@@ -503,26 +469,22 @@ static const s8 GTokens[256] = {
     /* 112  p   113  q   114  r   115  s   116  t   117  u   118  v   119  w  */
     'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
     /* 120  x   121  y   122  z   123  {   124  |   125  }   126  ~   127 del */
-    'x', 'y', 'z', 0, '|', 0, '~', 0
-};
+    'x', 'y', 'z', 0, '|', 0, '~', 0};
 
 
-static const u8 GMAP_UN_HEX[256] = {
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 10, 11, 12, 13, 14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 10, 11, 12, 13, 14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-};
+static const u8 GMAP_UN_HEX[256] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+    9, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 10, 11, 12, 13, 14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 10, 11,
+    12, 13, 14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 
 #if DHTTP_PARSE_STRICT
-# define T(v) 0
+#define T(v) 0
 #else
-# define T(v) v
+#define T(v) v
 #endif
 
 
@@ -558,93 +520,11 @@ static const u8 G_NORMAL_URL_CHAR[32] = {
     /* 112  p   113  q   114  r   115  s   116  t   117  u   118  v   119  w  */
     1 | 2 | 4 | 8 | 16 | 32 | 64 | 128,
     /* 120  x   121  y   122  z   123  {   124  |   125  }   126  ~   127 del */
-    1 | 2 | 4 | 8 | 16 | 32 | 64 | 0, };
+    1 | 2 | 4 | 8 | 16 | 32 | 64 | 0,
+};
 
 #undef T
-//DHTTP_PARSE_STRICT
-
-enum EPareState {
-    s_dead = 1 //important that this is > 0
-
-    , s_start_resp_or_req
-    , s_res_or_resp_H
-    , s_start_resp //response start
-    , s_res_H
-    , s_res_HT
-    , s_res_HTT
-    , s_res_HTTP
-    , s_res_http_major
-    , s_res_http_dot
-    , s_res_http_minor
-    , s_res_http_end
-    , s_res_first_status_code
-    , s_res_status_code
-    , s_res_status_start
-    , s_res_status
-    , s_res_line_almost_done
-
-    , s_start_req //request start
-
-    , s_req_method
-    , s_req_spaces_before_url
-    , s_req_schema
-    , s_req_schema_slash
-    , s_req_schema_slash2
-    , s_req_server_start
-    , s_req_server
-    , s_req_server_with_at
-    , s_req_path
-    , s_req_query_string_start
-    , s_req_query_string
-    , s_req_fragment_start
-    , s_req_fragment
-    , s_req_http_start
-    , s_req_http_H
-    , s_req_http_HT
-    , s_req_http_HTT
-    , s_req_http_HTTP
-    , s_req_http_I
-    , s_req_http_IC
-    , s_req_http_major
-    , s_req_http_dot
-    , s_req_http_minor
-    , s_req_http_end
-    , s_req_line_almost_done
-
-    , s_header_field_start
-    , s_header_field
-    , s_header_value_discard_ws             //丢弃head field & value 之间的间隔字符
-    , s_header_value_discard_ws_almost_done
-    , s_header_value_discard_lws            //丢弃value末尾的间隔字符
-    , s_header_value_start
-    , s_header_value
-    , s_header_value_lws
-
-    , s_header_almost_done
-
-    , s_chunk_size_start
-    , s_chunk_size
-    , s_chunk_parameters
-    , s_chunk_size_almost_done
-
-    , s_headers_almost_done
-    , s_headers_done
-    /*@note 's_headers_done' must be the last 'header' state. All
-     * states beyond this must be 'body' states. It is used for overflow
-     * checking. See the @note PARSING_HEADER.
-     */
-
-    , s_chunk_data              //只要有数据就需要回调，避免缓存区满时仍然不能触发回调
-    , s_chunk_data_almost_done
-    , s_chunk_data_done
-
-    , s_boundary_body          //只要有数据就需要回调，避免缓存区满时仍然不能触发回调
-
-    , s_body_identity          //content_length有效
-    , s_body_identity_eof      //无content-length/chunck等信息，靠断开连接表示body结束
-
-    , s_message_done
-};
+// DHTTP_PARSE_STRICT
 
 /**
  * @brief used for parse value
@@ -662,144 +542,95 @@ enum EPareState {
 enum EHeadValueState {
     EHV_ERROR = 0,
 
-    //for value
+    // for value
     EHV_START_NAME,
     EHV_PRE_NAME,
     EHV_NAME,
     EHV_PRE_VALUE,
     EHV_VALUE,
 
-    //for boundary body
-    EHV_BOUNDARY_CMP_PRE,     //\n in body
-    EHV_BOUNDARY_CMP_PRE1,    //first "-"
-    EHV_BOUNDARY_CMP_PRE2,    //2nd "-"
-    EHV_BOUNDARY_CMP,         //compare multipart's boundary
+    // for boundary body
+    EHV_BOUNDARY_CMP_PRE,  //\n in body
+    EHV_BOUNDARY_CMP_PRE1, // first "-"
+    EHV_BOUNDARY_CMP_PRE2, // 2nd "-"
+    EHV_BOUNDARY_CMP,      // compare multipart's boundary
     EHV_BOUNDARY_CMP_DONE,
-    EHV_BOUNDARY_CMP_TAIL,    //compare the tail "--"
-    EHV_BOUNDARY_BODY_PRE,    //body start
+    EHV_BOUNDARY_CMP_TAIL, // compare the tail "--"
+    EHV_BOUNDARY_BODY_PRE, // body start
     EHV_BOUNDARY_BODY,
 
-    //for flags
-    EHV_MATCH_TYPE_MULTI = 0x10000000,    //Content-Type: multipart/
-    EHV_CONTENT_TYPE_MULTI = 0x20000000,  //Content-Type: multipart/...
+    // for flags
+    EHV_MATCH_TYPE_MULTI = 0x10000000,   // Content-Type: multipart/
+    EHV_CONTENT_TYPE_MULTI = 0x20000000, // Content-Type: multipart/...
     EHV_DONE = 0x80000000,
-    //EHV_CONTENT_DISP = 0x20000000       //Content-Disposition
+    // EHV_CONTENT_DISP = 0x20000000       //Content-Disposition
 };
 
 enum EHttpHeaderState {
-    h_general = 0
-    , h_C
-    , h_CO
-    , h_CON
+    h_general = 0,
+    h_C,
+    h_CO,
+    h_CON,
 
-    , h_matching_connection
-    , h_matching_proxy_connection
-    , h_matching_content_           //Content-
-    , h_matching_content_type       //Content-Type
-    , h_matching_content_disp       //content-disposition
-    , h_matching_content_length
-    , h_matching_transfer_encoding
-    , h_matching_upgrade
+    h_matching_connection,
+    h_matching_proxy_connection,
+    h_matching_content_,     // Content-
+    h_matching_content_type, // Content-Type
+    h_matching_content_disp, // content-disposition
+    h_matching_content_length,
+    h_matching_transfer_encoding,
+    h_matching_upgrade,
 
-    , h_connection
-    , h_content_type        //Content-Type
-    , h_content_disp        //content-disposition
-    , h_content_length
-    , h_content_length_num
-    , h_content_length_ws
-    , h_transfer_encoding
-    , h_upgrade
-
-    , h_matching_transfer_encoding_token_start
-    , h_matching_transfer_encoding_chunked
-    , h_matching_transfer_encoding_token
-
-    , h_matching_connection_token_start
-    , h_matching_connection_keep_alive
-    , h_matching_connection_close
-    , h_matching_connection_upgrade
-    , h_matching_connection_token
-
-    , h_transfer_encoding_chunked
-    , h_connection_keep_alive
-    , h_connection_close
-    , h_connection_upgrade
+    h_connection,
+    h_content_type, // Content-Type
+    h_content_disp, // content-disposition
+    h_content_length,
+    h_content_length_num,
+    h_content_length_ws,
+    h_transfer_encoding,
+    h_upgrade,
+    h_matching_transfer_encoding_token_start,
+    h_matching_transfer_encoding_chunked,
+    h_matching_transfer_encoding_token,
+    h_matching_connection_token_start,
+    h_matching_connection_keep_alive,
+    h_matching_connection_close,
+    h_matching_connection_upgrade,
+    h_matching_connection_token,
+    h_transfer_encoding_chunked,
+    h_connection_keep_alive,
+    h_connection_close,
+    h_connection_upgrade
 };
 
-enum EHttpHostState {
-    s_http_host_dead = 1
-    , s_http_userinfo_start
-    , s_http_userinfo
-    , s_http_host_start
-    , s_http_host_v6_start
-    , s_http_host
-    , s_http_host_v6
-    , s_http_host_v6_end
-    , s_http_host_v6_zone_start
-    , s_http_host_v6_zone
-    , s_http_host_port_start
-    , s_http_host_port
-};
 
-/* Macros for character classes; depends on strict-mode  */
-#define CR                  '\r'
-#define LF                  '\n'
-#define LOWER(c)            (u8)(c | 0x20)
-#define IS_ALPHA(c)         (LOWER(c) >= 'a' && LOWER(c) <= 'z')
-#define IS_NUM(c)           ((c) >= '0' && (c) <= '9')
-#define IS_ALPHANUM(c)      (IS_ALPHA(c) || IS_NUM(c))
-#define IS_HEX(c)           (IS_NUM(c) || (LOWER(c) >= 'a' && LOWER(c) <= 'f'))
-#define IS_MARK(c)          ((c) == '-' || (c) == '_' || (c) == '.' || \
-  (c) == '!' || (c) == '~' || (c) == '*' || (c) == '\'' || (c) == '(' || \
-  (c) == ')')
-
-#define IS_USERINFO_CHAR(c) (IS_ALPHANUM(c) || IS_MARK(c) || (c) == '%' || \
-  (c) == ';' || (c) == ':' || (c) == '&' || (c) == '=' || (c) == '+' || \
-  (c) == '$' || (c) == ',')
-
-#define STRICT_TOKEN(c)     ((c == ' ') ? 0 : GTokens[(u8)c])
-
-#if DHTTP_PARSE_STRICT
-#define TOKEN(c)            STRICT_TOKEN(c)
-#define IS_URL_CHAR(c)      (AppIsBitON(G_NORMAL_URL_CHAR, (u8)c))
-#define IS_HOST_CHAR(c)     (IS_ALPHANUM(c) || (c) == '.' || (c) == '-')
-#else
-#define TOKEN(c)            GTokens[(u8)c]
-#define IS_URL_CHAR(c)                                                         \
-  (AppIsBitON(G_NORMAL_URL_CHAR, (u8)c) || ((c) & 0x80))
-#define IS_HOST_CHAR(c)                                                        \
-  (IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
-#endif
-
-//Verify that a char is a valid visible (printable) US-ASCII character or %x80-FF
+// Verify that a char is a valid visible (printable) US-ASCII character or %x80-FF
 #define IS_HEADER_CHAR(ch) (ch == CR || ch == LF || ch == 9 || ((u8)ch > 31 && ch != 127))
 
 
 #if DHTTP_PARSE_STRICT
-# define STRICT_CHECK(cond)                                          \
-do {                                                                 \
-  if (cond) {                                                        \
-    mHttpError = HPE_STRICT;                                         \
-    goto GT_ERROR;                                                   \
-  }                                                                  \
-} while (0)
+#define STRICT_CHECK(cond)                                                                                             \
+    do {                                                                                                               \
+        if (cond) {                                                                                                    \
+            mHttpError = HPE_STRICT;                                                                                   \
+            goto GT_ERROR;                                                                                             \
+        }                                                                                                              \
+    } while (0)
 
 #define NEW_MESSAGE() (shouldKeepAlive() ? (mType == EHTTP_REQUEST ? s_start_req : s_start_resp) : s_dead)
 
 #else
-# define STRICT_CHECK(cond)
-# define NEW_MESSAGE() (mType == EHTTP_REQUEST ? s_start_req : s_start_resp)
+#define STRICT_CHECK(cond)
+#define NEW_MESSAGE() (mType == EHTTP_REQUEST ? s_start_req : s_start_resp)
 #endif
 
 
- /* Map errno values to strings for human-readable output */
-#define HTTP_STRERROR_GEN(n, s) { "HPE_" #n, s },
+/* Map errno values to strings for human-readable output */
+#define HTTP_STRERROR_GEN(n, s) {"HPE_" #n, s},
 static struct {
     const s8* name;
     const s8* description;
-} HttpStrErrorTab[] = {
-    HTTP_ERRNO_MAP(HTTP_STRERROR_GEN)
-};
+} HttpStrErrorTab[] = {HTTP_ERRNO_MAP(HTTP_STRERROR_GEN)};
 #undef HTTP_STRERROR_GEN
 
 
@@ -939,126 +770,6 @@ static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
     return s_dead;
 }
 
-//not strict check
-static EPareState AppParseUrlChar2(EPareState s, const s8 ch) {
-    if (ch == ' ' || ch == '\r' || ch == '\n') {
-        return s_dead;
-    }
-
-#if DHTTP_PARSE_STRICT
-    if (ch == '\t' || ch == '\f') {
-        return s_dead;
-    }
-#endif
-
-    switch (s) {
-    case s_req_spaces_before_url:
-        /* Proxied requests are followed by scheme of an absolute URI (alpha).
-         * All methods except CONNECT are followed by '/' or '*'.
-         */
-        if (ch == '/' || ch == '*') {
-            return s_req_path;
-        }
-        if (IS_ALPHA(ch)) {
-            return s_req_schema;
-        }
-        break;
-
-    case s_req_schema:
-        if (IS_ALPHA(ch)) {
-            return s;
-        }
-        if (ch == ':') {
-            return s_req_schema_slash;
-        }
-        break;
-
-    case s_req_schema_slash:
-        if (ch == '/') {
-            return s_req_schema_slash2;
-        }
-        break;
-
-    case s_req_schema_slash2:
-        if (ch == '/') {
-            return s_req_server_start;
-        }
-        break;
-
-    case s_req_server_with_at:
-        if (ch == '@') {
-            return s_dead;
-        }
-
-        /* fall through */
-    case s_req_server_start:
-    case s_req_server:
-        if (ch == '/') {
-            return s_req_path;
-        }
-        if (ch == '?') {
-            return s_req_query_string_start;
-        }
-        if (ch == '@') {
-            return s_req_server_with_at;
-        }
-        if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
-            return s_req_server;
-        }
-        break;
-
-    case s_req_path:
-        switch (ch) {
-        case '?':
-            return s_req_query_string_start;
-        case '#':
-            return s_req_fragment_start;
-        default:
-            return s;
-        }
-        break;
-
-    case s_req_query_string_start:
-    case s_req_query_string:
-        switch (ch) {
-        case '?':
-            // allow extra '?' in query string
-            return s_req_query_string;
-        case '#':
-            return s_req_fragment_start;
-        default:
-            return s_req_query_string;
-        }
-        break;
-
-    case s_req_fragment_start:
-        switch (ch) {
-        case '?':
-            return s_req_fragment;
-        case '#':
-            return s;
-        default:
-            return s_req_fragment;
-        }
-        break;
-
-    case s_req_fragment:
-        switch (ch) {
-        case '?':
-        case '#':
-        default:
-            return s;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return s_dead;
-}
-
-
 const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, s32& omax, s32& vflag) {
     vflag = 0;
     s32 used = 0;
@@ -1095,7 +806,7 @@ const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, 
         {
             ++kname.mLen;
             if (';' == *curr) {
-                kval.set(curr, 0); //empty value
+                kval.set(curr, 0); // empty value
                 if (used + 1 < omax) {
                     out[used++] = kname;
                     out[used++] = kval;
@@ -1125,7 +836,7 @@ const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, 
             }
             vstat = EHV_NAME;
             kname.set(curr, 0);
-            //break; fall
+            // break; fall
 
         case EHV_NAME:
             if (' ' == *curr || '=' == *curr) {
@@ -1136,7 +847,7 @@ const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, 
             if ('/' == *curr) {
                 vstat = EHV_PRE_VALUE;
             } else if (';' == *curr) {
-                kval.set(curr, 0); //empty value
+                kval.set(curr, 0); // empty value
                 if (used + 1 < omax) {
                     out[used++] = kname;
                     out[used++] = kval;
@@ -1153,7 +864,7 @@ const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, 
             }
             vstat = EHV_VALUE;
             kval.set(curr, 0);
-            //no break
+            // no break
 
         case EHV_VALUE:
             if ('"' == *curr || ';' == *curr || ' ' == *curr) {
@@ -1169,12 +880,13 @@ const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, 
             ++kval.mLen;
             break;
 
-        default:break;
-        }//switch
-    }//for
+        default:
+            break;
+        } // switch
+    }     // for
 
 
-    GT_RET:
+GT_RET:
     omax = used;
     return curr;
 }
@@ -1220,8 +932,8 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
         return 0;
     }
 
-    s8 ch; //raw byte
-    s8 c;  //low char of ch
+    s8 ch; // raw byte
+    s8 c;  // low char of ch
     u8 unhex_val;
     StringView headkey;
     StringView headval;
@@ -1278,15 +990,15 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
         break;
     default:
         break;
-    }//switch
+    } // switch
 
     for (p = data; p != end; ++p) {
         ch = *p;
-        if (p_state <= s_headers_done) {//@note PARSING_HEADER
+        if (p_state <= s_headers_done) { //@note PARSING_HEADER
             COUNT_HEADER_SIZE(1);
         }
 
-        GT_REPARSE: //recheck current byte
+GT_REPARSE: // recheck current byte
         switch (p_state) {
         case s_dead:
             /* this state is used after a 'Connection: close' message
@@ -1474,7 +1186,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
         case s_res_status:
             if (ch == CR || ch == LF) {
                 p_state = (CR == ch ? s_res_line_almost_done : s_header_field_start);
-                //CALLBACK_DATA(Status);
+                // CALLBACK_DATA(Status);
                 DASSERT(mHttpError == HPE_OK);
                 if (tstat.mData) {
                     if (LIKELY(mMsg)) {
@@ -1503,26 +1215,55 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                 mHttpError = (HPE_INVALID_METHOD);
                 goto GT_ERROR;
             }
-            mMethod = (enum EHttpMethod) 0;
+            mMethod = (enum EHttpMethod)0;
             mIndex = 1;
             switch (ch) {
-            case 'A': mMethod = HTTP_ACL; break;
-            case 'B': mMethod = HTTP_BIND; break;
-            case 'C': mMethod = HTTP_CONNECT; /* or COPY, CHECKOUT */ break;
-            case 'D': mMethod = HTTP_DELETE; break;
-            case 'G': mMethod = HTTP_GET; break;
-            case 'H': mMethod = HTTP_HEAD; break;
-            case 'L': mMethod = HTTP_LOCK; /* or LINK */ break;
-            case 'M': mMethod = HTTP_MKCOL; /* or MOVE, MKACTIVITY, MERGE, M-SEARCH, MKCALENDAR */ break;
-            case 'N': mMethod = HTTP_NOTIFY; break;
-            case 'O': mMethod = HTTP_OPTIONS; break;
-            case 'P': mMethod = HTTP_POST;
+            case 'A':
+                mMethod = HTTP_ACL;
+                break;
+            case 'B':
+                mMethod = HTTP_BIND;
+                break;
+            case 'C':
+                mMethod = HTTP_CONNECT; /* or COPY, CHECKOUT */
+                break;
+            case 'D':
+                mMethod = HTTP_DELETE;
+                break;
+            case 'G':
+                mMethod = HTTP_GET;
+                break;
+            case 'H':
+                mMethod = HTTP_HEAD;
+                break;
+            case 'L':
+                mMethod = HTTP_LOCK; /* or LINK */
+                break;
+            case 'M':
+                mMethod = HTTP_MKCOL; /* or MOVE, MKACTIVITY, MERGE, M-SEARCH, MKCALENDAR */
+                break;
+            case 'N':
+                mMethod = HTTP_NOTIFY;
+                break;
+            case 'O':
+                mMethod = HTTP_OPTIONS;
+                break;
+            case 'P':
+                mMethod = HTTP_POST;
                 /* or PROPFIND|PROPPATCH|PUT|PATCH|PURGE */
                 break;
-            case 'R': mMethod = HTTP_REPORT; /* or REBIND */ break;
-            case 'S': mMethod = HTTP_SUBSCRIBE; /* or SEARCH, SOURCE */ break;
-            case 'T': mMethod = HTTP_TRACE; break;
-            case 'U': mMethod = HTTP_UNLOCK; /* or UNSUBSCRIBE, UNBIND, UNLINK */ break;
+            case 'R':
+                mMethod = HTTP_REPORT; /* or REBIND */
+                break;
+            case 'S':
+                mMethod = HTTP_SUBSCRIBE; /* or SEARCH, SOURCE */
+                break;
+            case 'T':
+                mMethod = HTTP_TRACE;
+                break;
+            case 'U':
+                mMethod = HTTP_UNLOCK; /* or UNSUBSCRIBE, UNBIND, UNLINK */
+                break;
             default:
                 mHttpError = (HPE_INVALID_METHOD);
                 goto GT_ERROR;
@@ -1553,29 +1294,30 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             } else if ((ch >= 'A' && ch <= 'Z') || ch == '-') {
 
                 switch (mMethod << 16 | mIndex << 8 | ch) {
-#define XX(meth, pos, ch, new_meth) \
-            case (HTTP_##meth << 16 | pos << 8 | ch): \
-              mMethod = HTTP_##new_meth; break;
+#define XX(meth, pos, ch, new_meth)                                                                                    \
+    case (HTTP_##meth << 16 | pos << 8 | ch):                                                                          \
+        mMethod = HTTP_##new_meth;                                                                                     \
+        break;
 
                     XX(POST, 1, 'U', PUT)
-                        XX(POST, 1, 'A', PATCH)
-                        XX(POST, 1, 'R', PROPFIND)
-                        XX(PUT, 2, 'R', PURGE)
-                        XX(CONNECT, 1, 'H', CHECKOUT)
-                        XX(CONNECT, 2, 'P', COPY)
-                        XX(MKCOL, 1, 'O', MOVE)
-                        XX(MKCOL, 1, 'E', MERGE)
-                        XX(MKCOL, 1, '-', MSEARCH)
-                        XX(MKCOL, 2, 'A', MKACTIVITY)
-                        XX(MKCOL, 3, 'A', MKCALENDAR)
-                        XX(SUBSCRIBE, 1, 'E', SEARCH)
-                        XX(SUBSCRIBE, 1, 'O', SOURCE)
-                        XX(REPORT, 2, 'B', REBIND)
-                        XX(PROPFIND, 4, 'P', PROPPATCH)
-                        XX(LOCK, 1, 'I', LINK)
-                        XX(UNLOCK, 2, 'S', UNSUBSCRIBE)
-                        XX(UNLOCK, 2, 'B', UNBIND)
-                        XX(UNLOCK, 3, 'I', UNLINK)
+                    XX(POST, 1, 'A', PATCH)
+                    XX(POST, 1, 'R', PROPFIND)
+                    XX(PUT, 2, 'R', PURGE)
+                    XX(CONNECT, 1, 'H', CHECKOUT)
+                    XX(CONNECT, 2, 'P', COPY)
+                    XX(MKCOL, 1, 'O', MOVE)
+                    XX(MKCOL, 1, 'E', MERGE)
+                    XX(MKCOL, 1, '-', MSEARCH)
+                    XX(MKCOL, 2, 'A', MKACTIVITY)
+                    XX(MKCOL, 3, 'A', MKCALENDAR)
+                    XX(SUBSCRIBE, 1, 'E', SEARCH)
+                    XX(SUBSCRIBE, 1, 'O', SOURCE)
+                    XX(REPORT, 2, 'B', REBIND)
+                    XX(PROPFIND, 4, 'P', PROPPATCH)
+                    XX(LOCK, 1, 'I', LINK)
+                    XX(UNLOCK, 2, 'S', UNSUBSCRIBE)
+                    XX(UNLOCK, 2, 'B', UNBIND)
+                    XX(UNLOCK, 3, 'I', UNLINK)
 #undef XX
                 default:
                     mHttpError = (HPE_INVALID_METHOD);
@@ -1614,7 +1356,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
         case s_req_server_start:
         {
             switch (ch) {
-            case ' ': //No whitespace allowed here
+            case ' ': // No whitespace allowed here
             case CR:
             case LF:
                 mHttpError = (HPE_INVALID_URL);
@@ -1640,14 +1382,14 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             switch (ch) {
             case ' ':
                 p_state = (s_req_http_start);
-                turl.mLen = 1; //turl.mLen>0表示需要回调
+                turl.mLen = 1; // turl.mLen>0表示需要回调
                 break;
             case CR:
             case LF:
                 mVersionMajor = 0;
                 mVersionMinor = 9;
                 p_state = (ch == CR ? s_req_line_almost_done : s_header_field_start);
-                turl.mLen = 1; //turl.mLen>0表示需要回调
+                turl.mLen = 1; // turl.mLen>0表示需要回调
                 break;
             default:
                 p_state = (AppParseUrlChar(p_state, ch));
@@ -1658,7 +1400,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             }
             if (1 == turl.mLen && turl.mData) {
                 DASSERT(mHttpError == HPE_OK);
-                turl.mLen = p - turl.mData; //重新计算长度
+                turl.mLen = p - turl.mData; // 重新计算长度
                 mState = p_state;
                 if (UNLIKELY(!mMsg->mURL.decode(turl.mData, turl.mLen))) {
                     mReadSize = nread;
@@ -1712,7 +1454,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
 
         case s_req_http_IC:
             STRICT_CHECK(ch != 'E');
-            p_state = s_req_http_HTTP;  // Treat "ICE" as "HTTP"
+            p_state = s_req_http_HTTP; // Treat "ICE" as "HTTP"
             break;
 
         case s_req_http_HTTP:
@@ -1984,7 +1726,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
 
             mHttpError = (HPE_INVALID_HEADER_TOKEN);
             goto GT_ERROR;
-        }//s_header_field
+        } // s_header_field
 
         case s_header_value_discard_ws:
         {
@@ -1999,7 +1741,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                 p_state = (s_header_value_discard_lws);
                 break;
             }
-            //break; fall through
+            // break; fall through
         }
 
         case s_header_value_start:
@@ -2040,13 +1782,13 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                 p = parseValue(p, end, vals, vcnt, vflags);
                 if (vflags & EHV_DONE) {
                     if (vcnt >= 4) {
-                        //name of form
+                        // name of form
                         if (4 == vals[2].mLen && App4Char2S32(vals[2].mData) == App4Char2S32("name")) {
                             mFormNameLen = (u8)vals[3].mLen;
                             memcpy(mFormName, vals[3].mData, mFormNameLen);
                         }
 
-                        //filename
+                        // filename
                         if (vcnt >= 6) {
                             if (8 == vals[4].mLen && App4Char2S32(vals[4].mData) == App4Char2S32("file")) {
                                 mFileNameLen = (u8)vals[5].mLen;
@@ -2203,7 +1945,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                         break;
                     }
                     h_state = h_content_length_num;
-                    //break; fall through
+                    // break; fall through
 
                 case h_content_length_num:
                 {
@@ -2234,7 +1976,9 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                 }
 
                 case h_content_length_ws:
-                    if (ch == ' ') { break; }
+                    if (ch == ' ') {
+                        break;
+                    }
                     mHttpError = (HPE_INVALID_CONTENT_LENGTH);
                     mHeaderState = h_state;
                     goto GT_ERROR;
@@ -2252,7 +1996,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                          */
                         h_state = h_matching_transfer_encoding_token;
                     } else if (c == ' ' || c == '\t') {
-                        //Skip lws
+                        // Skip lws
                     } else {
                         h_state = h_general;
                     }
@@ -2303,7 +2047,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                     }
                     break;
 
-                    //looking for 'Connection: close'
+                    // looking for 'Connection: close'
                 case h_matching_connection_close:
                     mIndex++;
                     if (mIndex > sizeof(CLOSE) - 1 || c != CLOSE[mIndex]) {
@@ -2358,8 +2102,8 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                     p_state = (s_header_value);
                     h_state = h_general;
                     break;
-                }//switch(h_state)
-            }//for in val
+                } // switch(h_state)
+            }     // for in val
             mHeaderState = h_state;
 
             if (p == end) {
@@ -2404,7 +2148,8 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             case h_connection_upgrade:
                 mFlags |= F_CONNECTION_UPGRADE;
                 break;
-            default: break;
+            default:
+                break;
             }
 
             p_state = (s_header_field_start);
@@ -2474,7 +2219,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                     break;
                 }
                 if (mFlags & (F_CHUNKED | F_TAILING)) {
-                    //End of a chunked request
+                    // End of a chunked request
                     p_state = s_message_done;
                     chunkDone();
                     mState = p_state;
@@ -2484,8 +2229,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
 
             /* Cannot use transfer-encoding and a content-length header together
                per the HTTP specification. (RFC 7230 Section 3.3.3) */
-            if ((mUseTransferEncode == 1) &&
-                (mFlags & F_CONTENTLENGTH)) {
+            if ((mUseTransferEncode == 1) && (mFlags & F_CONTENTLENGTH)) {
                 /* Allow it for lenient parsing as long as `Transfer-Encoding` is
                  * not `chunked` or allow_length_with_encoding is set */
                 if (mFlags & F_CHUNKED) {
@@ -2502,8 +2246,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             p_state = s_headers_done;
 
             /* Set this here so that headDone() can see it */
-            if ((mFlags & F_UPGRADE) &&
-                (mFlags & F_CONNECTION_UPGRADE)) {
+            if ((mFlags & F_UPGRADE) && (mFlags & F_CONNECTION_UPGRADE)) {
                 /* For responses, "Upgrade: foo" and "Connection: upgrade" are
                  * mandatory only when it is a 101 Switching Protocols response,
                  * otherwise it is purely informational, to announce support.
@@ -2538,7 +2281,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                 mReadSize = nread;
                 mHttpError = (HPE_CB_HeadersComplete);
                 mState = p_state;
-                return (p - data); //Error
+                return (p - data); // Error
             }
 
             if (mHttpError != HPE_OK) {
@@ -2566,11 +2309,10 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             mReadSize = 0;
             nread = 0;
 
-            s32 hasBody = (mFlags & (F_CHUNKED | F_BOUNDARY))
-                || (mContentLen > 0 && mContentLen != ULLONG_MAX);
+            s32 hasBody = (mFlags & (F_CHUNKED | F_BOUNDARY)) || (mContentLen > 0 && mContentLen != ULLONG_MAX);
 
             if (mUpgrade && (mMethod == HTTP_CONNECT || (mFlags & F_SKIPBODY) || !hasBody)) {
-                //Exit, the rest of the message is in a different protocol
+                // Exit, the rest of the message is in a different protocol
                 p_state = (NEW_MESSAGE());
                 msgEnd();
                 mReadSize = nread;
@@ -2580,11 +2322,11 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
 
             if (mFlags & F_SKIPBODY) {
                 p_state = (NEW_MESSAGE());
-                //CALLBACK_NOTIFY(MsgComplete);
+                // CALLBACK_NOTIFY(MsgComplete);
                 msgEnd();
                 mState = p_state;
             } else if (mFlags & F_CHUNKED) {
-                //chunked encoding, ignore Content-Length header
+                // chunked encoding, ignore Content-Length header
                 p_state = s_chunk_size_start;
             } else if (F_BOUNDARY & mFlags) {
                 mIndex = 0;
@@ -2624,7 +2366,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                     p_state = s_body_identity;
                 } else {
                     if (!needEOF()) {
-                        //Assume content-length 0 - read the next
+                        // Assume content-length 0 - read the next
                         p_state = (NEW_MESSAGE());
                         msgEnd();
                         mState = p_state;
@@ -2666,15 +2408,15 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                  * important for applications, but let's keep it for now.
                  */
 
-                 //CALLBACK_DATA_(tbody.mData, p - tbody.mData + 1, p - data);
+                // CALLBACK_DATA_(tbody.mData, p - tbody.mData + 1, p - data);
                 DASSERT(mHttpError == HPE_OK);
                 if (tbody.mData) {
                     tbody.mLen = p - tbody.mData + 1;
                     mState = p_state;
                     mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
-                    //if (UNLIKELY(mHttpError != HPE_OK)) {
-                    //    return (p - data);
-                    //}
+                    // if (UNLIKELY(mHttpError != HPE_OK)) {
+                    //     return (p - data);
+                    // }
                     tbody.set(nullptr, 0);
                 }
                 goto GT_REPARSE;
@@ -2683,7 +2425,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             break;
         }
 
-        //read until EOF
+        // read until EOF
         case s_body_identity_eof:
             if (!tbody.mData) {
                 tbody.set(p, 0);
@@ -2697,7 +2439,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             mState = p_state;
             mReadSize = nread;
             if (mUpgrade) {
-                //Exit, the rest of the message is in a different protocol
+                // Exit, the rest of the message is in a different protocol
                 return (p - data + 1);
             }
             break;
@@ -2813,9 +2555,9 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
                 tbody.mLen = p - tbody.mData;
                 mState = p_state;
                 mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
-                //if (UNLIKELY(mHttpError != HPE_OK)) {
-                //    return (p - data+1);
-                //}
+                // if (UNLIKELY(mHttpError != HPE_OK)) {
+                //     return (p - data+1);
+                // }
                 tbody.set(nullptr, 0);
             }
             break;
@@ -2834,26 +2576,26 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             DASSERT(0 && "unhandled state");
             mHttpError = (HPE_INVALID_INTERNAL_STATE);
             goto GT_ERROR;
-        }//switch
-    }//for -------------------------------------------------
+        } // switch
+    }     // for -------------------------------------------------
 
 
-    //check the leftover, @note p is out span now
+    // check the leftover, @note p is out span now
     if (turl.mData) {
         len = turl.mData - data;
         mHeaderState = h_general;
     } else if (tstat.mData) {
         len = tstat.mData - data;
         mHeaderState = h_general;
-        //mState = s_header_field_start;
+        // mState = s_header_field_start;
     } else if (headkey.mData) {
         DASSERT(headkey.mData >= data);
         len = headkey.mData - data;
         mReadSize = nread - (u32)(p - headkey.mData);
         mState = s_header_field_start;
 
-        //清除不能重入的状态
-        //判断是不是body中的header
+        // 清除不能重入的状态
+        // 判断是不是body中的header
         if (0 == (mFlags & F_HEAD_DONE)) {
             switch (mHeaderState) {
             case h_content_length:
@@ -2863,7 +2605,8 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
             case h_content_type:
                 mFlags &= (~(u32)(F_BOUNDARY));
                 break;
-            default:break;
+            default:
+                break;
             }
         }
         mHeaderState = h_general;
@@ -2871,10 +2614,10 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
         tbody.mLen = p - tbody.mData;
         mState = p_state;
         mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
-        //if (UNLIKELY(mHttpError != HPE_OK)) {
-        //    return (p - data);
-        //}
-        //tbody.set(nullptr, 0);
+        // if (UNLIKELY(mHttpError != HPE_OK)) {
+        //     return (p - data);
+        // }
+        // tbody.set(nullptr, 0);
     }
 
     mReadSize = nread;
@@ -2882,7 +2625,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
     return len;
 
 
-    GT_ERROR:
+GT_ERROR:
     if (HPE_OK == mHttpError) {
         mHttpError = HPE_UNKNOWN;
     }
@@ -2904,7 +2647,7 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
         {
             tbody.set(curr, 0);
             vstat = EHV_BOUNDARY_BODY;
-            //break; fall
+            // break; fall
         }
         case EHV_BOUNDARY_BODY:
         {
@@ -2921,8 +2664,8 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
                     break;
                 }
             }
-            //partly callback
-            //curr - tbody.mData
+            // partly callback
+            // curr - tbody.mData
             break;
         }
         case EHV_BOUNDARY_CMP_PRE:
@@ -3030,15 +2773,15 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
             mHttpError = HPE_CB_Body;
             end = --curr;
             break;
-        } //switch
-    }//for
+        } // switch
+    }     // for
 
     mValueState = vstat;
     return curr;
 }
 
 
-bool HttpLayer::needEOF()const {
+bool HttpLayer::needEOF() const {
     if (mType == EHTTP_REQUEST) {
         return false;
     }
@@ -3047,7 +2790,7 @@ bool HttpLayer::needEOF()const {
     if (mStatusCode / 100 == 1 || /* 1xx e.g. Continue */
         mStatusCode == 204 ||     /* No Content */
         mStatusCode == 304 ||     /* Not Modified */
-        mFlags & F_SKIPBODY) {     /* response to a HEAD request */
+        mFlags & F_SKIPBODY) {    /* response to a HEAD request */
         return false;
     }
 
@@ -3064,7 +2807,7 @@ bool HttpLayer::needEOF()const {
 }
 
 
-bool HttpLayer::shouldKeepAlive()const {
+bool HttpLayer::shouldKeepAlive() const {
     if (mVersionMajor > 0 && mVersionMinor > 0) {
         /* HTTP/1.1 */
         if (mFlags & F_CONNECTION_CLOSE) {
@@ -3098,7 +2841,10 @@ const s8* HttpLayer::getErrStr(EHttpError it) {
 }
 
 StringView HttpLayer::getMethodStr(EHttpMethod it) {
-#define DCASE(num, name, str) case HTTP_##name: ret.set(#str,sizeof(#str)-1);break;
+#define DCASE(num, name, str)                                                                                          \
+    case HTTP_##name:                                                                                                  \
+        ret.set(#str, sizeof(#str) - 1);                                                                               \
+        break;
 
     StringView ret;
     switch (it) {
@@ -3113,270 +2859,5 @@ StringView HttpLayer::getMethodStr(EHttpMethod it) {
 }
 
 
-//////////////////////////////
-static EHttpHostState parseHostChar(EHttpHostState s, const s8 ch) {
-    switch (s) {
-    case s_http_userinfo:
-    case s_http_userinfo_start:
-        if (ch == '@') {
-            return s_http_host_start;
-        }
-        if (IS_USERINFO_CHAR(ch)) {
-            return s_http_userinfo;
-        }
-        break;
-
-    case s_http_host_start:
-        if (ch == '[') {
-            return s_http_host_v6_start;
-        }
-        if (IS_HOST_CHAR(ch)) {
-            return s_http_host;
-        }
-        break;
-
-    case s_http_host:
-        if (IS_HOST_CHAR(ch)) {
-            return s_http_host;
-        }
-        //break; fall
-
-    case s_http_host_v6_end:
-        if (ch == ':') {
-            return s_http_host_port_start;
-        }
-        break;
-
-    case s_http_host_v6:
-        if (ch == ']') {
-            return s_http_host_v6_end;
-        }
-        //break; fall
-
-    case s_http_host_v6_start:
-        if (IS_HEX(ch) || ch == ':' || ch == '.') {
-            return s_http_host_v6;
-        }
-        if (s == s_http_host_v6 && ch == '%') {
-            return s_http_host_v6_zone_start;
-        }
-        break;
-
-    case s_http_host_v6_zone:
-        if (ch == ']') {
-            return s_http_host_v6_end;
-        }
-        //break; fall
-
-    case s_http_host_v6_zone_start:
-        /* RFC 6874 Zone ID consists of 1*( unreserved / pct-encoded) */
-        if (IS_ALPHANUM(ch) || ch == '%' || ch == '.' || ch == '-' || ch == '_' ||
-            ch == '~') {
-            return s_http_host_v6_zone;
-        }
-        break;
-
-    case s_http_host_port:
-    case s_http_host_port_start:
-        if (IS_NUM(ch)) {
-            return s_http_host_port;
-        }
-        break;
-
-    default:
-        break;
-    }
-    return s_http_host_dead;
-}
-
-
-s32 HttpURL::parseHost(const s8* buf, s32 found_at) {
-    usz buflen = mFieldData[UF_HOST].mOffset + mFieldData[UF_HOST].mLen;
-    DASSERT(mFieldSet & (1 << UF_HOST));
-    mFieldData[UF_HOST].mLen = 0;
-
-    EHttpHostState s = found_at ? s_http_userinfo_start : s_http_host_start;
-
-    for (const s8* p = buf + mFieldData[UF_HOST].mOffset; p < buf + buflen; p++) {
-        EHttpHostState new_s = parseHostChar(s, *p);
-
-        if (new_s == s_http_host_dead) {
-            return 1;
-        }
-
-        switch (new_s) {
-        case s_http_host:
-            if (s != s_http_host) {
-                mFieldData[UF_HOST].mOffset = (u16)(p - buf);
-            }
-            mFieldData[UF_HOST].mLen++;
-            break;
-
-        case s_http_host_v6:
-            if (s != s_http_host_v6) {
-                mFieldData[UF_HOST].mOffset = (u16)(p - buf);
-            }
-            mFieldData[UF_HOST].mLen++;
-            break;
-
-        case s_http_host_v6_zone_start:
-        case s_http_host_v6_zone:
-            mFieldData[UF_HOST].mLen++;
-            break;
-
-        case s_http_host_port:
-            if (s != s_http_host_port) {
-                mFieldData[UF_PORT].mOffset = (u16)(p - buf);
-                mFieldData[UF_PORT].mLen = 0;
-                mFieldSet |= (1 << UF_PORT);
-            }
-            mFieldData[UF_PORT].mLen++;
-            break;
-
-        case s_http_userinfo:
-            if (s != s_http_userinfo) {
-                mFieldData[UF_USERINFO].mOffset = (u16)(p - buf);
-                mFieldData[UF_USERINFO].mLen = 0;
-                mFieldSet |= (1 << UF_USERINFO);
-            }
-            mFieldData[UF_USERINFO].mLen++;
-            break;
-
-        default:
-            break;
-        }
-        s = new_s;
-    }
-
-    /* Make sure we don't end somewhere unexpected */
-    switch (s) {
-    case s_http_host_start:
-    case s_http_host_v6_start:
-    case s_http_host_v6:
-    case s_http_host_v6_zone_start:
-    case s_http_host_v6_zone:
-    case s_http_host_port_start:
-    case s_http_userinfo:
-    case s_http_userinfo_start:
-        return 1;
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-
-s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
-    if (buflen == 0) {
-        return 1;
-    }
-
-    s32 found_at = 0;
-    mPort = mFieldSet = 0;
-    EPareState s = is_connect ? s_req_server_start : s_req_spaces_before_url;
-    EHttpUrlFields uf;
-    EHttpUrlFields old_uf = UF_MAX;
-    for (const s8* p = buf; p < buf + buflen; p++) {
-        s = AppParseUrlChar2(s, *p);
-
-        /* Figure out the next field that we're operating on */
-        switch (s) {
-        case s_dead:
-            return 1;
-
-            /* Skip delimeters */
-        case s_req_schema_slash:
-        case s_req_schema_slash2:
-        case s_req_server_start:
-        case s_req_query_string_start:
-        case s_req_fragment_start:
-            continue;
-
-        case s_req_schema:
-            uf = UF_SCHEMA;
-            break;
-
-        case s_req_server_with_at:
-            found_at = 1;
-
-            /* fall through */
-        case s_req_server:
-            uf = UF_HOST;
-            break;
-
-        case s_req_path:
-            uf = UF_PATH;
-            break;
-
-        case s_req_query_string:
-            uf = UF_QUERY;
-            break;
-
-        case s_req_fragment:
-            uf = UF_FRAGMENT;
-            break;
-
-        default:
-            DASSERT(!"Unexpected state");
-            return 1;
-        }
-
-        /* Nothing's changed; soldier on */
-        if (uf == old_uf) {
-            mFieldData[uf].mLen++;
-            continue;
-        }
-
-        mFieldData[uf].mOffset = (u16)(p - buf);
-        mFieldData[uf].mLen = 1;
-
-        mFieldSet |= (1 << uf);
-        old_uf = uf;
-    }
-
-    /* host must be present if there is a schema */
-    /* parsing http:///toto will fail */
-    if ((mFieldSet & (1 << UF_SCHEMA)) &&
-        (mFieldSet & (1 << UF_HOST)) == 0) {
-        return 1;
-    }
-
-    if (mFieldSet & (1 << UF_HOST)) {
-        if (parseHost(buf, found_at) != 0) {
-            return 1;
-        }
-    }
-
-    /* CONNECT requests can only contain "hostname:port" */
-    if (is_connect && mFieldSet != ((1 << UF_HOST) | (1 << UF_PORT))) {
-        return 1;
-    }
-
-    if (mFieldSet & (1 << UF_PORT)) {
-        u16 off = mFieldData[UF_PORT].mOffset;
-        u16 len = mFieldData[UF_PORT].mLen;
-        const s8* end = buf + off + len;
-
-        /* NOTE: The characters are already validated and are in the [0-9] range */
-        DASSERT((usz)(off + len) <= buflen && "Port number overflow");
-        usz v = 0;
-        for (const s8* p = buf + off; p < end; p++) {
-            v *= 10;
-            v += *p - '0';
-            if (v > 0xffff) {
-                return 1;
-            }
-        }
-
-        mPort = (u16)v;
-    }
-
-    return 0;
-}
-
-
-
-
-} //namespace net
-}//namespace
+} // namespace net
+} // namespace app

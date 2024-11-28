@@ -34,6 +34,7 @@ namespace app {
 /**
  * @brief a futex base on atomic operations.
  * @note Futex is not recursive lock.
+ *       Futex在windows中不能跨进程使用
  */
 class Futex : public Nocopy {
 public:

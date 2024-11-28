@@ -37,19 +37,6 @@
 namespace app {
 namespace net {
 
-//Compile with -DHTTP_PARSER_STRICT=0 to make less checks, but run faster
-#ifndef DHTTP_PARSE_STRICT
-# define DHTTP_PARSE_STRICT 1
-#endif
-
-//Maximium header size allowed. 
-#ifndef HTTP_MAX_HEADER_SIZE
-# define HTTP_MAX_HEADER_SIZE (80*1024)
-#endif
-
-
-
-
 class Website;
 
 class HttpLayer : public RefCount {

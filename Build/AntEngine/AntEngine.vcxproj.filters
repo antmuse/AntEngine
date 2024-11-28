@@ -329,6 +329,9 @@
     <ClCompile Include="..\..\Source\Script\LuaColor.cpp">
       <Filter>Source\Script</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Windows\Futex.cpp">
+      <Filter>Source\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -648,6 +651,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\ReadWriteLock.h">
       <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h">
+      <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

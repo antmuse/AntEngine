@@ -55,10 +55,10 @@ public:
 
     void setPageCount(s32 count);
 
-    //@param align ¶ÔÆëµ¥Î»(±ØĞëÊÇ2µÄÃİ´Î·½)
+    //@param align å¯¹é½å•ä½(å¿…é¡»æ˜¯2çš„å¹‚æ¬¡æ–¹)
     s8* allocate(u64 bytesWanted, u64 align = sizeof(void*));
 
-    //@param align ¶ÔÆëµ¥Î»(±ØĞëÊÇ2µÄÃİ´Î·½)
+    //@param align å¯¹é½å•ä½(å¿…é¡»æ˜¯2çš„å¹‚æ¬¡æ–¹)
     s8* allocateAndClear(u64 bytesWanted, u64 align = sizeof(void*));
 
     void release(void* data);
