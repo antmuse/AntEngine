@@ -152,6 +152,7 @@
     <ClInclude Include="..\..\Include\HashFunctions.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h" />
     <ClInclude Include="..\..\Include\ReadWriteLock.h" />
     <ClInclude Include="..\..\Include\Logger.h" />
     <ClInclude Include="..\..\Include\Loop.h" />

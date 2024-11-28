@@ -20,15 +20,15 @@ s32 StationInit::onMsg(HttpMsg* msg) {
 s32 StationPath::check(HttpMsg* msg) {
     DASSERT(msg);
 
-    String& requrl = const_cast<String&>(msg->getURL().get());
-    requrl.replace('\\', '/');
+    //String& requrl = const_cast<String&>(msg->getURL().get());
+    //requrl.replace('\\', '/');
 
-    if (requrl.find("/../") >= 0) {
-        // TODO fix this path
-        msg->setStatus(403);
-        msg->setStationID(ES_ERROR);
-        return ES_ERROR;
-    }
+    //if (requrl.find("/../") >= 0) {
+    //    // TODO fix this path
+    //    msg->setStatus(403);
+    //    msg->setStationID(ES_ERROR);
+    //    return ES_ERROR;
+    //}
 
 
     return EE_OK;

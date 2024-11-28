@@ -652,6 +652,9 @@
     <ClInclude Include="..\..\Include\ReadWriteLock.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Depend\jsoncpp\LICENSE">

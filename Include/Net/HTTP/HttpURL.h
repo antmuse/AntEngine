@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
-
+#pragma once
 #ifndef APP_HTTPURL_H
-#define	APP_HTTPURL_H
+#define APP_HTTPURL_H
 
 
 #include "Strings.h"
@@ -33,14 +33,15 @@ namespace app {
 namespace net {
 
 enum EHttpUrlFields {
-    UF_SCHEMA = 0
-    , UF_HOST = 1
-    , UF_PORT = 2
-    , UF_PATH = 3
-    , UF_QUERY = 4
-    , UF_FRAGMENT = 5
-    , UF_USERINFO = 6
-    , UF_MAX = 7
+    UF_SCHEMA = 0,
+    UF_HOST = 1,
+    UF_PORT = 2,
+    UF_PATH = 3,
+    UF_QUERY = 4,
+    UF_FRAGMENT = 5,
+    UF_USERINFO = 6,
+
+    UF_MAX = 7
 };
 
 
@@ -53,7 +54,7 @@ public:
 
     ~HttpURL();
 
-    const String& get()const {
+    const String& get() const {
         return mData;
     }
 
@@ -67,37 +68,37 @@ public:
 
     void append(const s8* buf, size_t sz);
 
-    bool isHttps()const;
+    bool isHttps() const;
 
-    u16 getPort()const;
+    u16 getPort() const;
 
-    StringView getHost()const {
+    StringView getHost() const {
         return getNode(UF_HOST);
     }
 
-    StringView getPath()const {
+    StringView getPath() const {
         return getNode(UF_PATH);
     }
 
-    StringView getQuery()const {
+    StringView getQuery() const {
         return getNode(UF_QUERY);
     }
 
-    StringView getFragment()const {
+    StringView getFragment() const {
         return getNode(UF_FRAGMENT);
     }
 
-    StringView getNode(u32 idx)const;
+    StringView getNode(u32 idx) const;
 
 
 private:
     String mData;
 
-    u16 mFieldSet;           /* Bitmask of (1 << UF_*) values */
-    u16 mPort;                /* Converted UF_PORT string */
+    u16 mFieldSet; /* Bitmask of (1 << UF_*) values */
+    u16 mPort;     /* Converted UF_PORT string */
     struct {
-        u16 mOffset;          /* Offset into buffer in which field starts */
-        u16 mLen;             /* Length of run in buffer */
+        u16 mOffset; /* Offset into buffer in which field starts */
+        u16 mLen;    /* Length of run in buffer */
     } mFieldData[UF_MAX];
 
     /* Parse a URL; return nonzero on failure */
@@ -106,7 +107,7 @@ private:
     s32 parseHost(const s8* buf, s32 found_at);
 };
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app
 
-#endif //APP_HTTPURL_H
+#endif // APP_HTTPURL_H
