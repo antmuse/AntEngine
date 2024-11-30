@@ -26,7 +26,7 @@
 #ifndef APP_ENGINECONFIG_H
 #define	APP_ENGINECONFIG_H
 
-#include "Strings.h"
+#include "TString.h"
 #include "TVector.h"
 #include "HashDict.h"
 #include "Net/NetAddress.h"
@@ -59,6 +59,7 @@ public:
         u32 mSpeed;             //in bytes per seconds
         String mRootPath;
         String mPathTLS;
+        String mHost;
         net::NetAddress mLocal;
         HashDict* mDict;         //cache of site
         WebsiteCfg() :

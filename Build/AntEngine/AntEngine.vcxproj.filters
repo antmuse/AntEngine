@@ -284,7 +284,7 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\Stations.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\MsgStation.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp">
@@ -331,6 +331,33 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Windows\Futex.cpp">
       <Filter>Source\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationReqBodyDone.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationError.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationRespBody.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationRespHead.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationClose.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationReqBody.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationReqHead.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationReqPath.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\StationRespBodyDone.cpp">
+      <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -460,7 +487,7 @@
     <ClInclude Include="..\..\Include\StrConverter.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Strings.h">
+    <ClInclude Include="..\..\Include\TString.h">
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\System.h">
@@ -653,6 +680,33 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationReqBodyDone.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationError.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationRespBody.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationRespHead.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationClose.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationReqBody.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationReqHead.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationReqPath.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\StationRespBodyDone.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
   </ItemGroup>

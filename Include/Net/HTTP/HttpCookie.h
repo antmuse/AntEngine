@@ -26,7 +26,7 @@
 #ifndef APP_HTTPCOOKIE_H
 #define	APP_HTTPCOOKIE_H
 
-#include "Strings.h"
+#include "TString.h"
 #include "Packet.h"
 
 namespace app {

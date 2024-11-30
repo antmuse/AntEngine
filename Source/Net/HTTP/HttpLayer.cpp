@@ -166,11 +166,11 @@ bool HttpLayer::sendReq() {
     return true;
 }
 
-bool HttpLayer::sendResp(HttpMsg* msg) {
+s32 HttpLayer::sendResp(HttpMsg* msg) {
     DASSERT(msg);
 
     if (msg->getRespStatus() > 0) {
-        return true;
+        return EE_OK;
     }
 
     RingBuffer& bufs = msg->getCacheOut();
@@ -184,11 +184,11 @@ bool HttpLayer::sendResp(HttpMsg* msg) {
     s32 ret = writeIF(nd);
     if (EE_OK != ret) {
         RequestFD::delRequest(nd);
-        return false;
+        return ret;
     }
     msg->grab();
     msg->setRespStatus(1);
-    return true;
+    return EE_OK;
 }
 
 

@@ -17,14 +17,15 @@ HttpFileSave::HttpFileSave()
 HttpFileSave::~HttpFileSave() {
 }
 
-s32 HttpFileSave::onSent(net::HttpMsg& msg) {
+s32 HttpFileSave::onSent(net::HttpMsg* msg) {
     //go on to send body here
     return EE_OK;
 }
 
-s32 HttpFileSave::onOpen(net::HttpMsg& msg) {
+s32 HttpFileSave::onOpen(net::HttpMsg* msg) {
+    DASSERT(msg);
     mDone = false;
-    mBody = &msg.getCacheOut();
+    mBody = &msg->getCacheOut();
     s32 ret = mFile.open("Log/httpfile.html", 4);
     if (EE_OK == ret) {
         mWrited = mFile.getFileSize();
@@ -42,7 +43,7 @@ s32 HttpFileSave::onClose() {
     return EE_OK;
 }
 
-s32 HttpFileSave::onFinish(net::HttpMsg& msg) {
+s32 HttpFileSave::onFinish(net::HttpMsg* msg) {
     return onBodyPart(msg);
 }
 
@@ -66,7 +67,7 @@ void HttpFileSave::onFileWrite(RequestFD* it) {
     }
 }
 
-s32 HttpFileSave::onBodyPart(net::HttpMsg& msg) {
+s32 HttpFileSave::onBodyPart(net::HttpMsg* msg) {
     if (!mFile.isOpen()) {
         return EE_ERROR;
     }

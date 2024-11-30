@@ -1,7 +1,7 @@
 #ifndef APP_COLOR_H
 #define APP_COLOR_H
 
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 

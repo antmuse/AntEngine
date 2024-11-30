@@ -119,6 +119,7 @@ s32 HandleFile::open(const String& fname, s32 flag) {
 
 s32 HandleFile::write(RequestFD* req, usz offset) {
     if (0 == (EHF_WRITEABLE & mFlag)) {
+        req->mError = EE_NO_WRITEABLE;
         return EE_NO_WRITEABLE;
     }
     DASSERT(req && req->mCall);
@@ -132,6 +133,7 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
     if (FALSE == WriteFile(mFile, req->mData, req->mUsed, nullptr, &req->mOverlapped)) {
         const s32 ecode = System::getError();
         if (ERROR_IO_PENDING != ecode) {
+            req->mError = EE_ERROR;
             return mLoop->closeHandle(this);
         }
     }
@@ -143,6 +145,7 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
 s32 HandleFile::read(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
     if (0 == (EHF_READABLE & mFlag)) {
+        req->mError = EE_NO_READABLE;
         return EE_NO_READABLE;
     }
     req->mError = 0;
@@ -156,6 +159,7 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
         req->mAllocated - req->mUsed, nullptr, &req->mOverlapped)) {
         const s32 ecode = System::getError();
         if (ERROR_IO_PENDING != ecode) {
+            req->mError = EE_ERROR;
             return mLoop->closeHandle(this);
         }
     }

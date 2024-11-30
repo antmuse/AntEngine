@@ -249,10 +249,10 @@ public:
     HttpEventer() { }
     virtual ~HttpEventer() { }
     virtual s32 onClose() = 0;
-    virtual s32 onOpen(HttpMsg& msg) = 0;
-    virtual s32 onSent(HttpMsg& req) = 0;
-    virtual s32 onFinish(HttpMsg& resp) = 0;
-    virtual s32 onBodyPart(HttpMsg& resp) = 0;
+    virtual s32 onOpen(HttpMsg* msg) = 0;
+    virtual s32 onSent(HttpMsg* msg) = 0;
+    virtual s32 onFinish(HttpMsg* msg) = 0;
+    virtual s32 onBodyPart(HttpMsg* msg) = 0;
 };
 
 
@@ -280,7 +280,6 @@ public:
 
     void setEvent(HttpEventer* it) {
         if (mEvent) {
-            mEvent->onClose();
             mEvent->drop();
         }
         if (it) {

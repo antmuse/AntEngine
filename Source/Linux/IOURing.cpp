@@ -365,6 +365,7 @@ void IOURing::postQueue() {
 
 s32 IOURing::postReq(RequestFD* req) {
     if (mWaitPostSize >= G_MAX_WAIT_REQ) {
+        req->mError = EE_RETRY;
         return EE_RETRY;
     }
     HandleFile* handle = reinterpret_cast<HandleFile*>(req->mHandle);

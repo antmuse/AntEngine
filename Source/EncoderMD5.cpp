@@ -1,6 +1,5 @@
 #include "EncoderMD5.h"
-#include <stdio.h>
-#include <memory.h>
+#include <cstring>
 
 namespace app {
 

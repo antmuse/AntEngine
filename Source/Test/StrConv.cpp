@@ -8,7 +8,7 @@
 #include "TVector.h"
 #include "TList.h"
 #include "Converter.h"
-#include "Strings.h"
+#include "TString.h"
 #include "Spinlock.h"
 #include "CodecBase64.h"
 #include "EncoderMD5.h"

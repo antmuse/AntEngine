@@ -12,10 +12,10 @@ public:
     HttpEvtLua(const StringView& file);
     virtual ~HttpEvtLua();
 
-    virtual s32 onSent(net::HttpMsg& req) override;
-    virtual s32 onFinish(net::HttpMsg& resp) override;
-    virtual s32 onBodyPart(net::HttpMsg& resp) override;
-    virtual s32 onOpen(net::HttpMsg& msg) override;
+    virtual s32 onSent(net::HttpMsg* req) override;
+    virtual s32 onFinish(net::HttpMsg* resp) override;
+    virtual s32 onBodyPart(net::HttpMsg* resp) override;
+    virtual s32 onOpen(net::HttpMsg* msg) override;
     virtual s32 onClose() override;
 
     //virtual s32 onBackSent(RequestFD* it);

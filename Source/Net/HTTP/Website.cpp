@@ -3,6 +3,19 @@
 #include "FileReader.h"
 #include "Packet.h"
 
+#include "Net/HTTP/StationReqPath.h"
+#include "Net/HTTP/StationReqHead.h"
+#include "Net/HTTP/StationReqBody.h"
+#include "Net/HTTP/StationReqBodyDone.h"
+
+#include "Net/HTTP/StationRespHead.h"
+#include "Net/HTTP/StationRespBody.h"
+#include "Net/HTTP/StationRespBodyDone.h"
+
+#include "Net/HTTP/StationError.h"
+#include "Net/HTTP/StationClose.h"
+
+
 namespace app {
 namespace net {
 
@@ -10,8 +23,7 @@ static const s8* G_CA_FILE = "ca.crt";
 static const s8* G_CERT_FILE = "server.crt";
 static const s8* G_PRIVATE_FILE = "server.unsecure.key";
 
-Website::Website(EngineConfig::WebsiteCfg& cfg)
-    : mConfig(cfg) {
+Website::Website(EngineConfig::WebsiteCfg& cfg) : mConfig(cfg) {
     init();
 }
 
@@ -21,14 +33,14 @@ Website::~Website() {
 
 s32 Website::stepMsg(HttpMsg* msg) {
     if (!msg) {
+        DLOG(ELL_ERROR, "HttpLayer::stepMsg>> msg=null");
         return EE_ERROR;
     }
-    MsgStation* stn = getStation(msg->getStationID());
-    if (!stn) {
-        stn = getStation(ES_ERROR);
-        DASSERT(stn);
-    }
-    return stn->onMsg(msg);
+    s32 ret;
+    do {
+        ret = getStation(msg->getStationID())->onMsg(msg);
+    } while (EE_RETRY == ret);
+    return ret;
 }
 
 
@@ -43,7 +55,7 @@ void Website::clear() {
 
 
 void Website::loadTLS() {
-    if (1 != mConfig.mType) { //ssl
+    if (1 != mConfig.mType) { // ssl
         return;
     }
     Packet buf(1024);
@@ -86,7 +98,7 @@ void Website::init() {
     setStation(ES_INIT, nd);
     nd->drop();
 
-    nd = new StationPath();
+    nd = new StationReqPath();
     setStation(ES_PATH, nd);
     nd->drop();
 
@@ -94,11 +106,11 @@ void Website::init() {
     setStation(ES_HEAD, nd);
     nd->drop();
 
-    nd = new StationBody();
+    nd = new StationReqBody();
     setStation(ES_BODY, nd);
     nd->drop();
 
-    nd = new StationBodyDone();
+    nd = new StationReqBodyDone();
     setStation(ES_BODY_DONE, nd);
     nd->drop();
 
@@ -139,5 +151,5 @@ bool Website::setStation(EStationID id, MsgStation* it) {
 }
 
 
-}  // namespace net
-}  // namespace app
+} // namespace net
+} // namespace app

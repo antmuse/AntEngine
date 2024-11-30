@@ -28,7 +28,7 @@
 
 
 #include "IntID.h"
-#include "Strings.h"
+#include "TString.h"
 
 
 struct sockaddr_in;

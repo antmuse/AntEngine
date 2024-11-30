@@ -33,7 +33,7 @@
 #include <MSWSock.h>
 #endif
 #include "Nocopy.h"
-#include "Strings.h"
+#include "TString.h"
 #include "Net/NetAddress.h"
 
 namespace app {

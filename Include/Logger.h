@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include <mutex>
 #include "TVector.h"
-#include "Strings.h"
+#include "TString.h"
 
 #if defined(DOS_WINDOWS)
 #define DBFILE(N) (strrchr(N,'\\')?strrchr(N,'\\')+1:N)

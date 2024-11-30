@@ -27,7 +27,7 @@
 #define	APP_REDISCLIENTCLUSTER_H
 
 #include "TMap.h"
-#include "Strings.h"
+#include "TString.h"
 #include "Net/NetAddress.h"
 #include "Net/RedisClient/RedisClientPool.h"
 

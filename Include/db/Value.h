@@ -2,7 +2,7 @@
 #define	APP_DB_VALUE_H
 
 #include "Converter.h"
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 namespace db {

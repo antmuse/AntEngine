@@ -174,6 +174,7 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
                 nd.mLocal.setIPort(val["Website"][i]["Lisen"].asCString());
                 nd.mRootPath = val["Website"][i]["Path"].asCString();
                 nd.mRootPath.replace('\\', '/');
+                nd.mHost = val["Website"][i]["Host"].asCString();
                 if ('/' == nd.mRootPath.lastChar()) {
                     nd.mRootPath.setLen(nd.mRootPath.getLen() - 1);
                 }

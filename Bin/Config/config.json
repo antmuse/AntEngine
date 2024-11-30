@@ -14,14 +14,16 @@
             "Lisen": "0.0.0.0:8000",
             "Type": 0, //0=http,1=https
             "Timeout": 30, //秒,0不超时
-            "Path": "/home/antmuse/all/code/my/AntEngine/Bin/Web/"
+            "Path": "/home/antmuse/all/code/my/AntEngine/Bin/Web/",
+            "Host": "local.cn"
         },
         {
             "Lisen": "0.0.0.0:8443",
             "Type": 1, //0=http,1=https
             "Timeout": 30, //秒,0不超时
             "Path": "/home/antmuse/all/code/my/AntEngine/Bin/Web/",
-            "PathTLS": "/home/antmuse/all/code/my/AntEngine/Bin/Web/TLS"
+            "PathTLS": "/home/antmuse/all/code/my/AntEngine/Bin/Web/TLS",
+            "Host": "local.cn"
         }
     ],
 

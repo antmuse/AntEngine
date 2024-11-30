@@ -109,6 +109,7 @@ s32 HandleFile::open(const String& fname, s32 flag) {
 
 s32 HandleFile::write(RequestFD* req, usz offset) {
     if (0 == (EHF_WRITEABLE & mFlag)) {
+        req->mError = EE_NO_WRITEABLE;
         return EE_NO_WRITEABLE;
     }
     DASSERT(req && req->mCall);
@@ -124,6 +125,7 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
     mLoop->bindFly(this);
     if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::stepByPool, this, req)) {
         mLoop->unbindFly(this);
+        req->mError = EE_ERROR;
         return EE_ERROR;
     }
     return EE_OK;
@@ -134,9 +136,11 @@ s32 HandleFile::write(RequestFD* req, usz offset) {
 s32 HandleFile::read(RequestFD* req, usz offset) {
     DASSERT(req && req->mCall);
     if (req->mUsed >= req->mAllocated) {
+        req->mError = EE_INVALID_PARAM;
         return EE_ERROR;
     }
     if (0 == (EHF_READABLE & mFlag)) {
+        req->mError = EE_NO_READABLE;
         return EE_NO_READABLE;
     }
     req->mError = 0;
@@ -151,6 +155,7 @@ s32 HandleFile::read(RequestFD* req, usz offset) {
     mLoop->bindFly(this);
     if (!Engine::getInstance().getThreadPool().postTask(&HandleFile::stepByPool, this, req)) {
         mLoop->unbindFly(this);
+        req->mError = EE_ERROR;
         return EE_ERROR;
     }
     return EE_OK;

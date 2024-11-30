@@ -26,7 +26,7 @@
 #ifndef APP_HTTPHEAD_H
 #define	APP_HTTPHEAD_H
 
-#include "Strings.h"
+#include "TString.h"
 #include "TVector.h"
 
 namespace app {

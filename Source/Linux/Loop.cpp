@@ -864,7 +864,8 @@ void Loop::onTask(void* it) {
 
 s32 Loop::postRequest(RequestFD* it) {
     DASSERT(it && it->mHandle);
-    if (!it || isStop()) {
+    if (isStop()) {
+        it->mError = EE_ERROR;
         return EE_ERROR;
     }
     switch (it->mHandle->getType()) {
@@ -873,6 +874,7 @@ s32 Loop::postRequest(RequestFD* it) {
     default:
         break;
     }
+    it->mError = EE_ERROR;
     return EE_ERROR;
 }
 

@@ -1,21 +1,21 @@
 #ifndef APP_HTTPFILESAVE_H
-#define	APP_HTTPFILESAVE_H
+#define APP_HTTPFILESAVE_H
 
 #include "HandleFile.h"
 #include "Net/HTTP/HttpLayer.h"
 
 namespace app {
 
-class HttpFileSave :public net::HttpEventer {
+class HttpFileSave : public net::HttpEventer {
 public:
     HttpFileSave();
     virtual ~HttpFileSave();
 
-    virtual s32 onSent(net::HttpMsg& req)override;
-    virtual s32 onFinish(net::HttpMsg& resp)override;
-    virtual s32 onBodyPart(net::HttpMsg& resp)override;
-    virtual s32 onOpen(net::HttpMsg& msg)override;
-    virtual s32 onClose()override;
+    virtual s32 onSent(net::HttpMsg* msg) override;
+    virtual s32 onFinish(net::HttpMsg* msg) override;
+    virtual s32 onBodyPart(net::HttpMsg* msg) override;
+    virtual s32 onOpen(net::HttpMsg* msg) override;
+    virtual s32 onClose() override;
 
 private:
     RingBuffer mBuf;
@@ -39,5 +39,5 @@ private:
     }
 };
 
-}//namespace app
-#endif //APP_HTTPFILESAVE_H
+} // namespace app
+#endif // APP_HTTPFILESAVE_H

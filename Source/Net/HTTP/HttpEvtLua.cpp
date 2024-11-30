@@ -21,14 +21,14 @@ HttpEvtLua::HttpEvtLua(const StringView& file) :
 HttpEvtLua::~HttpEvtLua() {
 }
 
-s32 HttpEvtLua::onSent(net::HttpMsg& msg) {
+s32 HttpEvtLua::onSent(net::HttpMsg* msg) {
     script::ScriptManager::resumeThread(mLuaThread);
     return EE_OK;
 }
 
-s32 HttpEvtLua::onOpen(net::HttpMsg& msg) {
-    mBody = &msg.getCacheOut();
-    net::Website* site = msg.getHttpLayer()->getWebsite();
+s32 HttpEvtLua::onOpen(net::HttpMsg* msg) {
+    mBody = &msg->getCacheOut();
+    net::Website* site = msg->getHttpLayer()->getWebsite();
     if (!site || mLuaThread.mSubVM) {
         return EE_ERROR;
     }
@@ -51,9 +51,9 @@ s32 HttpEvtLua::onOpen(net::HttpMsg& msg) {
         return EE_OK;
     }
     if (EE_RETRY == mLuaThread.mStatus) {
-        msg.grab();
+        msg->grab();
         grab();
-        mMsg = &msg;
+        mMsg = msg;
         return EE_OK;
     }
     mEvtFlags = EHF_CLOSE;
@@ -65,7 +65,7 @@ s32 HttpEvtLua::onClose() {
     return EE_OK;
 }
 
-s32 HttpEvtLua::onFinish(net::HttpMsg& msg) {
+s32 HttpEvtLua::onFinish(net::HttpMsg* msg) {
     return onBodyPart(msg);
 }
 
@@ -125,7 +125,7 @@ void HttpEvtLua::onRead(RequestFD* it) {
     }
 }
 
-s32 HttpEvtLua::onBodyPart(net::HttpMsg& msg) {
+s32 HttpEvtLua::onBodyPart(net::HttpMsg* msg) {
     if (!0) {
         return EE_ERROR;
     }

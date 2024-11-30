@@ -27,7 +27,7 @@
 #define	APP_CFILEREADER_H
 
 #include <stdarg.h>
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 

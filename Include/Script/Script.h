@@ -25,7 +25,7 @@
 #ifndef APP_SCRIPT_H
 #define	APP_SCRIPT_H
 
-#include "Strings.h"
+#include "TString.h"
 
 struct lua_State;
 

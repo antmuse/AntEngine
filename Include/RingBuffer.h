@@ -27,7 +27,7 @@
 #define APP_RINGBUFFER_H
 
 #include "Nocopy.h"
-#include "Strings.h"
+#include "TString.h"
 
 #define D_RBUF_BLOCK_SIZE (4 * 1024)
 

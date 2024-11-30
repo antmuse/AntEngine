@@ -27,7 +27,7 @@
 #define	APP_CFILEWRITER_H
 
 #include <stdarg.h>
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 

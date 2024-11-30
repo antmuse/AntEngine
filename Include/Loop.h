@@ -27,7 +27,7 @@
 #define	APP_LOOP_H
 
 #include "Nocopy.h"
-#include "Strings.h"
+#include "TString.h"
 #include "MsgHeader.h"
 #include "BinaryHeap.h"
 #include "Spinlock.h"

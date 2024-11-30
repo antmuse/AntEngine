@@ -26,7 +26,7 @@
 #pragma once
 
 #include <atomic>
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 

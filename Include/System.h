@@ -26,7 +26,7 @@
 #ifndef APP_SYSTEM_H
 #define APP_SYSTEM_H
 
-#include "Strings.h"
+#include "TString.h"
 #include "TVector.h"
 
 namespace app {

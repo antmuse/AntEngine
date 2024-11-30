@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "Strings.h"
+#include "TString.h"
 #include "BinaryHeap.h"
 #include "TMap.h"
 

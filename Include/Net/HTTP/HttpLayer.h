@@ -68,7 +68,7 @@ public:
     bool onLink(RequestFD* it);
 
     bool sendReq();
-    bool sendResp(HttpMsg* msg);
+    s32 sendResp(HttpMsg* msg);
 
     /* Executes the parser. Returns number of parsed bytes. Sets
      * `parser->EHttpError` on error. */

@@ -14,14 +14,16 @@
             "Lisen": "0.0.0.0:8000",
             "Type": 0, //0=http,1=https
             "Timeout": 30, //秒,0不超时
-            "Path": "D:/Code/My/AntEngine/Bin/Web/"
+            "Path": "D:/Code/My/AntEngine/Bin/Web/",
+            "Host": "local.cn"
         },
         {
             "Lisen": "0.0.0.0:8443",
             "Type": 1, //0=http,1=https
             "Timeout": 30, //秒,0不超时
             "Path": "D:/Code/My/AntEngine/Bin/Web/",
-            "PathTLS": "D:/Code/My/AntEngine/Bin/Web/TLS"
+            "PathTLS": "D:/Code/My/AntEngine/Bin/Web/TLS",
+            "Host": "local.cn"
         }
     ],
 

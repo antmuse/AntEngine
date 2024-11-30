@@ -3,7 +3,7 @@
 
 #include "Config.h"
 #include "Nocopy.h"
-#include "Strings.h"
+#include "TString.h"
 #include "Net/NetAddress.h"
 #include "Net/Socket.h"
 

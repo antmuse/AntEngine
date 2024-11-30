@@ -41,7 +41,7 @@
  */
 
 #include <memory.h>
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 

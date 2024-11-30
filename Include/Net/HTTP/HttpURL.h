@@ -27,7 +27,7 @@
 #define APP_HTTPURL_H
 
 
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 namespace net {

@@ -27,7 +27,7 @@
 #define	APP_ENGINE_H
 
 #include <atomic>
-#include "Strings.h"
+#include "TString.h"
 #include "TVector.h"
 #include "EngineConfig.h"
 #include "Loop.h"

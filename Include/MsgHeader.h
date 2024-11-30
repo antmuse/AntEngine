@@ -26,7 +26,7 @@
 #ifndef APP_MSGHEADER_H
 #define APP_MSGHEADER_H
 
-#include "Strings.h"
+#include "TString.h"
 
 namespace app {
 
