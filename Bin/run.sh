@@ -77,10 +77,64 @@ function ShowHelp(){
     echo "--------------------------------1. start    // start Server.bin"
     echo "--------------------------------2. stop     // stop  Server.bin"
     echo "--------------------------------3. show     // show  running info of Server.bin"
-    echo "--------------------------------4. help     // show help"
+    echo "--------------------------------4. strip    // strip files"
+    echo "--------------------------------5. help     // show help"
     echo "--------------------------------bin:"
     ls -lh ${RUNDIR}/*.bin
 }
+
+function StripExit() {
+    #usage:
+    scriptname=`basename ${0}`
+    echo "USAGE ${scriptname} <tostrip>"
+
+    errorcode=${1}
+    shift
+    echo $@
+    exit ${errorcode}
+}
+
+
+function StripSymbol() {
+    to_strip_dir=`dirname "$1"`
+    to_strip_file=`basename "$1"`
+    symbol_dir="."
+    echo "dir $1,$#"
+
+    if [ -z ${to_strip_file} ] ; then
+        StripExit 0 "tostrip must be specified"
+    fi
+
+    cd "${to_strip_dir}"
+
+    if [ 2 == $# ]; then
+        symbol_dir=$2
+    fi
+
+    symbol_file="${to_strip_file}.debug"
+
+    if [ "." != ${symbol_dir} ] ; then
+        if [ ! -d "${symbol_dir}" ] ; then
+            echo "creating dir ${to_strip_dir}/${symbol_dir}"
+            mkdir -p "${symbol_dir}"
+        fi
+    fi
+
+
+    symbol_line="$(nm ${to_strip_file} | wc -l)"
+    if [ ${symbol_line} != 0 ] ; then
+        echo "stripping ${to_strip_file}, putting debug symbol into ${symbol_file}"
+
+        objcopy --only-keep-debug "${to_strip_file}" "${symbol_dir}/${symbol_file}"
+        strip --strip-debug --strip-unneeded "${to_strip_file}"
+        objcopy --add-gnu-debuglink="${symbol_dir}/${symbol_file}" "${to_strip_file}"
+        chmod -x "${symbol_dir}/${symbol_file}"
+    else
+        echo "no symbols in execute file ${to_strip_file}"
+    fi
+    cd -
+}
+
 
 main(){
     local cmd=${1}
@@ -100,6 +154,10 @@ main(){
         "show")
             echo "show Server.bin"
             ShowRuning "Server.bin"
+            ;;
+        "strip")
+            shift 1
+            StripSymbol $@
             ;;
         "help")
             ShowHelp
