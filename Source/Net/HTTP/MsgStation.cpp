@@ -1,7 +1,5 @@
 #include "Net/HTTP/MsgStation.h"
 #include "Net/HTTP/HttpLayer.h"
-#include "Net/HTTP/HttpFileRead.h"
-#include "Net/HTTP/HttpFileSave.h"
 #include "Net/HTTP/HttpEvtLua.h"
 #include "Net/HTTP/Website.h"
 
