@@ -51,14 +51,33 @@ function StopServer(){
     ShowRuning "Server.bin"
 }
 
+function Temp(){
+    echo '--------------------------------输入 1 到 4 之间的数字:'
+    echo '你输入的数字为:'
+    read aNum
+    case $aNum in
+        1)  echo '你选择了 1'
+            ;;
+        2)  echo '你选择了 2'
+            ;;
+        3)  echo '你选择了 3'
+            ;;
+        4)  echo '你选择了 4'
+            ;;
+        *)  echo '你没有输入[1-4]之间的数字'
+            ;;
+    esac
+}
+
 
 function ShowHelp(){
     export LD_DEBUG=help
     echo "--------------------------------rundir = ${RUNDIR}"
     echo "--------------------------------usage:"
-    echo "--------------------------------1.     ./Server.bin"
-    echo "--------------------------------2.     ./Server.bin"
-    echo "--------------------------------3.     ./Server.bin"
+    echo "--------------------------------1. start    // start Server.bin"
+    echo "--------------------------------2. stop     // stop  Server.bin"
+    echo "--------------------------------3. show     // show  running info of Server.bin"
+    echo "--------------------------------4. help     // show help"
     echo "--------------------------------bin:"
     ls -lh ${RUNDIR}/*.bin
 }
@@ -86,21 +105,7 @@ main(){
             ShowHelp
             ;;
         *)
-            echo '--------------------------------输入 1 到 4 之间的数字:'
-            echo '你输入的数字为:'
-            read aNum
-            case $aNum in
-                1)  echo '你选择了 1'
-                    ;;
-                2)  echo '你选择了 2'
-                    ;;
-                3)  echo '你选择了 3'
-                    ;;
-                4)  echo '你选择了 4'
-                    ;;
-                *)  echo '你没有输入[1-4]之间的数字'
-                    ;;
-            esac
+            ShowHelp
             ;;
     esac
 }

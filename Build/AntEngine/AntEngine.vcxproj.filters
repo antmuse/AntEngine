@@ -281,7 +281,7 @@
     <ClCompile Include="..\..\Source\MemSlabPool.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileSave.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\MsgStation.cpp">
@@ -290,7 +290,7 @@
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpFileRead.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileRead.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp">
@@ -520,7 +520,7 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpFileSave.h">
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileSave.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h">
@@ -640,7 +640,7 @@
     <ClInclude Include="..\..\Include\RefCount.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpFileRead.h">
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileRead.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h">

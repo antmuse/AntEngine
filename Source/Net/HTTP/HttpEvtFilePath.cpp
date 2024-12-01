@@ -15,12 +15,7 @@ HttpEvtFilePath::~HttpEvtFilePath() {
 }
 
 s32 HttpEvtFilePath::onSent(net::HttpMsg* msg) {
-    if (mOffset > mList.size()) {
-        // finished
-        return EE_CLOSING;
-    }
-    writeChunk();
-    return EE_OK;
+    return writeChunk();
 }
 
 s32 HttpEvtFilePath::onOpen(net::HttpMsg* msg) {
@@ -34,9 +29,6 @@ s32 HttpEvtFilePath::onOpen(net::HttpMsg* msg) {
     mBody = &msg->getCacheOut();
     mMsg = msg;
     msg->grab();
-
-    writeStr("<htm><head><title>simple path resp</title></head><body>Path List:<br><hr><br><ol>");
-    // postResp();
     return EE_OK;
 }
 
@@ -50,7 +42,28 @@ s32 HttpEvtFilePath::onClose() {
 }
 
 s32 HttpEvtFilePath::onFinish(net::HttpMsg* msg) {
-    return onBodyPart(msg);
+    net::HttpHead& hed = msg->getHeadOut();
+    const String& host = msg->getHttpLayer()->getWebsite()->getConfig().mHost;
+    StringView key("Host", 4);
+    StringView val(host.c_str(), host.size());
+    hed.add(key, val);
+
+    key.set("Access-Control-Allow-Origin", sizeof("Access-Control-Allow-Origin") - 1);
+    val.set("*", 1);
+    hed.add(key, val);
+
+    // key.set(DSTRV("Content-Type"));
+    // val.set(DSTRV("text/html;charset=utf-8"));
+    // hed.add(key, val);
+
+    hed.writeChunked();
+
+    msg->writeStatus(200);
+    msg->dumpHeadOut();
+    msg->writeOutBody("\r\n", 2);
+    // msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
+    writeStr("<htm><head><title>simple path resp</title></head><body>Path List:<br><hr><br><ol>");
+    return msg->getHttpLayer()->sendResp(msg);
 }
 
 void HttpEvtFilePath::writeStr(const s8* it) {
@@ -64,7 +77,13 @@ void HttpEvtFilePath::writeStr(const s8* it) {
     postResp();
 }
 
-void HttpEvtFilePath::writeChunk() {
+s32 HttpEvtFilePath::writeChunk() {
+    if (mOffset > mList.size()) {
+        return EE_CLOSING;
+    }
+    if (!mMsg) {
+        return EE_CLOSING;
+    }
     if (mOffset < mList.size()) {
         mChunkPos = mBody->getTail();
         s8 chunked[256];
@@ -83,26 +102,28 @@ void HttpEvtFilePath::writeChunk() {
         snprintf(chunked, sizeof(chunked), "%04x\r\n", len);
         mBody->rewrite(mChunkPos, chunked, -G_BLOCK_HEAD_SIZE);
         mBody->write("\r\n", 2);
-        postResp();
-    } else if (mOffset == mList.size()) {
-        ++mOffset;
-        writeStr("</ol><br><hr><br>the end<br><hr></body></html>");
-        mBody->write("0\r\n\r\n", 5);
-        mMsg->setStationID(net::ES_RESP_BODY_DONE);
-        if (mMsg) {
-            mMsg->getHttpLayer()->sendResp(mMsg);
-            mMsg->drop();
-            mMsg = nullptr;
-        }
+        return postResp();
     }
+
+    // if (mOffset == mList.size()) :
+    ++mOffset;
+    writeStr("</ol><br><hr><br>the end<br><hr></body></html>");
+    mBody->write("0\r\n\r\n", 5);
+    mMsg->setStationID(net::ES_RESP_BODY_DONE);
+    s32 ret = mMsg->getHttpLayer()->sendResp(mMsg);
+    mMsg->drop();
+    mMsg = nullptr;
+    return ret;
 }
 
-void HttpEvtFilePath::postResp() {
-    if (EE_OK != mMsg->getHttpLayer()->sendResp(mMsg)) {
+s32 HttpEvtFilePath::postResp() {
+    s32 ret = mMsg->getHttpLayer()->sendResp(mMsg);
+    if (EE_OK != ret) {
         DLOG(ELL_ERROR, "HttpEvtFilePath::postResp fail, station=%d", mMsg->getStationID());
         mMsg->drop();
         mMsg = nullptr;
     }
+    return ret;
 }
 
 s32 HttpEvtFilePath::onBodyPart(net::HttpMsg* msg) {

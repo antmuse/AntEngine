@@ -8,7 +8,7 @@
 #include "AppTicker.h"
 #include "Net/HandleTCP.h"
 #include "Net/HTTP/HttpLayer.h"
-#include "Net/HTTP/HttpFileSave.h"
+#include "Net/HTTP/HttpEvtFileSave.h"
 
 
 #ifdef DOS_WINDOWS
@@ -68,7 +68,7 @@ s32 AppTicker::onTimeout(HandleTime* it) {
             net::HttpLayer* nd = new net::HttpLayer(net::EHTTP_RESPONSE);
             nd->getMsg()->getHeadOut().writeKeepAlive(true);
             nd->getMsg()->getHeadOut().add("Accept", "*/*");
-            HttpFileSave* evt = new HttpFileSave();
+            HttpEvtFileSave* evt = new HttpEvtFileSave();
             nd->getMsg()->setEvent(evt);
             s32 fly = nd->get(url);
             printf("url = %s, ip=%s\n", url, nd->getHandle().getRemote().getStr());

@@ -1,4 +1,4 @@
-#include "Net/HTTP/HttpFileRead.h"
+#include "Net/HTTP/HttpEvtFileRead.h"
 #include "RingBuffer.h"
 #include "Net/HTTP/Website.h"
 #include "Net/HTTP/MsgStation.h"
@@ -7,17 +7,17 @@ namespace app {
 
 static const s32 G_BLOCK_HEAD_SIZE = 6;
 
-HttpFileRead::HttpFileRead() : mReaded(0), mMsg(nullptr), mBody(nullptr) {
-    mReqs.mCall = HttpFileRead::funcOnRead;
+HttpEvtFileRead::HttpEvtFileRead() : mReaded(0), mMsg(nullptr), mBody(nullptr) {
+    mReqs.mCall = HttpEvtFileRead::funcOnRead;
     // mReqs.mUser = this;
-    mFile.setClose(EHT_FILE, HttpFileRead::funcOnClose, this);
+    mFile.setClose(EHT_FILE, HttpEvtFileRead::funcOnClose, this);
 }
 
-HttpFileRead::~HttpFileRead() {
+HttpEvtFileRead::~HttpEvtFileRead() {
     DASSERT(mMsg == nullptr);
 }
 
-s32 HttpFileRead::onSent(net::HttpMsg* msg) {
+s32 HttpEvtFileRead::onSent(net::HttpMsg* msg) {
     if (mReqs.mError) {
         return EE_ERROR;
     }
@@ -27,7 +27,7 @@ s32 HttpFileRead::onSent(net::HttpMsg* msg) {
     return launchRead();
 }
 
-s32 HttpFileRead::onOpen(net::HttpMsg* msg) {
+s32 HttpEvtFileRead::onOpen(net::HttpMsg* msg) {
     net::Website* site = msg->getHttpLayer()->getWebsite();
     if (!site) {
         return EE_ERROR;
@@ -45,8 +45,50 @@ s32 HttpFileRead::onOpen(net::HttpMsg* msg) {
     mReqs.mUser = nullptr;
     mBody = &msg->getCacheOut();
 
+    msg->grab();
+    mMsg = msg;
+    return EE_OK;
+}
+
+s32 HttpEvtFileRead::onClose() {
+    if (mMsg) {
+        mMsg->drop();
+        mMsg = nullptr;
+        mFile.launchClose();
+    }
+    return EE_OK;
+}
+
+
+s32 HttpEvtFileRead::onBodyPart(net::HttpMsg* msg) {
+    return EE_CLOSING;
+}
+
+s32 HttpEvtFileRead::onFinish(net::HttpMsg* msg) {
+    if (!mMsg) {
+        return ELL_ERROR;
+    }
+    net::HttpHead& hed = msg->getHeadOut();
+    const String& host = msg->getHttpLayer()->getWebsite()->getConfig().mHost;
+    StringView key("Host", 4);
+    StringView val(host.c_str(), host.size());
+    hed.add(key, val);
+    hed.writeChunked();
+
+    key.set("Access-Control-Allow-Origin", sizeof("Access-Control-Allow-Origin") - 1);
+    val.set("*", 1);
+    hed.add(key, val);
+
+    // key.set(DSTRV("Content-Type"));
+    // val.set(DSTRV("text/html;charset=utf-8"));
+    // hed.add(key, val);
+
+    msg->writeStatus(200);
+    msg->dumpHeadOut();
+    msg->writeOutBody("\r\n", 2);
+
     if (mFile.getFileSize() > 0) {
-        ret = launchRead();
+        s32 ret = launchRead();
         if (EE_OK != ret) {
             mFile.launchClose();
             return ret;
@@ -55,26 +97,10 @@ s32 HttpFileRead::onOpen(net::HttpMsg* msg) {
         mBody->write("0\r\n\r\n", 5);
         mFile.launchClose();
     }
-
-    msg->grab();
-    mMsg = msg;
-    return EE_OK;
+    return msg->getHttpLayer()->sendResp(msg);
 }
 
-s32 HttpFileRead::onClose() {
-    if (mMsg) {
-        mMsg->drop();
-        mMsg = nullptr;
-        mFile.launchClose();
-    }
-    return EE_OK;
-}
-
-s32 HttpFileRead::onFinish(net::HttpMsg* msg) {
-    return onBodyPart(msg);
-}
-
-void HttpFileRead::onFileClose(Handle* it) {
+void HttpEvtFileRead::onFileClose(Handle* it) {
     if (mMsg) {
         mMsg->drop();
         mMsg = nullptr;
@@ -82,10 +108,10 @@ void HttpFileRead::onFileClose(Handle* it) {
     drop();
 }
 
-void HttpFileRead::onFileRead(RequestFD* it) {
+void HttpEvtFileRead::onFileRead(RequestFD* it) {
     if (it->mError) {
         mMsg->setStationID(net::ES_RESP_BODY_DONE);
-        Logger::log(ELL_ERROR, "HttpFileRead::onFileRead>>err=%d, file=%s", it->mError, mFile.getFileName().c_str());
+        Logger::log(ELL_ERROR, "HttpEvtFileRead::onFileRead>>err=%d, file=%s", it->mError, mFile.getFileName().c_str());
         mFile.launchClose();
         return;
     }
@@ -106,20 +132,12 @@ void HttpFileRead::onFileRead(RequestFD* it) {
     it->mUsed = 0;
     it->mUser = nullptr;
     if (!mMsg || EE_OK != mMsg->getHttpLayer()->sendResp(mMsg)) {
-        DLOG(ELL_ERROR, "HttpFileRead::onFileRead>>post resp err file=%s", mFile.getFileName().c_str());
+        DLOG(ELL_ERROR, "HttpEvtFileRead::onFileRead>>post resp err file=%s", mFile.getFileName().c_str());
         mFile.launchClose();
     }
 }
 
-s32 HttpFileRead::onBodyPart(net::HttpMsg* msg) {
-    if (!mFile.isOpen()) {
-        return EE_ERROR;
-    }
-    return launchRead();
-}
-
-
-s32 HttpFileRead::launchRead() {
+s32 HttpEvtFileRead::launchRead() {
     if (EE_OK != mReqs.mError) {
         return mReqs.mError;
     }

@@ -1,15 +1,14 @@
-#ifndef APP_HTTPFILESAVE_H
-#define APP_HTTPFILESAVE_H
+#pragma once
 
 #include "HandleFile.h"
 #include "Net/HTTP/HttpLayer.h"
 
 namespace app {
 
-class HttpFileSave : public net::HttpEventer {
+class HttpEvtFileSave : public net::HttpEventer {
 public:
-    HttpFileSave();
-    virtual ~HttpFileSave();
+    HttpEvtFileSave();
+    virtual ~HttpEvtFileSave();
 
     virtual s32 onSent(net::HttpMsg* msg) override;
     virtual s32 onFinish(net::HttpMsg* msg) override;
@@ -18,26 +17,26 @@ public:
     virtual s32 onClose() override;
 
 private:
-    RingBuffer mBuf;
     RingBuffer* mBody;
     RequestFD mReqs;
     HandleFile mFile;
     usz mWrited;
-    bool mDone;
+    bool mFinish;
+    net::HttpMsg* mMsg;
+
     void onFileWrite(RequestFD* it);
     void onFileClose(Handle* it);
 
     s32 launchWrite();
 
     static void funcOnWrite(RequestFD* it) {
-        HttpFileSave& nd = *(HttpFileSave*)it->mUser;
+        HttpEvtFileSave& nd = *(HttpEvtFileSave*)it->mUser;
         nd.onFileWrite(it);
     }
     static void funcOnClose(Handle* it) {
-        HttpFileSave& nd = *(HttpFileSave*)it->getUser();
+        HttpEvtFileSave& nd = *(HttpEvtFileSave*)it->getUser();
         nd.onFileClose(it);
     }
 };
 
 } // namespace app
-#endif // APP_HTTPFILESAVE_H

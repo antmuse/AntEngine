@@ -49,8 +49,8 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFilePath.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpFileRead.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpFileSave.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileRead.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileSave.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\StationClose.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\StationError.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\StationReqBody.cpp" />
@@ -190,8 +190,8 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpFileRead.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpFileSave.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileRead.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileSave.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLayer.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpMsg.h" />

@@ -1,15 +1,14 @@
-#ifndef APP_HTTPFILEREAD_H
-#define APP_HTTPFILEREAD_H
+#pragma once
 
 #include "HandleFile.h"
 #include "Net/HTTP/HttpLayer.h"
 
 namespace app {
 
-class HttpFileRead : public net::HttpEventer {
+class HttpEvtFileRead : public net::HttpEventer {
 public:
-    HttpFileRead();
-    virtual ~HttpFileRead();
+    HttpEvtFileRead();
+    virtual ~HttpEvtFileRead();
 
     virtual s32 onSent(net::HttpMsg* req) override;
     virtual s32 onFinish(net::HttpMsg* resp) override;
@@ -32,14 +31,13 @@ private:
     s32 launchRead();
 
     static void funcOnRead(RequestFD* it) {
-        HttpFileRead& nd = *(HttpFileRead*)it->mUser;
+        HttpEvtFileRead& nd = *(HttpEvtFileRead*)it->mUser;
         nd.onFileRead(it);
     }
     static void funcOnClose(Handle* it) {
-        HttpFileRead& nd = *(HttpFileRead*)it->getUser();
+        HttpEvtFileRead& nd = *(HttpEvtFileRead*)it->getUser();
         nd.onFileClose(it);
     }
 };
 
 } // namespace app
-#endif // APP_HTTPFILEREAD_H

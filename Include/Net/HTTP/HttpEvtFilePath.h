@@ -17,9 +17,9 @@ public:
     virtual s32 onClose() override;
 
 private:
-    void writeChunk();
+    s32 writeChunk();
     void writeStr(const s8* it);
-    void postResp();
+    s32 postResp();
     SRingBufPos mChunkPos;
     RingBuffer* mBody;
     net::HttpMsg* mMsg;

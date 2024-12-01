@@ -10,6 +10,9 @@ public:
     StationReqHead() { };
     virtual ~StationReqHead() { };
     virtual s32 onMsg(HttpMsg* msg) override;
+
+private:
+    HttpEventer* createEvt(HttpMsg* msg);
 };
 
 
