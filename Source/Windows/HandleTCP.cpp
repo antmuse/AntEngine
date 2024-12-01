@@ -49,7 +49,8 @@ s32 HandleTCP::open(const RequestAccept& req, RequestFD* it) {
 
     if (EE_OK != mLoop->openHandle(this)) {
         mSock.close();
-        return EE_ERROR;
+        it->mError = EE_NO_OPEN;
+        return EE_NO_OPEN;
     }
     s32 ret = it ? read(it) : EE_OK;
     if (EE_OK != ret) {
@@ -64,7 +65,8 @@ s32 HandleTCP::open(const NetAddress& addr, RequestFD* it) {
     mLoop = &Engine::getInstance().getLoop();
     mRemote = addr;
     if (EE_OK != mLoop->openHandle(this)) {
-        return EE_ERROR;
+        it->mError = EE_NO_OPEN;
+        return EE_NO_OPEN;
     }
     return connect(it);
 }
@@ -77,7 +79,8 @@ s32 HandleTCP::open(const String& addr, RequestFD* it) {
         mRemote.setIPort(addr.c_str());
     }
     if (EE_OK != mLoop->openHandle(this)) {
-        return EE_ERROR;
+        it->mError = EE_NO_OPEN;
+        return EE_NO_OPEN;
     }
     return connect(it);
 }
@@ -91,6 +94,7 @@ s32 HandleTCP::close() {
 s32 HandleTCP::accept(RequestAccept* it) {
     DASSERT(it);
     if (0 == (EHF_OPEN & mFlag)) {
+        it->mError = EE_NO_OPEN;
         return EE_NO_OPEN;
     }
     it->mType = ERT_ACCEPT;
@@ -116,6 +120,7 @@ s32 HandleTCP::accept(RequestAccept* it) {
 
 s32 HandleTCP::connect(RequestFD* it) {
     if (0 == (EHF_OPEN & mFlag)) {
+        it->mError = EE_NO_OPEN;
         return EE_NO_OPEN;
     }
     DASSERT(it);
@@ -136,6 +141,7 @@ s32 HandleTCP::connect(RequestFD* it) {
 s32 HandleTCP::read(RequestFD* it) {
     DASSERT(it);
     if (0 == (EHF_READABLE & mFlag)) {
+        it->mError = EE_NO_READABLE;
         return EE_NO_READABLE;
     }
     it->mType = ERT_READ;
@@ -155,6 +161,7 @@ s32 HandleTCP::read(RequestFD* it) {
 s32 HandleTCP::write(RequestFD* it) {
     DASSERT(it);
     if (0 == (EHF_WRITEABLE & mFlag)) {
+        it->mError = EE_NO_WRITEABLE;
         return EE_NO_WRITEABLE;
     }
     it->mType = ERT_WRITE;

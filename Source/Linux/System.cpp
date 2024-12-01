@@ -330,7 +330,7 @@ s32 System::createPath(const String& it) {
     const s8* end = curr + it.getLen();
     path += *curr++;
     for (; curr < end; ++curr) {
-        if (isPathDiv(*curr)) {
+        if (AppIsPathDelimiter(*curr)) {
             if (0 != access(path.c_str(), F_OK)) {
                 if (0 != mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
                     return System::getAppError();
@@ -369,7 +369,7 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
         return;
     }
     memcpy(fname, pth.c_str(), len);
-    if (!isPathDiv(fname[len - 1])) {
+    if (!AppIsPathDelimiter(fname[len - 1])) {
         fname[len++] = DSTR('\\');
     }
     fname[len] = 0;

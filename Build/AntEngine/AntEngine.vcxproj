@@ -46,6 +46,7 @@
     <ClCompile Include="..\..\Source\MemoryPool.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFilePath.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpFileRead.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="..\..\Include\HashFunctions.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFilePath.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\StationClose.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\StationError.h" />

@@ -47,7 +47,7 @@ s32 HandleFile::close() {
     if (INVALID_HANDLE_VALUE != mFile) {
         CloseHandle(mFile);
         mFile = INVALID_HANDLE_VALUE;
-        mFilename.setLen(0);
+        //mFilename.setLen(0);
         mFileSize = 0;
     }
     return EE_OK;

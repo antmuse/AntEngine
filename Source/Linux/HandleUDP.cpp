@@ -90,11 +90,13 @@ s32 HandleUDP::open(RequestUDP* it, const NetAddress* remote, const NetAddress* 
     }
 
     if (EE_OK != ret) {
+        it->mError = ret;
         mSock.close();
         return ret;
     }
 
     if (EE_OK != mLoop->openHandle(this)) {
+        it->mError = EE_NO_OPEN;
         return EE_ERROR;
     }
     return (mFlags & 2) > 0 ? read(it) : readFrom(it);

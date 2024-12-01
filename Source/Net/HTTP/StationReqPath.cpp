@@ -19,12 +19,18 @@ s32 StationReqPath::onMsg(HttpMsg* msg) {
         msg->getURL().get().c_str());
 
     // reset url
+    net::Website* site = msg->getHttpLayer()->getWebsite();
+    String fnm(site->getConfig().mRootPath);
 
     // default page
     if (msg->getURL().get() == "/") {
-        msg->getURL().append("index.html", sizeof("index.html") - 1);
-        msg->getURL().parser();
+        fnm += "/index.html";
+        // msg->getURL().append("index.html", sizeof("index.html") - 1);
+        // msg->getURL().parser();
+    } else {
+        fnm += msg->getURL().getPath();
     }
+    msg->setRealPath(fnm);
     return EE_OK;
 }
 

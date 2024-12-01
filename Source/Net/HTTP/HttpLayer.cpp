@@ -325,7 +325,10 @@ void HttpLayer::onConnect(RequestFD* it) {
 
 void HttpLayer::onWrite(RequestFD* it, HttpMsg* msg) {
     if (EE_OK != it->mError) {
-        Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
+        Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d, msg=%s", it->mUsed, it->mError,
+            msg->getRealPath().c_str());
+        msg->setStationID(ES_CLOSE);
+        mWebsite->stepMsg(msg);
     } else {
         msg->setRespStatus(0);
         msg->getCacheOut().commitHead(static_cast<s32>(it->mUsed));

@@ -418,6 +418,13 @@ public:
         dumpHead(mHeadOut, mCacheOut);
     }
 
+    const String& getRealPath() const {
+        return mRealPath;
+    }
+
+    void setRealPath(const String& it) {
+        mRealPath = it;
+    }
 
 protected:
     void dumpHead(const HttpHead& hds, RingBuffer& out);
@@ -444,6 +451,7 @@ protected:
     RingBuffer mCacheOut;
 
     HttpURL mURL;   //request only
+    String mRealPath;  //request only
     String mBrief;  //response only
 
     HttpLayer* mLayer;

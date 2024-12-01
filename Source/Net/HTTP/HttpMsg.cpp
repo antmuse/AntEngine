@@ -297,7 +297,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
     };
 
 
-    s8 suffix[20]; //����2,֧��<=18�ĺ�׺
+    s8 suffix[20]; //文件后缀max len<=18
     s32 pos = sizeof(suffix) - 1;
     suffix[pos--] = 0;
     ssz i;
@@ -324,7 +324,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
     }
 
     //default
-    return StringView("application/octet-stream", sizeof("application/octet-stream") - 1);
+    return StringView("text/html; charset=utf-8", sizeof("text/html; charset=utf-8") - 1);
 }
 
 

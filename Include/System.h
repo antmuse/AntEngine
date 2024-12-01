@@ -111,11 +111,8 @@ private:
     System(const System&&) = delete;
     System& operator=(const System&) = delete;
     System& operator=(const System&&) = delete;
-    static s32 gSignal;
 
-    static bool isPathDiv(tchar p) {
-        return DSTR('/') == p || DSTR('\\') == p;
-    }
+    static s32 gSignal;
 };
 
 

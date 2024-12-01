@@ -93,11 +93,13 @@ s32 HandleUDP::open(RequestUDP* it, const NetAddress* remote, const NetAddress* 
     }
 
     if (EE_OK != ret) {
+        it->mError = ret;
         mSock.close();
         return ret;
     }
 
     if (EE_OK != mLoop->openHandle(this)) {
+        it->mError = EE_NO_OPEN;
         return EE_ERROR;
     }
     return (mFlags & 2) > 0 ? read(it) : readFrom(it);
@@ -129,6 +131,7 @@ s32 HandleUDP::close() {
 s32 HandleUDP::read(RequestUDP* it) {
     DASSERT(it);
     if (0 == (EHF_READABLE & mFlag)) {
+        it->mError = EE_NO_READABLE;
         return EE_NO_READABLE;
     }
     it->mType = ERT_READ;
@@ -149,6 +152,7 @@ s32 HandleUDP::read(RequestUDP* it) {
 s32 HandleUDP::write(RequestUDP* it) {
     DASSERT(it);
     if (0 == (EHF_WRITEABLE & mFlag)) {
+        it->mError = EE_NO_WRITEABLE;
         return EE_NO_WRITEABLE;
     }
     it->mType = ERT_WRITE;
@@ -169,6 +173,7 @@ s32 HandleUDP::write(RequestUDP* it) {
 s32 HandleUDP::readFrom(RequestUDP* it) {
     DASSERT(it);
     if (0 == (EHF_READABLE & mFlag)) {
+        it->mError = EE_NO_READABLE;
         return EE_NO_READABLE;
     }
     it->mType = ERT_READ;
@@ -189,6 +194,7 @@ s32 HandleUDP::readFrom(RequestUDP* it) {
 s32 HandleUDP::writeTo(RequestUDP* it) {
     DASSERT(it);
     if (0 == (EHF_WRITEABLE & mFlag)) {
+        it->mError = EE_NO_WRITEABLE;
         return EE_NO_WRITEABLE;
     }
     it->mType = ERT_WRITE;

@@ -2,8 +2,10 @@
 #include "Net/HTTP/HttpLayer.h"
 #include "Net/HTTP/HttpFileRead.h"
 #include "Net/HTTP/HttpFileSave.h"
+#include "Net/HTTP/HttpEvtFilePath.h"
 #include "Net/HTTP/HttpEvtLua.h"
 #include "Net/HTTP/Website.h"
+#include "System.h"
 
 // def str view
 #define DSTRV(V) V, sizeof(V) - 1
@@ -14,18 +16,32 @@ namespace net {
 
 HttpEventer* StationReqBodyDone::createEvt(HttpMsg* msg) {
     HttpEventer* evt = nullptr;
-    StringView requrl = msg->getURL().getPath();
+    net::Website* site = msg->getHttpLayer()->getWebsite();
+    const String& real = msg->getRealPath();
+    StringView requrl(
+        real.c_str() + site->getConfig().mRootPath.size(), real.size() - site->getConfig().mRootPath.size());
     if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
-        // requrl.set(requrl.mData + 5, requrl.mLen - 5);
         evt = new HttpEvtLua(requrl);
     } else if (requrl.equalsn("/api/", sizeof("/api/") - 1)) {
-        //
+        // TODO
+        msg->setStatus(500);
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
-        evt = new HttpFileRead();
+        s32 ck = System::isExist(real);
+        if (0 == ck) {
+            evt = new HttpFileRead();
+        } else if (1 == ck) {
+            evt = new HttpEvtFilePath();
+        } else {
+            msg->setStatus(404);
+        }
     } else if (requrl.equalsn("/up/", sizeof("/up/") - 1)) {
         evt = new HttpFileSave();
-    } else {
-        evt = new HttpFileRead();
+    } else { // readonly
+        if (0 == System::isExist(real)) {
+            evt = new HttpFileRead();
+        } else {
+            msg->setStatus(404);
+        }
     }
 
     const StringView str = HttpMsg::getMimeType(requrl.mData, requrl.mLen);
@@ -52,7 +68,6 @@ s32 StationReqBodyDone::onMsg(HttpMsg* msg) {
     HttpEventer* evt = createEvt(msg);
     if (!evt) {
         msg->setStationID(ES_ERROR);
-        msg->setStatus(500);
         return EE_RETRY;
     }
 
@@ -82,7 +97,7 @@ s32 StationReqBodyDone::onMsg(HttpMsg* msg) {
     msg->setEvent(evt);
     evt->drop();
     msg->setStationID(ES_RESP_HEAD);
-    return EE_OK;
+    return msg->getHttpLayer()->sendResp(msg);
 }
 
 } // namespace net

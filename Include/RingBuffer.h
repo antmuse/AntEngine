@@ -137,6 +137,8 @@ public:
     StringView peekHead();
     void commitHead(s32 used);
 
+    void reserve(s32 reserved);
+
 private:
     SRingBufPos mTailPos;
     SRingBufPos mHeadPos;

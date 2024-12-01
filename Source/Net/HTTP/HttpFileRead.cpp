@@ -33,9 +33,7 @@ s32 HttpFileRead::onOpen(net::HttpMsg* msg) {
         return EE_ERROR;
     }
     mMsg = nullptr;
-    String fnm(site->getConfig().mRootPath);
-    fnm += msg->getURL().getPath();
-    s32 ret = mFile.open(fnm, 1);
+    s32 ret = mFile.open(msg->getRealPath(), 1);
     if (EE_OK != ret) {
         mReqs.mError = ret;
         return ret;
@@ -46,10 +44,16 @@ s32 HttpFileRead::onOpen(net::HttpMsg* msg) {
     mReqs.mError = 0;
     mReqs.mUser = nullptr;
     mBody = &msg->getCacheOut();
-    ret = launchRead();
-    if (EE_OK != ret) {
+
+    if (mFile.getFileSize() > 0) {
+        ret = launchRead();
+        if (EE_OK != ret) {
+            mFile.launchClose();
+            return ret;
+        }
+    } else {
+        mBody->write("0\r\n\r\n", 5);
         mFile.launchClose();
-        return ret;
     }
 
     msg->grab();
@@ -81,8 +85,8 @@ void HttpFileRead::onFileClose(Handle* it) {
 void HttpFileRead::onFileRead(RequestFD* it) {
     if (it->mError) {
         mMsg->setStationID(net::ES_RESP_BODY_DONE);
+        Logger::log(ELL_ERROR, "HttpFileRead::onFileRead>>err=%d, file=%s", it->mError, mFile.getFileName().c_str());
         mFile.launchClose();
-        Logger::log(ELL_ERROR, "HttpFileRead::onFileRead>>err file=%s", mFile.getFileName().c_str());
         return;
     }
     if (it->mUsed > 0) {
@@ -101,9 +105,8 @@ void HttpFileRead::onFileRead(RequestFD* it) {
 
     it->mUsed = 0;
     it->mUser = nullptr;
-    if (mMsg) {
-        mMsg->getHttpLayer()->sendResp(mMsg);
-    } else {
+    if (!mMsg || EE_OK != mMsg->getHttpLayer()->sendResp(mMsg)) {
+        DLOG(ELL_ERROR, "HttpFileRead::onFileRead>>post resp err file=%s", mFile.getFileName().c_str());
         mFile.launchClose();
     }
 }

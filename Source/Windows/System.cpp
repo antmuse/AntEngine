@@ -301,10 +301,10 @@ s32 System::createPath(const String& it) {
 #else
     AppUTF8ToGBK(it.c_str(), fname, sizeof(fname));
 #endif
-
+    AppSimplifyPath(fname, fname + DSLEN(fname) + 1);
     DWORD dwAttributes;
     for (tchar* curr = fname; *curr; ++curr) {
-        if (isPathDiv(*curr)) {
+        if (AppIsPathDelimiter(*curr)) {
             if (curr <= fname) {
                 return EE_ERROR;
             }
@@ -368,7 +368,7 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
     if (0 == len || len + 3 > 260) {
         return;
     }
-    if (!isPathDiv(fname[len - 1])) {
+    if (!AppIsPathDelimiter(fname[len - 1])) {
         fname[len++] = DSTR('\\');
     }
     fname[len++] = DSTR('*');

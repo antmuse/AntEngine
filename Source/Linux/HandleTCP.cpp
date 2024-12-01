@@ -49,6 +49,7 @@ s32 HandleTCP::open(const RequestAccept& req, RequestFD* it) {
 
     if (EE_OK != mLoop->openHandle(this)) {
         mSock.close();
+        it->mError = EE_NO_OPEN;
         return EE_ERROR;
     }
     s32 ret = it ? read(it) : EE_OK;
@@ -64,6 +65,7 @@ s32 HandleTCP::open(const NetAddress& addr, RequestFD* it) {
     mLoop = &Engine::getInstance().getLoop();
     mRemote = addr;
     if (EE_OK != mLoop->openHandle(this)) {
+        it->mError = EE_NO_OPEN;
         return EE_ERROR;
     }
     return connect(it);
@@ -77,6 +79,7 @@ s32 HandleTCP::open(const String& addr, RequestFD* it) {
         mRemote.setIPort(addr.c_str());
     }
     if (EE_OK != mLoop->openHandle(this)) {
+        it->mError = EE_NO_OPEN;
         return EE_ERROR;
     }
     return connect(it);

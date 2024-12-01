@@ -359,6 +359,9 @@
     <ClCompile Include="..\..\Source\Net\HTTP\StationRespBodyDone.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFilePath.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -707,6 +710,9 @@
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\StationRespBodyDone.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFilePath.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
   </ItemGroup>

@@ -124,7 +124,7 @@ void RingBuffer::write(const void* data, s32 size) {
 
 bool RingBuffer::rewrite(SRingBufPos& ndpos, const void* data, s32 size) {
     const s8* pos = (const s8*)data;
-    s32 leftover = size;
+    s32 leftover = size > 0 ? size : -size;
     DASSERT(nullptr != ndpos.mNode);
 
     while (leftover > 0) {
@@ -148,7 +148,9 @@ bool RingBuffer::rewrite(SRingBufPos& ndpos, const void* data, s32 size) {
         memcpy(ndpos.mNode->mData + ndpos.mPosition, pos, copysz);
 
         ndpos.mPosition += copysz;
-        mSize += copysz;
+        if (size > 0) {
+            mSize += copysz;
+        }
         pos += copysz;
         leftover -= copysz;
     }
@@ -168,6 +170,16 @@ s32 RingBuffer::peekTailNode(s8** data, s32 size) {
 
     *data = mTailPos.mNode->mData + mTailPos.mPosition;
     return size > available ? available : size;
+}
+
+
+void RingBuffer::reserve(s32 reserved) {
+    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
+    while (reserved > available) {
+        reserved -= available;
+        pushBack();
+        available = sizeof(SRingBufNode::mData);
+    }
 }
 
 s32 RingBuffer::peekTailNode(s32 reserved, s8** data, s32 size) {
