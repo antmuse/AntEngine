@@ -24,9 +24,13 @@ s32 HttpEvtFileSave::onOpen(net::HttpMsg* msg) {
     DASSERT(msg);
     mFinish = false;
     mBody = &msg->getCacheIn();
-    s32 ret = mFile.open(msg->getRealPath(), 4);
+    s32 ret = mFile.open(msg->getRealPath(), 2 | 4);
     if (EE_OK == ret) {
         mWrited = mFile.getFileSize();
+        if (mWrited > 0) {
+            msg->setStatus(400);
+            return EE_NO_WRITEABLE;
+        }
         msg->grab();
         mMsg = msg;
         grab();

@@ -74,7 +74,9 @@ s32 StationReqHead::onMsg(HttpMsg* msg) {
 
     if (EE_OK != evt->onOpen(msg)) {
         msg->setStationID(ES_ERROR);
-        msg->setStatus(404);
+        if (msg->getStatus() == HTTP_STATUS_OK) {
+            msg->setStatus(404);
+        }
         evt->drop();
         return EE_RETRY;
     }

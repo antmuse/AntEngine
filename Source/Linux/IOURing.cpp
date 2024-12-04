@@ -350,12 +350,18 @@ void IOURing::postQueue() {
         --mWaitPostSize;
         mFlyRequest++;
         //++cnt;
+        if (ERT_READ == req->mType) {
+            sqe->opcode = IORING_OP_READ;
+            sqe->addr = (u64)(req->mData + req->mUsed);
+            sqe->len = req->mAllocated - req->mUsed;
+        } else {
+            sqe->opcode = IORING_OP_WRITE;
+            sqe->addr = (u64)(req->mData);
+            sqe->len = req->mUsed;
+        }
         sqe->user_data = (u64)req;
-        sqe->addr = (u64)req->mData;
         sqe->fd = handle->getHandle();
-        sqe->len = req->mAllocated;
         sqe->off = req->mOffset; // default set offset = -1
-        sqe->opcode = (ERT_READ == req->mType ? IORING_OP_READ : IORING_OP_WRITE);
         std::atomic_store_explicit(
             reinterpret_cast<std::atomic<u32>*>(mTailSQ), *mTailSQ + 1, std::memory_order_release);
     }
@@ -367,6 +373,13 @@ s32 IOURing::postReq(RequestFD* req) {
     if (mWaitPostSize >= G_MAX_WAIT_REQ) {
         req->mError = EE_RETRY;
         return EE_RETRY;
+    }
+    if (ERT_READ == req->mType) {
+        if (req->mAllocated <= req->mUsed) {
+            return EE_INVALID_PARAM;
+        }
+    } else if (0 == req->mUsed) {
+        return EE_INVALID_PARAM;
     }
     HandleFile* handle = reinterpret_cast<HandleFile*>(req->mHandle);
     handle->getLoop()->bindFly(handle);
@@ -394,7 +407,11 @@ void IOURing::updatePending() {
 
         // io_uring stores error codes as negative numbers
         if (nd->res >= 0) {
-            req->mUsed += nd->res;
+            if (ERT_READ == req->mType) {
+                req->mUsed += nd->res;
+            } else {
+                req->mUsed = nd->res;
+            }
         } else {
             req->mError = nd->res;
         }
