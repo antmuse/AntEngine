@@ -55,7 +55,7 @@ void HttpHead::add(const String& key, const String& val) {
 void HttpHead::remove(const StringView& key, s32 cnt) {
     usz mx = mData.size();
     for (usz i = 0; i < mx; ++i) {
-        if (key.mLen == mData[i].mKey.getLen() && 0 == AppStrNocaseCMP(mData[i].mKey.c_str(), key.mData, key.mLen)) {
+        if (key.mLen == mData[i].mKey.size() && 0 == AppStrNocaseCMP(mData[i].mKey.c_str(), key.mData, key.mLen)) {
             mData[i] = mData[mx - 1];
             mData.resize(mx - 1);
             if (--cnt < 1) {
@@ -70,8 +70,8 @@ StringView HttpHead::get(const StringView& key, usz pos)const {
     StringView ret;
     size_t mx = mData.size();
     for (; pos < mx; ++pos) {
-        if (key.mLen == mData[pos].mKey.getLen() && 0 == AppStrNocaseCMP(mData[pos].mKey.c_str(), key.mData, key.mLen)) {
-            ret.set(mData[pos].mVal.c_str(), mData[pos].mVal.getLen());
+        if (key.mLen == mData[pos].mKey.size() && 0 == AppStrNocaseCMP(mData[pos].mKey.c_str(), key.mData, key.mLen)) {
+            ret.set(mData[pos].mVal.c_str(), mData[pos].mVal.size());
             break;
         }
     }

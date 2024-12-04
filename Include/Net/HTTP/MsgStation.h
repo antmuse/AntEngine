@@ -5,20 +5,6 @@
 namespace app {
 namespace net {
 
-enum EStationID {
-    ES_INIT = 0,
-    ES_PATH,
-    ES_HEAD,
-    ES_BODY,
-    ES_BODY_DONE,
-    ES_RESP_HEAD,
-    ES_RESP_BODY,
-    ES_RESP_BODY_DONE,
-    ES_ERROR,
-    ES_CLOSE,
-    ES_COUNT
-};
-
 class MsgStation : public RefCount {
 public:
     MsgStation() : mNext(nullptr){};

@@ -424,8 +424,8 @@ s32 NetAddress::convertStr2IP(const s8* buffer, IP& result, bool ipv6) {
 
 void NetAddress::convertIP2Str(const IP& ip, String& result, bool ipv6) {
     result.reserve(DIP_STR_MAX_SIZE);
-    ::inet_ntop(ipv6 ? AF_INET6 : AF_INET, &ip, (s8*)result.c_str(), DIP_STR_MAX_SIZE);
-    result.setLen(strlen(result.c_str()));
+    ::inet_ntop(ipv6 ? AF_INET6 : AF_INET, &ip, result.data(), DIP_STR_MAX_SIZE);
+    result.resize(strlen(result.c_str()));
 }
 
 

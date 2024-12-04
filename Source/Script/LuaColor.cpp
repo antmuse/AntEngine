@@ -61,7 +61,7 @@ int LuaColor2Str(lua_State* vm) {
     Color** col = reinterpret_cast<Color**>(lua_touserdata(vm, 1));
     if (col && *col) {
         String str = (*col)->toStr();
-        lua_pushlstring(vm, str.c_str(), str.getLen());
+        lua_pushlstring(vm, str.c_str(), str.size());
     } else {
         lua_pushnil(vm);
     }

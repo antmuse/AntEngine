@@ -126,7 +126,7 @@ s64 FileWriter::getPos() const {
 }
 
 bool FileWriter::openFile(const String& fileName, bool append) {
-    if (0 == fileName.getLen()) {
+    if (0 == fileName.size()) {
         return false;
     }
     close();

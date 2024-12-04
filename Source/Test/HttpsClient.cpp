@@ -77,7 +77,7 @@ void HttpsClient::onConnect(RequestFD* it) {
         String fnm = "Log/";
         fnm += mTCP.getRemote().getStr();
         s64 len = fnm.findFirst(':');
-        fnm.setLen(len > 0 ? len : fnm.getLen());
+        fnm.resize(len > 0 ? len : fnm.size());
         fnm += ".html";
         mFile.openFile(fnm, false);
         it->mCall = HttpsClient::funcOnRead;

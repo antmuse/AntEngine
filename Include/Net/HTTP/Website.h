@@ -1,5 +1,5 @@
 #ifndef APP_WEBSITE_H
-#define	APP_WEBSITE_H
+#define APP_WEBSITE_H
 
 #include "TVector.h"
 #include "Net/Acceptor.h"
@@ -17,10 +17,12 @@ namespace net {
  *        HttpLayer bind with HandleTCP & HttpMsg;
  *        HttpMsg bind with logic worker.
  */
-class Website :public RefCount {
+class Website : public HttpMsgReceiver {
 public:
     Website(EngineConfig::WebsiteCfg& cfg);
     virtual ~Website();
+
+    virtual s32 stepMsg(HttpMsg* msg) override;
 
     static void funcOnLink(RequestFD* it) {
         DASSERT(it && it->mUser);
@@ -29,18 +31,16 @@ public:
         web->onLink(it);
     }
 
-    s32 stepMsg(HttpMsg* msg);
-
     bool setStation(EStationID id, MsgStation* it);
 
-    MsgStation* getStation(u32 idx)const {
+    MsgStation* getStation(u32 idx) const {
         if (idx < ES_COUNT) {
             return mStations[idx];
         }
         return nullptr;
     }
 
-    const EngineConfig::WebsiteCfg& getConfig()const {
+    const EngineConfig::WebsiteCfg& getConfig() const {
         return mConfig;
     }
 
@@ -48,30 +48,13 @@ public:
         return mTlsContext;
     }
 
-    void bind(HttpLayer* it) {
-        if (it) {
-            it->grab();
-            grab();
-        }
-    }
-
-    void unbind(HttpLayer* it) {
-        if (it) {
-            drop();
-            it->drop();
-        }
-    }
-
-
 private:
-    //friend class HttpLayer;
-
     void init();
     void loadTLS();
     void clear();
 
     void onLink(RequestFD* it) {
-        HttpLayer* con = new HttpLayer();
+        HttpLayer* con = new HttpLayer(this, EHTTP_REQUEST, 1 == getConfig().mType, &mTlsContext);
         con->onLink(it);
         con->drop();
     }
@@ -85,7 +68,7 @@ private:
     EngineConfig::WebsiteCfg& mConfig;
 };
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app
 
-#endif //APP_WEBSITE_H
+#endif // APP_WEBSITE_H

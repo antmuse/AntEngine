@@ -28,10 +28,6 @@ s32 HttpEvtFileRead::onSent(net::HttpMsg* msg) {
 }
 
 s32 HttpEvtFileRead::onOpen(net::HttpMsg* msg) {
-    net::Website* site = msg->getHttpLayer()->getWebsite();
-    if (!site) {
-        return EE_ERROR;
-    }
     mMsg = nullptr;
     s32 ret = mFile.open(msg->getRealPath(), 1);
     if (EE_OK != ret) {
@@ -68,12 +64,13 @@ s32 HttpEvtFileRead::onFinish(net::HttpMsg* msg) {
     if (!mMsg) {
         return ELL_ERROR;
     }
+    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
     net::HttpHead& hed = msg->getHeadOut();
-    const String& host = msg->getHttpLayer()->getWebsite()->getConfig().mHost;
+    const String& host = site->getConfig().mHost;
     StringView key("Host", 4);
     StringView val(host.c_str(), host.size());
     hed.add(key, val);
-    hed.writeChunked();
+    hed.setChunked();
 
     key.set("Access-Control-Allow-Origin", sizeof("Access-Control-Allow-Origin") - 1);
     val.set("*", 1);

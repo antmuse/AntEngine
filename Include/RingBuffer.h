@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_RINGBUFFER_H
@@ -34,12 +34,10 @@
 namespace app {
 
 struct SRingBufNode {
-    s8 mData[D_RBUF_BLOCK_SIZE];
     SRingBufNode* mNext;
-
+    s8 mData[D_RBUF_BLOCK_SIZE];
     SRingBufNode() : mNext(nullptr) {
     }
-
     ~SRingBufNode() {
     }
 };
@@ -47,10 +45,9 @@ struct SRingBufNode {
 struct SRingBufPos {
     s32 mPosition;
     SRingBufNode* mNode;
-    SRingBufPos() :mPosition(0), mNode(nullptr) {
+    SRingBufPos() : mPosition(0), mNode(nullptr) {
     }
-    SRingBufPos(s32 pos, SRingBufNode* bk)
-        :mPosition(pos), mNode(bk) {
+    SRingBufPos(s32 pos, SRingBufNode* bk) : mPosition(pos), mNode(bk) {
     }
     void init(s32 pos, SRingBufNode* bk) {
         mPosition = pos;
@@ -88,7 +85,7 @@ public:
 
     void reset();
 
-    long getRet()const {
+    long getRet() const {
         return mRet;
     }
 
@@ -96,11 +93,11 @@ public:
         mRet = val;
     }
 
-    const SRingBufPos& getHead()const {
+    const SRingBufPos& getHead() const {
         return mHeadPos;
     }
 
-    const SRingBufPos& getTail()const {
+    const SRingBufPos& getTail() const {
         return mTailPos;
     }
 
@@ -113,24 +110,24 @@ public:
     s32 getSize() const;
 
     /**
-    * @brief peek data bufs when writing.
-    */
+     * @brief peek data bufs when writing.
+     */
     s32 peekTailNode(s8** data, s32 size);
     s32 peekTailNode(s32 reserved, s8** data, s32 size);
 
     /**
-    * @param how many bytes writed in peeked tail cache before.
-    */
+     * @param how many bytes writed in peeked tail cache before.
+     */
     void commitTailPos(s32 writedBytes);
 
     /**
-    * @brief peek data bufs when reading.
-    */
+     * @brief peek data bufs when reading.
+     */
     SRingBufPos peekHeadNode(SRingBufPos pos, StringView* bufs, s32* bufs_count);
 
     /**
-    * @param pos readed position of peeked head cache before.
-    */
+     * @param pos readed position of peeked head cache before.
+     */
     void commitHeadPos(const SRingBufPos& pos);
 
 
@@ -143,7 +140,7 @@ private:
     SRingBufPos mTailPos;
     SRingBufPos mHeadPos;
     s32 mSize;
-    long mRet; //for tls
+    long mRet; // for tls
 
 
     void popFront();
@@ -151,6 +148,6 @@ private:
     void pushBack();
 };
 
-}//namespace app
+} // namespace app
 
-#endif //APP_RINGBUFFER_H
+#endif // APP_RINGBUFFER_H

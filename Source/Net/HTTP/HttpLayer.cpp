@@ -10,24 +10,28 @@ namespace net {
 
 u32 HttpLayer::GMAX_HEAD_SIZE = HTTP_MAX_HEADER_SIZE;
 
-HttpLayer::HttpLayer(EHttpParserType tp) :
-    mPType(tp), mWebsite(nullptr), mMsg(nullptr), mHttpError(HPE_OK), mHTTPS(true) {
+HttpLayer::HttpLayer(HttpMsgReceiver* recv, EHttpParserType tp, bool https, TlsContext* tlsContext) :
+    mPType(tp), mReceiver(recv), mMsg(nullptr), mHttpError(HPE_OK), mHTTPS(https), mTlsContext(tlsContext) {
     clear();
+    if (recv) {
+        recv->grab();
+    }
 }
 
 
 HttpLayer::~HttpLayer() {
-    // onClose();
+    if (mReceiver) {
+        mReceiver->drop();
+        mReceiver = nullptr;
+    }
 }
 
 
-s32 HttpLayer::get(const String& gurl) {
-    mMsg->clear();
-    if (EE_OK != mMsg->writeGet(gurl)) {
+s32 HttpLayer::post(HttpMsg* msg) {
+    if (mMsg) {
         return EE_ERROR;
     }
-
-    mHTTPS = mMsg->getURL().isHttps();
+    mHTTPS = msg->getURL().isHttps();
     if (!mHTTPS) {
         mTCP.getHandleTCP().setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.getHandleTCP().setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
@@ -35,9 +39,8 @@ s32 HttpLayer::get(const String& gurl) {
         mTCP.setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
     }
-
-    StringView host = mMsg->getURL().getHost();
-    NetAddress addr(mMsg->getURL().getPort());
+    StringView host = msg->getURL().getHost();
+    NetAddress addr(msg->getURL().getPort());
     s8 shost[256]; // 255, Maximum host name defined in RFC 1035
     snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
     addr.setDomain(shost);
@@ -50,11 +53,10 @@ s32 HttpLayer::get(const String& gurl) {
         RequestFD::delRequest(nd);
         return ret;
     }
+    mMsg = msg;
+    msg->grab();
+    grab();
     return EE_OK;
-}
-
-s32 HttpLayer::post(const String& gurl) {
-    return EE_ERROR;
 }
 
 
@@ -111,7 +113,7 @@ void HttpLayer::chunkHeadDone() {
 }
 
 void HttpLayer::msgStep() {
-    if (EE_OK != mWebsite->stepMsg(mMsg)) {
+    if (EE_OK != mReceiver->stepMsg(mMsg)) {
         postClose();
     }
 }
@@ -140,7 +142,7 @@ void HttpLayer::chunkMsg() {
 void HttpLayer::chunkDone() {
     if (mMsg) {
         mMsg->mStationID = ES_BODY_DONE;
-        mWebsite->stepMsg(mMsg);
+        mReceiver->stepMsg(mMsg);
         mMsg->drop();
         mMsg = nullptr;
     }
@@ -268,28 +270,21 @@ void HttpLayer::onClose(Handle* it) {
 
     if (mMsg) {
         mMsg->mStationID = ES_CLOSE;
-        mWebsite->stepMsg(mMsg);
+        mReceiver->stepMsg(mMsg);
         mMsg->drop();
         mMsg = nullptr;
     }
-    if (mWebsite) {
-        Website* site = mWebsite;
-        mWebsite = nullptr;
-        site->unbind(this);
-    } else {
-        drop();
-        Logger::log(ELL_ERROR, "HttpLayer::onClose>>null website");
-    }
+
+    drop();
+    Logger::log(ELL_ERROR, "HttpLayer::onClose>>null website");
 }
 
 
 bool HttpLayer::onLink(RequestFD* it) {
-    DASSERT(nullptr == mWebsite);
+    DASSERT(mReceiver);
     net::Acceptor* accp = (net::Acceptor*)(it->mUser);
     RequestAccept& req = *(RequestAccept*)it;
-    mWebsite = reinterpret_cast<Website*>(accp->getUser());
-    DASSERT(mWebsite);
-    mHTTPS = 1 == mWebsite->getConfig().mType;
+    // mReceiver = reinterpret_cast<Website*>(accp->getUser());
     if (mHTTPS) {
         mTCP.setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
@@ -300,12 +295,11 @@ bool HttpLayer::onLink(RequestFD* it) {
     RequestFD* nd = RequestFD::newRequest(4 * 1024);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnRead;
-    s32 ret = mHTTPS ? mTCP.open(req, nd, &mWebsite->getTlsContext()) : mTCP.getHandleTCP().open(req, nd);
+    s32 ret = mHTTPS ? mTCP.open(req, nd, mTlsContext) : mTCP.getHandleTCP().open(req, nd);
     if (0 == ret) {
-        mWebsite->bind(this);
+        grab();
         Logger::log(ELL_INFO, "HttpLayer::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
-        mWebsite = nullptr;
         RequestFD::delRequest(nd);
         Logger::log(ELL_ERROR, "HttpLayer::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(),
             mTCP.getLocal().getStr(), ret);
@@ -314,12 +308,17 @@ bool HttpLayer::onLink(RequestFD* it) {
 }
 
 void HttpLayer::onConnect(RequestFD* it) {
-    if (0 == it->mError && sendReq()) {
-        it->mCall = HttpLayer::funcOnRead;
-        if (EE_OK == readIF(it)) {
-            return;
+    if (EE_OK == it->mError) {
+        mMsg->buildReq();
+        if (sendReq()) {
+            it->mCall = HttpLayer::funcOnRead;
+            if (EE_OK == readIF(it)) {
+                return;
+            }
         }
     }
+    DLOG(ELL_ERROR, "HttpLayer::onConnect>> [url=%d] [ip=%s], ecode=%d", mMsg->getURL().data().c_str(),
+        mTCP.getRemote().getStr(), it->mError);
     RequestFD::delRequest(it);
 }
 
@@ -328,14 +327,14 @@ void HttpLayer::onWrite(RequestFD* it, HttpMsg* msg) {
         Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d, msg=%s", it->mUsed, it->mError,
             msg->getRealPath().c_str());
         msg->setStationID(ES_CLOSE);
-        mWebsite->stepMsg(msg);
+        mReceiver->stepMsg(msg);
     } else {
         msg->setRespStatus(0);
         msg->getCacheOut().commitHead(static_cast<s32>(it->mUsed));
         if (msg->getCacheOut().getSize() > 0) {
             sendResp(msg);
         } else {
-            if (EE_OK != mWebsite->stepMsg(msg)) {
+            if (EE_OK != mReceiver->stepMsg(msg)) {
                 postClose();
             }
         }
@@ -628,16 +627,6 @@ enum EHttpHeaderState {
 #endif
 
 
-/* Map errno values to strings for human-readable output */
-#define HTTP_STRERROR_GEN(n, s) {"HPE_" #n, s},
-static struct {
-    const s8* name;
-    const s8* description;
-} HttpStrErrorTab[] = {HTTP_ERRNO_MAP(HTTP_STRERROR_GEN)};
-#undef HTTP_STRERROR_GEN
-
-
-
 /* Our URL parser.
  *
  * This is designed to be shared by parseBuf() for URL validation,
@@ -907,9 +896,6 @@ void HttpLayer::clear() {
     mUseTransferEncode = 0;
     mAllowChunkedLen = 0;
     mLenientHeaders = 0;
-    if (EHTTP_REQUEST == mPType) {
-        msgBegin();
-    }
     reset();
 }
 
@@ -2840,25 +2826,14 @@ bool HttpLayer::isBodyFinal() const {
 }
 
 const s8* HttpLayer::getErrStr(EHttpError it) {
+#define HTTP_STRERROR_GEN(n, s) {"HPE_" #n, s},
+    const static struct {
+        const s8* name;
+        const s8* description;
+    } HttpStrErrorTab[] = {HTTP_ERRNO_MAP(HTTP_STRERROR_GEN)};
+#undef HTTP_STRERROR_GEN
+
     return HttpStrErrorTab[it].description;
-}
-
-StringView HttpLayer::getMethodStr(EHttpMethod it) {
-#define DCASE(num, name, str)                                                                                          \
-    case HTTP_##name:                                                                                                  \
-        ret.set(#str, sizeof(#str) - 1);                                                                               \
-        break;
-
-    StringView ret;
-    switch (it) {
-        HTTP_METHOD_MAP(DCASE)
-    default:
-        ret.set("NULL", 4);
-        break;
-    }
-
-#undef DCASE
-    return ret;
 }
 
 

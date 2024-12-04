@@ -19,7 +19,7 @@ s32 HttpEvtFilePath::onSent(net::HttpMsg* msg) {
 }
 
 s32 HttpEvtFilePath::onOpen(net::HttpMsg* msg) {
-    net::Website* site = msg->getHttpLayer()->getWebsite();
+    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
     if (!site) {
         return EE_ERROR;
     }
@@ -42,8 +42,9 @@ s32 HttpEvtFilePath::onClose() {
 }
 
 s32 HttpEvtFilePath::onFinish(net::HttpMsg* msg) {
+    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
     net::HttpHead& hed = msg->getHeadOut();
-    const String& host = msg->getHttpLayer()->getWebsite()->getConfig().mHost;
+    const String& host = site->getConfig().mHost;
     StringView key("Host", 4);
     StringView val(host.c_str(), host.size());
     hed.add(key, val);
@@ -56,7 +57,7 @@ s32 HttpEvtFilePath::onFinish(net::HttpMsg* msg) {
     // val.set(DSTRV("text/html;charset=utf-8"));
     // hed.add(key, val);
 
-    hed.writeChunked();
+    hed.setChunked();
 
     msg->writeStatus(200);
     msg->dumpHeadOut();

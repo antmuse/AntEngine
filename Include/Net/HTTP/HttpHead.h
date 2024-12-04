@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_HTTPHEAD_H
-#define	APP_HTTPHEAD_H
+#define APP_HTTPHEAD_H
 
 #include "TString.h"
 #include "TVector.h"
@@ -36,20 +36,17 @@ class HeadLine {
 public:
     String mKey;
     String mVal;
-    HeadLine() { }
-    ~HeadLine() { }
-    HeadLine(const StringView& kk, const StringView& vv) :
-        mKey(kk), mVal(vv) {
+    HeadLine() {
     }
-    HeadLine(const String& kk, const String& vv) :
-        mKey(kk), mVal(vv) {
+    ~HeadLine() {
     }
-    HeadLine(const HeadLine& it) :
-        mKey(it.mKey), mVal(it.mVal) {
+    HeadLine(const StringView& kk, const StringView& vv) : mKey(kk), mVal(vv) {
     }
-    HeadLine(HeadLine&& it)noexcept
-        : mKey(std::move(it.mKey))
-        , mVal(std::move(it.mVal)) {
+    HeadLine(const String& kk, const String& vv) : mKey(kk), mVal(vv) {
+    }
+    HeadLine(const HeadLine& it) : mKey(it.mKey), mVal(it.mVal) {
+    }
+    HeadLine(HeadLine&& it) noexcept : mKey(std::move(it.mKey)), mVal(std::move(it.mVal)) {
     }
     HeadLine& operator=(HeadLine&& it) noexcept {
         if (&it != this) {
@@ -74,57 +71,57 @@ public:
     HttpHead();
 
     ~HttpHead();
-    
-    void writeLength(usz sz) {
+
+    void setLength(usz sz) {
         s8 tmp[128];
-        StringView key("Content-Length",sizeof("Content-Length")-1);
-        StringView val(tmp,snprintf(tmp, sizeof(tmp), "%llu", sz));
-        add(key,val);
+        StringView key("Content-Length", sizeof("Content-Length") - 1);
+        StringView val(tmp, snprintf(tmp, sizeof(tmp), "%llu", sz));
+        add(key, val);
     }
 
-    void writeContentRange(usz total, usz start, usz stop) {
+    void setContentRange(usz total, usz start, usz stop) {
         s8 tmp[128];
-        StringView key("Content-Range",sizeof("Content-Range")-1);
-        StringView val(tmp,snprintf(tmp, sizeof(tmp), "bytes %llu-%llu/%llu", start, stop, total));
-        add(key,val);
+        StringView key("Content-Range", sizeof("Content-Range") - 1);
+        StringView val(tmp, snprintf(tmp, sizeof(tmp), "bytes %llu-%llu/%llu", start, stop, total));
+        add(key, val);
     }
 
     //@brief default is "text/html; charset=utf-8"
-    void writeDefaultContentType() {
-        StringView key("Content-Type",sizeof("Content-Type")-1);
-        StringView val("text/html;charset=utf-8",sizeof("text/html;charset=utf-8")-1);
-        add(key,val);
+    void setDefaultContentType() {
+        StringView key("Content-Type", sizeof("Content-Type") - 1);
+        StringView val("text/html;charset=utf-8", sizeof("text/html;charset=utf-8") - 1);
+        add(key, val);
     }
 
-    void writeContentType(const StringView& val) {
-        StringView key("Content-Type",sizeof("Content-Type")-1);
-        add(key,val);
+    void setContentType(const StringView& val) {
+        StringView key("Content-Type", sizeof("Content-Type") - 1);
+        add(key, val);
     }
 
-    void writeKeepAlive(bool it) {
-        StringView key("Connection",sizeof("Connection")-1);
-        StringView val("keep-alive",sizeof("keep-alive")-1);
+    void setKeepAlive(bool it) {
+        StringView key("Connection", sizeof("Connection") - 1);
+        StringView val("keep-alive", sizeof("keep-alive") - 1);
         if (!it) {
-            val.set("close",sizeof("close")-1);
+            val.set("close", sizeof("close") - 1);
         }
-        add(key,val);
+        add(key, val);
     }
 
-    void writeChunked() {
-        StringView key("Transfer-Encoding",sizeof("Transfer-Encoding")-1);
-        StringView val("chunked",sizeof("chunked")-1);
-        add(key,val);
+    void setChunked() {
+        StringView key("Transfer-Encoding", sizeof("Transfer-Encoding") - 1);
+        StringView val("chunked", sizeof("chunked") - 1);
+        add(key, val);
     }
 
-    //Transfer-Encoding : chunked
-    bool isChunked()const;
+    // Transfer-Encoding : chunked
+    bool isChunked() const;
 
     void add(const StringView& key, const StringView& val);
     void add(const String& key, const String& val);
 
     void remove(const StringView& key, s32 cnt = 1);
 
-    StringView get(const StringView& key, usz pos = 0)const;
+    StringView get(const StringView& key, usz pos = 0) const;
 
     void clear() {
         mData.clear();
@@ -139,12 +136,12 @@ public:
         return mData[idx];
     }
 
-    const HeadLine& operator[](const usz idx)const {
+    const HeadLine& operator[](const usz idx) const {
         DASSERT(idx < mData.size());
         return mData[idx];
     }
 
-    usz size()const {
+    usz size() const {
         return mData.size();
     }
 
@@ -152,7 +149,7 @@ private:
     TVector<HeadLine> mData;
 };
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app
 
-#endif //APP_HTTPHEAD_H
+#endif // APP_HTTPHEAD_H

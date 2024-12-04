@@ -36,7 +36,7 @@ namespace app {
 
 static u64 hashCallback(const void* key) {
     const String& str = *reinterpret_cast<const String*>(key);
-    return AppHashSIP(str.c_str(), str.getLen());
+    return AppHashSIP(str.c_str(), str.size());
 }
 
 static bool compareCallback(void* iUserData, const void* key1, const void* key2) {
@@ -176,7 +176,7 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
                 nd.mRootPath.replace('\\', '/');
                 nd.mHost = val["Website"][i]["Host"].asCString();
                 if ('/' == nd.mRootPath.lastChar()) {
-                    nd.mRootPath.setLen(nd.mRootPath.getLen() - 1);
+                    nd.mRootPath.resize(nd.mRootPath.size() - 1);
                 }
                 if (1 == nd.mType) {
                     if (!val["Website"][i].isMember("PathTLS")) {

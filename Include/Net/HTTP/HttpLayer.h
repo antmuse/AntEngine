@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_HTTPLAYER_H
-#define	APP_HTTPLAYER_H
+#define APP_HTTPLAYER_H
 
 
 #include "EngineConfig.h"
@@ -33,15 +33,25 @@
 #include "FileReader.h"
 #include "Net/HandleTLS.h"
 #include "Net/HTTP/HttpMsg.h"
+#include "Net/TlsContext.h"
 
 namespace app {
 namespace net {
 
-class Website;
+class HttpMsgReceiver : public RefCount {
+public:
+    HttpMsgReceiver() {
+    }
+    virtual ~HttpMsgReceiver() {
+    }
+    virtual s32 stepMsg(HttpMsg* msg) = 0;
+};
+
 
 class HttpLayer : public RefCount {
 public:
-    HttpLayer(EHttpParserType tp = EHTTP_BOTH);
+    HttpLayer(
+        HttpMsgReceiver* recv, EHttpParserType tp = EHTTP_BOTH, bool https = false, TlsContext* tlsContext = nullptr);
 
     virtual ~HttpLayer();
 
@@ -49,19 +59,17 @@ public:
         return mMsg;
     }
 
-    Website* getWebsite() const {
-        return mWebsite;
+    HttpMsgReceiver* getMsgReceiver() const {
+        return mReceiver;
     }
 
-    s32 get(const String& gurl);
+    s32 post(HttpMsg* msg);
 
-    s32 post(const String& gurl);
-
-    EHttpParserType getType()const {
+    EHttpParserType getType() const {
         return mPType;
     }
 
-    const HandleTLS& getHandle()const {
+    const HandleTLS& getHandle() const {
         return mTCP;
     }
 
@@ -77,7 +85,6 @@ public:
     static void setMaxHeaderSize(u32 size) {
         GMAX_HEAD_SIZE = size;
     }
-    static StringView getMethodStr(EHttpMethod it);
 
     static const s8* getErrStr(EHttpError it);
 
@@ -137,17 +144,17 @@ private:
 
     bool mHTTPS;
     EHttpParserType mPType;
-    Website* mWebsite;
+    TlsContext* mTlsContext;
+    HttpMsgReceiver* mReceiver;
     HandleTLS mTCP;
     HttpMsg* mMsg;
 
-    //parser
+    // parser
 private:
+    // Checks if this is the final chunk of the body
+    bool isBodyFinal() const;
 
-    //Checks if this is the final chunk of the body
-    bool isBodyFinal()const;
-
-    bool isBodyHeader()const {
+    bool isBodyHeader() const {
         return 0 != (mFlags & F_HEAD_DONE);
     }
 
@@ -157,7 +164,7 @@ private:
      * If you are the server, respond with the "Connection: close" header.
      * If you are the client, close the connection.
      */
-    bool shouldKeepAlive()const;
+    bool shouldKeepAlive() const;
 
     /* Pause or un-pause the parser; a nonzero value pauses
      * Users should only be pausing/unpausing a parser that is not in an error
@@ -168,7 +175,7 @@ private:
 
 
     /* Get an EHttpError value from an HttpParser */
-    EHttpError getError()const {
+    EHttpError getError() const {
         return mHttpError;
     }
 
@@ -176,8 +183,8 @@ private:
         mHttpError = it;
     }
 
-    //Does the parser need to see an EOF to find the end of the message?
-    bool needEOF()const;
+    // Does the parser need to see an EOF to find the end of the message?
+    bool needEOF() const;
 
 
     /** eg:
@@ -187,21 +194,20 @@ private:
         Content-Disposition: form-data; name="field"; filename="filename.jpg"
         out = {"form-data"="","name"="field","filename"="filename.jpg"};
     */
-    static const s8* parseValue(const s8* curr, const s8* end,
-        StringView* out, s32& omax, s32& vflag);
+    static const s8* parseValue(const s8* curr, const s8* end, StringView* out, s32& omax, s32& vflag);
 
-    u16 mFlags;            // F_* values from 'flags' enum; semi-public
-    u8 mIndex;             // index into current matcher
+    u16 mFlags; // F_* values from 'flags' enum; semi-public
+    u8 mIndex;  // index into current matcher
     u8 mState;
     u8 mHeaderState;
     u8 mValueState;
 
-    u32 mType : 2;         // enum EHttpParserType
+    u32 mType : 2; // enum EHttpParserType
 
-    //Transfer-Encoding header is present
+    // Transfer-Encoding header is present
     u32 mUseTransferEncode : 1;
 
-    //Allow headers with both `Content-Length` and `Transfer-Encoding: chunked`
+    // Allow headers with both `Content-Length` and `Transfer-Encoding: chunked`
     u32 mAllowChunkedLen : 1;
 
     u32 mLenientHeaders : 1;
@@ -213,7 +219,7 @@ private:
      */
     u32 mUpgrade : 1;
 
-    //bytes read in various scenarios
+    // bytes read in various scenarios
     u32 mReadSize;
 
     /* bytes in body.
@@ -221,7 +227,7 @@ private:
      */
     u64 mContentLen;
 
-    //READ-ONLY
+    // READ-ONLY
     u16 mVersionMajor;
     u16 mVersionMinor;
     u16 mStatusCode;     // responses only
@@ -239,7 +245,7 @@ private:
 
     static u32 GMAX_HEAD_SIZE;
 
-    //reset parser
+    // reset parser
     void reset();
 
     const s8* parseBoundBody(const s8* curr, const s8* end, StringView& tbody);
@@ -260,7 +266,7 @@ private:
     void msgStep();
 };
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app
 
-#endif //APP_HTTPLAYER_H
+#endif // APP_HTTPLAYER_H

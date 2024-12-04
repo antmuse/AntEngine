@@ -54,7 +54,7 @@ public:
 
     ~HttpURL();
 
-    const String& get() const {
+    const String& data() const {
         return mData;
     }
 

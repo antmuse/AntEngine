@@ -292,7 +292,7 @@ s32 System::daemon() {
 }
 
 s32 System::createPath(const String& it) {
-    if (it.getLen() >= _MAX_PATH) {
+    if (it.size() >= _MAX_PATH) {
         return EE_ERROR;
     }
     tchar fname[_MAX_PATH];
@@ -377,8 +377,8 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
     FileFinder fnd;
     FileInfo itm;
     const s8* prefix = pth.c_str() + pos;
-    if (pos < pth.getLen()) {
-        pos = pth.getLen() - pos;
+    if (pos < pth.size()) {
+        pos = pth.size() - pos;
     } else {
         prefix = pth.c_str();
         pos = 0;
@@ -514,13 +514,13 @@ String System::getWorkingPath() {
 #if defined(DWCHAR_SYS)
     _wgetcwd(tmp, _MAX_PATH);
     wkpath.reserve(4 * _tcslen(tmp));
-    usz len = AppWcharToUTF8(tmp, (s8*)wkpath.c_str(), wkpath.getAllocated());
+    usz len = AppWcharToUTF8(tmp, (s8*)wkpath.c_str(), wkpath.capacity());
 #else
     _getcwd(tmp, _MAX_PATH);
     wkpath.reserve(2 * DSLEN(tmp));
-    usz len = AppGbkToUTF8(tmp, (s8*)wkpath.c_str(), wkpath.getAllocated());
+    usz len = AppGbkToUTF8(tmp, (s8*)wkpath.c_str(), wkpath.capacity());
 #endif
-    wkpath.setLen(len);
+    wkpath.resize(len);
     wkpath.replace('\\', '/');
     if ('/' != wkpath.lastChar()) {
         wkpath += '/';

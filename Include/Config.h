@@ -208,9 +208,13 @@ using f64 = double;
 #if defined(DOS_64BIT)
 using usz = u64;
 using ssz = s64;
+const usz GMAX_SSIZE = 0x7FFFFFFFFFFFFFFFLL;
+const usz GMAX_USIZE = 0xFFFFFFFFFFFFFFFFULL;
 #else
 using usz = u32;
 using ssz = s32;
+const usz GMAX_SSIZE = 0x7FFFFFFF;
+const usz GMAX_USIZE = 0xFFFFFFFF;
 #endif
 
 

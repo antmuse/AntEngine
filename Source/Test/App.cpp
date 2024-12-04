@@ -111,7 +111,8 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestFutex(argc, argv);
+            AppTestStr(argc, argv);
+            //AppTestFutex(argc, argv);
         } else {
             AppTestThreadPool(argc, argv);
             AppTestSimplifyPath(argc, argv);

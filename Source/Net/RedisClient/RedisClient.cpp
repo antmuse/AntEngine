@@ -263,7 +263,7 @@ void RedisClient::onConnect(RequestFD* it) {
         if (0 == mTCP.read(it)) {
             const String& pwd = mPool->getPassword();
             const s32 dbid = mPool->getDatabaseID();
-            if (dbid <= 0 && 0 == pwd.getLen()) {
+            if (dbid <= 0 && 0 == pwd.size()) {
                 mStatus |= 2|4;
                 mStatus &= ~1;
                 mPool->push(this);
@@ -271,16 +271,16 @@ void RedisClient::onConnect(RequestFD* it) {
                 RequestFD* out = RequestFD::newRequest(128);
                 out->mUser = this;
                 out->mCall = RedisClient::funcOnWrite;
-                if (pwd.getLen() > 0) {
+                if (pwd.size() > 0) {
                     //"CLUSTER SLOTS"="*2\r\n$7\r\nCLUSTER\r\n$5\r\nSLOTS\r\n"
                     //"AUTH 123456"="*2\r\n$4\r\nAUTH\r\n$6\r\n123456\r\n"
                     out->mUsed = snprintf(out->mData, out->mAllocated,
-                        "*2\r\n$4\r\nAUTH\r\n$%llu\r\n%s\r\n", pwd.getLen(), pwd.c_str());
+                        "*2\r\n$4\r\nAUTH\r\n$%llu\r\n%s\r\n", pwd.size(), pwd.c_str());
                 } else {
                     mStatus |= 2;
                     //"SELECT 5"="*2\r\n$6\r\nSELECT\r\n$1\r\n5\r\n"
                     out->mUsed = snprintf(out->mData, out->mAllocated,
-                        "*2\r\n$6\r\nSELECT\r\n$%llu\r\n%s\r\n", pwd.getLen(), pwd.c_str());
+                        "*2\r\n$6\r\nSELECT\r\n$%llu\r\n%s\r\n", pwd.size(), pwd.c_str());
                 }
                 if (0 != mTCP.write(out)) {
                     RequestFD::delRequest(out);

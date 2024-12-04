@@ -1,28 +1,3 @@
-/***************************************************************************************************
- * MIT License
- *
- * Copyright (c) 2021 antmuse@live.cn/antmuse@qq.com
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
-***************************************************************************************************/
-
-
 #include "RingBuffer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -31,9 +6,8 @@
 
 namespace app {
 
-RingBuffer::RingBuffer()
-    : mSize(0), mRet(-1) {
-    //init();
+RingBuffer::RingBuffer() : mSize(0), mRet(-1) {
+    // init();
 }
 
 RingBuffer::~RingBuffer() {
@@ -98,7 +72,7 @@ void RingBuffer::reset() {
 void RingBuffer::write(const void* data, s32 size) {
     const s8* pos = (const s8*)data;
     s32 leftover = size;
-    DASSERT(nullptr!=mTailPos.mNode);
+    DASSERT(nullptr != mTailPos.mNode);
 
     while (leftover > 0) {
         s32 copysz = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
@@ -159,7 +133,7 @@ bool RingBuffer::rewrite(SRingBufPos& ndpos, const void* data, s32 size) {
 
 
 s32 RingBuffer::peekTailNode(s8** data, s32 size) {
-    DASSERT(nullptr!=mTailPos.mNode);
+    DASSERT(nullptr != mTailPos.mNode);
     DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
 
     s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
@@ -174,11 +148,23 @@ s32 RingBuffer::peekTailNode(s8** data, s32 size) {
 
 
 void RingBuffer::reserve(s32 reserved) {
-    s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
-    while (reserved > available) {
-        reserved -= available;
-        pushBack();
-        available = sizeof(SRingBufNode::mData);
+    s32 leftover = reserved > 0 ? reserved : -reserved;
+    DASSERT(nullptr != mTailPos.mNode);
+    while (leftover > 0) {
+        s32 copysz = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
+        DASSERT(mTailPos.mPosition <= sizeof(SRingBufNode::mData));
+        if (copysz == 0) {
+            pushBack();
+            copysz = sizeof(SRingBufNode::mData);
+        }
+        if (copysz > leftover) {
+            copysz = leftover;
+        }
+        mTailPos.mPosition += copysz;
+        if (reserved > 0) {
+            mSize += copysz;
+        }
+        leftover -= copysz;
     }
 }
 
@@ -206,7 +192,7 @@ s32 RingBuffer::peekTailNode(s32 reserved, s8** data, s32 size) {
 void RingBuffer::commitTailPos(s32 size) {
     s32 available = sizeof(SRingBufNode::mData) - mTailPos.mPosition;
     s32 to_commit = size;
-    DASSERT(nullptr!=mTailPos.mNode);
+    DASSERT(nullptr != mTailPos.mNode);
     if (to_commit > available) {
         to_commit = available;
     }
@@ -220,7 +206,7 @@ s32 RingBuffer::read(void* data, s32 len) {
     s32 initial_size = mSize;
     s8* pos = (s8*)data;
     s32 leftover = len;
-    DASSERT(nullptr!=mHeadPos.mNode);
+    DASSERT(nullptr != mHeadPos.mNode);
 
     while (leftover > 0) {
         const s8* block_pos = mHeadPos.mNode->mData + mHeadPos.mPosition;
@@ -292,7 +278,7 @@ void RingBuffer::commitHead(s32 used) {
 SRingBufPos RingBuffer::peekHeadNode(SRingBufPos pos, StringView* bufs, s32* bufs_count) {
     SRingBufPos current = pos;
     s32 count = 0;
-    DASSERT(nullptr!=pos.mNode);
+    DASSERT(nullptr != pos.mNode);
 
     while (count < *bufs_count) {
         StringView* buf = bufs + count;
@@ -330,4 +316,5 @@ void RingBuffer::commitHeadPos(const SRingBufPos& pos) {
     mHeadPos = pos;
 }
 
-}//namespace app
+
+} // namespace app

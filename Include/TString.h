@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_STRINGS_H
-#define	APP_STRINGS_H
+#define APP_STRINGS_H
 
 #include <string.h>
 #include <string>
@@ -74,13 +74,13 @@ static void AppStr2Lower(T* str, usz len) {
 
 
 /**
-* @brief 字符串限长比较, char or wchar_t
-* @param s1 字符串1,不可传空指针
-* @param s2 字符串2,不可传空指针
-* @param n 限长（比较前n个字母）
-* @return [0]=(s1==s2)，[>0]=(s1>s2), [<0]=(s1<s2)
-*/
-template<class T>
+ * @brief 字符串限长比较, char or wchar_t
+ * @param s1 字符串1,不可传空指针
+ * @param s2 字符串2,不可传空指针
+ * @param n 限长（比较前n个字母）
+ * @return [0]=(s1==s2)，[>0]=(s1>s2), [<0]=(s1<s2)
+ */
+template <class T>
 static s32 AppStrNocaseCMP(const T* s1, const T* s2, usz n) {
     if (s1 == s2 || n == 0) {
         return 0;
@@ -93,7 +93,7 @@ static s32 AppStrNocaseCMP(const T* s1, const T* s2, usz n) {
     return ca - cb;
 }
 
-template<class T>
+template <class T>
 static s32 AppStrCMP(const T* s1, const T* s2, usz n) {
     if (s1 == s2 || n == 0) {
         return 0;
@@ -108,23 +108,22 @@ static s32 AppStrCMP(const T* s1, const T* s2, usz n) {
 
 
 
-
 /**
-* @brief Sunday算法，查找子串, 常用于字符串的模式匹配
-* @param txt 查找空间, 不可为null
-* @param txtLen 查找空间长度，单位=sizeof(T)
-* @param pattern 待查找内容, 不可为null
-* @param patLen 待查找内容长度，单位=sizeof(P)
-* @return 为\p txt中首次出现\p pattern的位置(>=0)，<0则未找到
-*/
-template<typename T, typename P>
+ * @brief Sunday算法，查找子串, 常用于字符串的模式匹配
+ * @param txt 查找空间, 不可为null
+ * @param txtLen 查找空间长度，单位=sizeof(T)
+ * @param pattern 待查找内容, 不可为null
+ * @param patLen 待查找内容长度，单位=sizeof(P)
+ * @return 为\p txt中首次出现\p pattern的位置(>=0)，<0则未找到
+ */
+template <typename T, typename P>
 static ssz AppSundayFind(const T* txt, ssz txtLen, const P* pattern, ssz patLen) {
     DASSERT(txt && pattern);
     if (patLen > 0 && txtLen >= patLen) {
         txtLen -= patLen;
         ssz i, j, pos;
         T ch;
-        for (ssz start = 0; start <= txtLen; ) {
+        for (ssz start = 0; start <= txtLen;) {
             for (i = start, j = 0; j < patLen && txt[i] == pattern[j]; ++i, ++j) {
             }
             if (j == patLen) {
@@ -137,7 +136,7 @@ static ssz AppSundayFind(const T* txt, ssz txtLen, const P* pattern, ssz patLen)
             start += patLen - pos;
         }
     }
-    return -1;  //not find
+    return -1; // not find
 }
 
 
@@ -202,9 +201,9 @@ static usz AppSimplifyPath(T* str, const T* const end) {
 
 
 /**
-* @brief
-* 此类不管理任何内存
-*/
+ * @brief
+ * 此类不管理任何内存
+ */
 template <typename T>
 class TStrView {
 public:
@@ -231,7 +230,7 @@ public:
         return *this;
     }
 
-    const TStrView& operator=(const TStrView&& it)noexcept {
+    const TStrView& operator=(const TStrView&& it) noexcept {
         mData = it.mData;
         mLen = it.mLen;
         return *this;
@@ -285,193 +284,209 @@ public:
 };
 
 
-
-template <typename T, typename TAlloc = TAllocator<T> >
+template <typename T, typename TAlloc = TAllocator<T>>
 class TString {
 public:
     /**
      * @brief default constructor which have not alloc mem
      */
-    TString() : mBuffer(reinterpret_cast<T*>(&mAllocated)), mAllocated(0), mLen(0) {
+    TString() noexcept {
+        initSmall();
     }
 
-    TString(usz reserve) : mAllocated(1 + reserve), mLen(0) {
-        mBuffer = mAllocator.allocate(mAllocated);
-        mBuffer[0] = 0;
-    }
-
-    TString(const TString<T, TAlloc>& other) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
-        mAllocated(0), mLen(0) {
-        *this = other;
-    }
-
-    TString(TString<T, TAlloc>&& it) noexcept : mBuffer(it.mBuffer), mAllocated(it.mAllocated), mLen(it.mLen) {
-        if (it.isAllocated()) {
-            it.mBuffer = reinterpret_cast<T*>(&it.mAllocated);
-            it.mAllocated = 0;
-            it.mLen = 0;
-            AppSwap(mAllocator, it.mAllocator);
+    TString(usz reserve) noexcept {
+        if (reserve > G_SMALL_CAPACITY) {
+            mBigStr.mCapacity = (reserve + 1) & G_ALLOC_MASK;
+            mBigStr.mLength = 0;
+            mBigStr.mBuffer = mAllocator.allocate(mBigStr.mCapacity | 1);
+            mBigStr.mBuffer[0] = 0;
         } else {
-            mBuffer = reinterpret_cast<T*>(&mAllocated);
-            mAllocated = 0;
-            mLen = 0;
+            initSmall();
         }
-    }
-
-    //! Constructor from other String types
-    template <class B, class A>
-    TString(const TString<B, A>& other) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
-        mAllocated(0), mLen(0) {
-        *this = other;
-    }
-
-    TString<T, TAlloc>(const TStrView<T>& other) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
-        mAllocated(0), mLen(0) {
-        reallocate(other.mLen);
-        append(other.mData, other.mLen);
     }
 
     template <class B>
-    TString(const B* const str, usz length) : mBuffer(reinterpret_cast<T*>(&mAllocated)),
-        mAllocated(0), mLen(0) {
-        reallocate(length);
-        if (str) {
-            for (usz i = 0; i < length; ++i) {
-                mBuffer[i] = (T)str[i];
-            }
-            mLen = length;
-            mBuffer[length] = 0;
-        } else {
-            mLen = 0;
-            mBuffer[0] = 0;
-        }
+    TString(const B* const str, usz len) noexcept {
+        initStr<B>(str, len);
     }
 
+
+    TString(const TString<T, TAlloc>& other) noexcept {
+        initStr<T>(other.c_str(), other.size());
+    }
+
+
+    TString<T, TAlloc>(const TStrView<T>& other) noexcept {
+        initStr<T>(other.mData, other.mLen);
+    }
+
+
+    /** @brief Constructor from other String types */
+    template <class B, class A>
+    TString(const TString<B, A>& other) noexcept {
+        initStr<B>(other.c_str(), other.size());
+    }
+
+    template <class B>
+    TString<T, TAlloc>(const TStrView<B>& other) noexcept {
+        initStr<B>(other.mData, other.mLen);
+    }
+
+    TString(TString<T, TAlloc>&& it) noexcept {
+        mBigStr = it.mBigStr;
+        AppSwap(mAllocator, it.mAllocator);
+        it.initSmall();
+    }
 
     //! Constructor for unicode and ascii strings
     template <class B>
-    TString(const B* const c) : mBuffer(reinterpret_cast<T*>(&mAllocated)), mAllocated(0), mLen(0) {
+    TString(const B* const c) : TString() {
         *this = c;
     }
 
-    TString(const T* const c) : mBuffer(reinterpret_cast<T*>(&mAllocated)), mAllocated(0), mLen(0) {
+    TString(const T* const c) : TString() {
         *this = c;
     }
 
     ~TString() {
-        setBuffer(&mAllocated);
-        mAllocated = 0;
-        mLen = 0;
+        if (isAllocated()) {
+            mAllocator.deallocate(mBigStr.mBuffer);
+#ifdef DDEBUG
+            mBigStr.mBuffer = nullptr;
+            initSmall();
+#endif
+        }
     }
 
 
-    TString<T, TAlloc>& operator=(const TString<T, TAlloc>& other) {
-        if (this != &other) {
-            mLen = other.mLen;
-            if (mLen >= mAllocated) {
-                reallocate(mLen);
-            }
-            for (usz i = 0; i < mLen; ++i) {
-                mBuffer[i] = other.mBuffer[i];
-            }
-            mBuffer[mLen] = 0;
+    TString<T, TAlloc>& operator=(const TString<T, TAlloc>& it) {
+        if (&it != this) {
+            usz length = it.size();
+            resize(length);
+            memcpy(data(), it.data(), length * sizeof(T));
         }
         return *this;
     }
 
     TString<T, TAlloc>& operator=(TString<T, TAlloc>&& it) noexcept {
         if (&it != this) {
-            if (it.isAllocated()) {
-                setBuffer(it.mBuffer);
-                it.mBuffer = reinterpret_cast<T*>(&it.mAllocated);
-                it.mAllocated = 0;
-                it.mLen = 0;
-                AppSwap(mAllocator, it.mAllocator);
-            } else {
-                setBuffer(&mAllocated);
-                mAllocated = 0;
-                mLen = 0;
+            if (isAllocated()) {
+                mAllocator.deallocate(mBigStr.mBuffer);
             }
+            mBigStr = it.mBigStr;
+            AppSwap(mAllocator, it.mAllocator);
+            it.initSmall();
         }
         return *this;
     }
 
     template <class B, class A>
-    TString<T, TAlloc>& operator=(const TString<B, A>& other) {
-        *this = other.c_str();
+    TString<T, TAlloc>& operator=(const TString<B, A>& it) {
+        usz len = it.size();
+        resize(len);
+        if (sizeof(T) == sizeof(B)) {
+            memcpy(data(), it.data(), len * sizeof(T));
+        } else {
+            copyOtherType(it.data(), len, data());
+        }
         return *this;
     }
 
-    TString<T, TAlloc>& operator=(const TStrView<T>& other) {
-        mLen = 0;
-        return append(other.mData, other.mLen);
+    TString<T, TAlloc>& operator=(const TStrView<T>& it) {
+        usz length = it.mLen;
+        if (inCurrentMem(it.mData)) {
+            T* buf = data();
+            length = AppMin(capacity() - (it.mData - buf), length);
+            if (it.mData > buf && length > 0) {
+                memmove(buf, it.mData, length * sizeof(T));
+            }
+            cutLen(length);
+        } else {
+            resize(length);
+            memcpy(data(), it.mData, length * sizeof(T));
+        }
     }
 
     template <class B>
-    TString<T, TAlloc>& operator=(const B* const c) {
-        if (!c) {
-            setLen(0);
+    TString<T, TAlloc>& operator=(const B* ss) {
+        if (!ss) {
+            cutLen(0);
             return *this;
         }
-
-        if ((void*)c == (void*)mBuffer) {
-            return *this;
-        }
-
+        T* buf = data();
+        usz slen = size();
         usz len = 0;
-        const B* p = c;
+        if (inCurrentMem((T*)ss)) {
+            len = ((T*)ss - buf);
+            len = len >= slen ? 0 : slen - len;
+            if ((T*)ss > buf && len > 0) {
+                memmove(buf, ss, len * sizeof(T));
+            }
+            cutLen(len);
+            return *this;
+        }
+        const B* p = ss;
         while (*p++) {
             ++len;
         }
 
-        // we'll keep the old String for a while, because the new
-        // String could be a part of the current String.
-        T* buf = mBuffer;
-
-        if (len >= mAllocated) {
-            mAllocated = nextAlloc(len);
-            buf = mAllocator.allocate(mAllocated);
+        resize(len);
+        if (sizeof(T) == sizeof(B)) {
+            memcpy(data(), ss, len * sizeof(T));
+        } else {
+            copyOtherType(ss, len, data());
         }
-
-        for (usz l = 0; l < len; ++l) {
-            buf[l] = (T)c[l];
-        }
-        mLen = len;
-        buf[len] = 0;
-        if (buf != mBuffer) {
-            setBuffer(buf);
-        }
+        cutLen(len);
         return *this;
     }
 
 
-    TString<T, TAlloc> operator+(const TString<T, TAlloc>& other) const {
-        TString<T, TAlloc> str(*this);
-        return str.append(other, other.getLen());
+    TString<T, TAlloc> operator+(const TString<T, TAlloc>& it) const {
+        TString<T, TAlloc> str(size() + it.size());
+        memcpy(str.data(), data(), sizeof(T) * size());
+        memcpy(str.data() + size(), it.data(), sizeof(T) * it.size());
+        str.cutLen(size() + it.size());
+        return str;
     }
 
 
-    TString<T, TAlloc> operator+(const TStrView<T>& other) const {
-        TString<T, TAlloc> str(*this);
-        return str.append(other.mData, other.mLen);
+    TString<T, TAlloc> operator+(const TStrView<T>& it) const {
+        usz mlen = size();
+        TString<T, TAlloc> str(mlen + it.mLen);
+        memcpy(str.data(), data(), sizeof(T) * mlen);
+        memcpy(str.data() + mlen, it.mData, sizeof(T) * it.mLen);
+        str.cutLen(mlen + it.mLen);
+        return str;
     }
 
     template <class B>
-    TString<T, TAlloc> operator+(const B* const c) const {
-        TString<T, TAlloc> str(*this);
-        return str.append(c);
+    TString<T, TAlloc> operator+(const B* const ss) {
+        const T* p = ss;
+        while (*p++) {
+        }
+        usz len = (usz)(p - ss) - 1;
+        usz mlen = size();
+        TString<T, TAlloc> str(mlen + len);
+        memcpy(str.data(), data(), sizeof(T) * mlen);
+        if (sizeof(T) == sizeof(B)) {
+            memcpy(str.data() + mlen, ss, sizeof(T) * len);
+        } else {
+            copyOtherType(ss, len, str.data() + mlen);
+        }
+        str.cutLen(mlen + len);
+        return str;
     }
 
 
     T& operator[](const usz index) {
-        DASSERT(index < mLen);
-        return mBuffer[index];
+        DASSERT(index < size());
+        return *(data() + index);
     }
 
 
     const T& operator[](const usz index) const {
-        DASSERT(index < mLen);
-        return mBuffer[index];
+        DASSERT(index < size());
+        return *(c_str() + index);
     }
 
 
@@ -479,161 +494,128 @@ public:
         if (!str) {
             return false;
         }
+        const T* buf = c_str();
+        usz len = size();
         usz i;
-        for (i = 0; i < mLen && str[i]; ++i) {
-            if (mBuffer[i] != str[i]) {
+        for (i = 0; i < len && str[i]; ++i) {
+            if (buf[i] != str[i]) {
                 return false;
             }
         }
-        return mBuffer[i] == str[i];
+        return buf[i] == str[i];
     }
 
 
     bool operator==(const TString<T, TAlloc>& other) const {
-        if (mLen == other.mLen) {
-            for (usz i = 0; i < mLen; ++i) {
-                if (mBuffer[i] != other.mBuffer[i]) {
-                    return false;
-                }
+        usz len = size();
+        if (len == other.size()) {
+            if (0 == memcmp(c_str(), other.c_str(), len * sizeof(T))) {
+                return true;
             }
-            return true;
         }
         return false;
     }
 
 
     bool operator<(const TString<T, TAlloc>& other) const {
-        usz cnt = AppMin(mLen, other.mLen);
+        usz len = size();
+        usz cnt = AppMin(len, other.size());
+        const T* buf = c_str();
+        const T* buf2 = other.c_str();
         for (usz i = 0; i < cnt; ++i) {
-            s32 diff = (s32)mBuffer[i] - (s32)other.mBuffer[i];
+            s32 diff = (s32)buf[i] - (s32)buf2[i];
             if (diff) {
                 return (diff < 0);
             }
         }
-        return (mLen < other.mLen);
+        return (len < other.size());
     }
 
     bool operator>(const TString<T, TAlloc>& other) const {
-        usz cnt = AppMin(mLen, other.mLen);
+        usz len = size();
+        usz cnt = AppMin(len, other.size());
+        const T* buf = c_str();
+        const T* buf2 = other.c_str();
         for (usz i = 0; i < cnt; ++i) {
-            s32 diff = (s32)mBuffer[i] - (s32)other.mBuffer[i];
+            s32 diff = (s32)buf[i] - (s32)buf2[i];
             if (diff) {
                 return (diff > 0);
             }
         }
-        return (mLen > other.mLen);
+        return (len > other.size());
     }
 
     bool operator!=(const T* const str) const {
         if (!str) {
             return true;
         }
+        const T* buf = c_str();
+        usz len = size();
         usz i;
-        for (i = 0; i < mLen && str[i]; ++i) {
-            if (mBuffer[i] != str[i]) {
+        for (i = 0; i < len && str[i]; ++i) {
+            if (buf[i] != str[i]) {
                 return true;
             }
         }
-        return mBuffer[i] != str[i];
+        return buf[i] != str[i];
     }
 
 
     bool operator!=(const TString<T, TAlloc>& other) const {
-        if (mLen == other.mLen) {
-            for (usz i = 0; i < mLen; ++i) {
-                if (mBuffer[i] != other.mBuffer[i]) {
-                    return true;
-                }
+        usz len = size();
+        if (len == other.size()) {
+            if (0 == memcmp(c_str(), other.c_str(), len * sizeof(T))) {
+                return false;
             }
-            return false;
         }
         return true;
     }
 
-    usz getAllocated() const {
-        return mAllocated;
-    }
-
-    /**
-    * @return 长度，不含tail.
-    */
-    usz getLen() const {
-        return mLen;
-    }
-
-    usz size() const {
-        return mLen;
-    }
-
-    bool empty() const {
-        return 0 == mLen;
-    }
-
-    /**
-    * @return A valid pointer to C-style NULL terminated String.
-    */
-    const T* c_str() const {
-        return mBuffer;
-    }
-
-
     TString<T, TAlloc>& toLower() {
-        AppStr2Lower(mBuffer, mLen);
+        AppStr2Lower(data(), size());
         return *this;
     }
 
     TString<T, TAlloc>& toUpper() {
-        AppStr2Upper(mBuffer, mLen);
+        AppStr2Upper(data(), size());
         return *this;
     }
 
 
     /**
-    * @brief Compares the strings ignoring case.
-    * @param other: Other TString to compare.
-    * @return True if the strings are equal ignoring case. */
+     * @brief Compares the strings ignoring case.
+     * @param other: Other TString to compare.
+     * @return true if the strings are equal ignoring case. */
     bool equalsNocase(const TString<T, TAlloc>& other) const {
-        if (mLen == other.mLen) {
-            return 0 == AppStrNocaseCMP(mBuffer, other.mBuffer, mLen);
-        }
-        return false;
+        return 0 == AppStrNocaseCMP(c_str(), other.c_str(), size());
     }
 
     /**
-    * @brief Compares the strings ignoring case.
-    * @param other: Other String to compare.
-    * @param sourcePos: where to start to compare in the String
-    * @return True if the strings are equal ignoring case. */
+     * @brief Compares the strings ignoring case.
+     * @param other: Other String to compare.
+     * @param sourcePos: where to start to compare in the String
+     * @return true if the strings are equal ignoring case. */
     bool equalsSubNocase(const TString<T, TAlloc>& other, const usz sourcePos = 0) const {
-        if (sourcePos >= mLen) {
+        usz len = size();
+        if (sourcePos >= len) {
             return false;
         }
-        usz i = mLen - sourcePos;
-        if (i == other.mLen) {
-            return 0 == AppStrNocaseCMP(mBuffer + sourcePos, other.mBuffer, i);
-        }
-        return false;
+        len -= sourcePos;
+        return 0 == AppStrNocaseCMP(c_str(), other.c_str(), len);
     }
 
 
     /**
-    * @brief Compares the strings ignoring case.
-    * @param other: Other TString to compare.
-    * @return True if this TString is smaller ignoring case. */
-    bool lowerNocase(const TString<T, TAlloc>& other) const {
-        return AppStrNocaseCMP(mBuffer, other.mBuffer, AppMax(mLen, other.mLen)) < 0;
-    }
-
-
-    /**
-    * @brief compares the first n characters of the strings
-    * @param other Other String to compare.
-    * @param n Number of characters to compare
-    * @return True if the n first characters of both strings are equal. */
+     * @brief compares the first n characters of the strings
+     * @param other Other String to compare.
+     * @param n Number of characters to compare
+     * @return True if the n first characters of both strings are equal. */
     bool equalsn(const TString<T, TAlloc>& other, usz n) const {
-        if (n <= mLen && n <= other.mLen) {
+        if (n <= size() && n <= other.size()) {
+            const T* buf = c_str();
+            const T* bufb = other.c_str();
             for (usz i = 0; i < n; ++i) {
-                if (mBuffer[i] != other.mBuffer[i]) {
+                if (buf[i] != bufb[i]) {
                     return false;
                 }
             }
@@ -644,17 +626,18 @@ public:
 
 
     /**
-    * @brief compares the first n characters of the strings
-    * @param str Other String to compare.
-    * @param n Number of characters to compare
-    * @return True if the n first characters of both strings are equal. */
+     * @brief compares the first n characters of the strings
+     * @param str Other String to compare.
+     * @param n Number of characters to compare
+     * @return True if the n first characters of both strings are equal. */
     bool equalsn(const T* const str, usz n) const {
         if (!str) {
             return false;
         }
-        if (n <= mLen) {
-            for (usz i = 0; i < n && str[i]; ++i) {
-                if (mBuffer[i] != str[i]) {
+        if (n <= size()) {
+            const T* buf = c_str();
+            for (usz i = 0; i < n; ++i) {
+                if (buf[i] != str[i]) {
                     return false;
                 }
             }
@@ -664,68 +647,75 @@ public:
     }
 
     void simplifyPath() {
-        mLen = AppSimplifyPath(mBuffer, mBuffer + mLen);
-        mBuffer[mLen] = 0;
+        T* buf = data();
+        cutLen(AppSimplifyPath(buf, buf + size()));
     }
 
     void resize(usz val) {
-        setLen(val);
-    }
-
-    void setLen(usz val) {
-        if (val >= mAllocated) {
+        if (val > capacity()) {
             reallocate(val);
         }
-        mLen = val;
-        mBuffer[val] = 0;
+        cutLen(val);
     }
 
-
     /**
-    * @brief Appends a String to this String
-    * @param other: Char String to append.
-    * @param length: The length of the String to append. */
-    TString<T, TAlloc>& append(const T* const other, usz len = 0xFFFFFFFFFFFFFFFFULL) {
-        if (!other || 0 == len /*|| other == mBuffer*/) {
+     * @brief Appends a String to this String
+     * @param other: Char String to append.
+     * @param length: The length of the String to append. */
+    template <class B>
+    TString<T, TAlloc>& append(const B* const other, usz len = GMAX_USIZE) {
+        if (!other || 0 == len) {
             return *this;
         }
-        if (0xFFFFFFFFFFFFFFFFULL == len) {
+        if (GMAX_USIZE == len) {
             const T* p = other;
-            while (*p++) { }
+            while (*p++) {
+            }
             len = (usz)(p - other) - 1;
+            if (0 == len) {
+                return *this;
+            }
         }
         // we'll keep the old String for a while, because the new
         // String could be a part of the current String.
-        T* buf = mBuffer;
-        if (mLen + len + 1 > mAllocated) {
-            mAllocated = nextAlloc(mLen + len);
-            buf = mAllocator.allocate(mAllocated);
-            for (usz i = 0; i < mLen; ++i) {
-                buf[i] = mBuffer[i];
+        usz slen = size();
+        T* buf = data();
+        T* del = nullptr;
+        T* newbuf = nullptr;
+        usz newcap;
+        if (slen + len > capacity()) {
+            if (isAllocated()) {
+                del = buf;
             }
+            newcap = nextAlloc(slen + len, slen);
+            newbuf = mAllocator.allocate(newcap | 1);
+            memcpy(newbuf, buf, sizeof(T) * slen);
+            buf = newbuf;
         }
-        for (usz i = 0; i < len; ++i) {
-            buf[mLen + i] = other[i];
+        if (sizeof(T) == sizeof(B)) {
+            memcpy(buf + slen, other, sizeof(T) * len);
+        } else {
+            copyOtherType(other, len, buf + slen);
         }
-        mLen += len;
-        buf[mLen] = 0;
-        if (buf != mBuffer) {
-            setBuffer(buf);
+        if (newbuf) {
+            mBigStr.mCapacity = newcap;
+            mBigStr.mBuffer = newbuf;
+            if (del) {
+                mAllocator.deallocate(del);
+            }
+            cutLenBig(slen + len);
+            return *this;
         }
+        cutLen(slen + len);
         return *this;
     }
 
 
-    TString<T, TAlloc>& append(const TString<T, TAlloc>& other, usz length) {
-        return append(other.mBuffer, length > other.getLen() ? other.getLen() : length);
-    }
-
-
     /**
-    * @brief Reserves some memory.
-    * @param count: Amount of characters to reserve. */
+     * @brief Reserves some memory.
+     * @param count: Amount of characters to reserve. */
     void reserve(usz count) {
-        if (count >= mAllocated) {
+        if (count > capacity()) {
             reallocate(count);
         }
     }
@@ -741,9 +731,11 @@ public:
         if (!c || 0 == count) {
             return -1;
         }
-        for (usz i = 0; i < mLen; ++i) {
+        const T* buf = c_str();
+        usz len = size();
+        for (usz i = 0; i < len; ++i) {
             for (usz j = 0; j < count; ++j) {
-                if (mBuffer[i] == c[j]) {
+                if (buf[i] == c[j]) {
                     return i;
                 }
             }
@@ -763,10 +755,12 @@ public:
         if (!c || 0 == count) {
             return -1;
         }
-        for (usz i = 0; i < mLen; ++i) {
+        const T* buf = c_str();
+        usz len = size();
+        for (usz i = 0; i < len; ++i) {
             usz j;
             for (j = 0; j < count; ++j) {
-                if (mBuffer[i] == c[j]) {
+                if (buf[i] == c[j]) {
                     break;
                 }
             }
@@ -788,10 +782,11 @@ public:
         if (!c || 0 == count) {
             return -1;
         }
-        for (ssz i = (ssz)(mLen)-1; i >= 0; --i) {
+        const T* buf = c_str();
+        for (ssz i = (ssz)(size()) - 1; i >= 0; --i) {
             usz j;
             for (j = 0; j < count; ++j) {
-                if (mBuffer[i] == c[j]) {
+                if (buf[i] == c[j]) {
                     break;
                 }
             }
@@ -803,12 +798,14 @@ public:
     }
 
     /**
-    * @brief finds first occurrence of character in String
-    * @param c: Character to search for.
-    * @return Position where the character has been found, or -1 if not found. */
-    ssz findFirst(T c) const {
-        for (usz i = 0; i < mLen; ++i) {
-            if (mBuffer[i] == c) {
+     * @brief finds first occurrence of character in String
+     * @param c: Character to search for.
+     * @return Position where the character has been found, or -1 if not found. */
+    ssz findFirst(T ch) const {
+        const T* buf = c_str();
+        usz len = size();
+        for (usz i = 0; i < len; ++i) {
+            if (buf[i] == ch) {
                 return i;
             }
         }
@@ -816,14 +813,16 @@ public:
     }
 
     /**
-    * @brief finds next occurrence of character in String
-    * @param c: Character to search for.
-    * @param startPos: Position in TString to start searching.
-    * @return Position where the character has been found, or -1 if not found. */
+     * @brief finds next occurrence of character in String
+     * @param c: Character to search for.
+     * @param startPos: Position in TString to start searching.
+     * @return Position where the character has been found, or -1 if not found. */
     ssz findNext(T c, usz startPos) const {
-        for (usz i = startPos; i < mLen; ++i) {
-            if (mBuffer[i] == c) {
-                return i;
+        const T* buf = c_str();
+        usz len = size();
+        for (; startPos < len; ++startPos) {
+            if (buf[startPos] == c) {
+                return startPos;
             }
         }
         return -1;
@@ -831,14 +830,16 @@ public:
 
 
     /**
-    * @brief 查找末尾字符位置
-    * @param ch: 要找的字符
-    * @param start: 起始位，从此处开始反向查找，-1则从末尾开始
-    * @return 符合字符的位置(以0始), 失败则返回-1. */
+     * @brief 查找末尾字符位置
+     * @param ch: 要找的字符
+     * @param start: 起始位，从此处开始反向查找，-1则从末尾开始
+     * @return 符合字符的位置(以0始), 失败则返回-1. */
     ssz findLast(T ch, ssz start = -1) const {
-        start = AppClamp(start < 0 ? (ssz)mLen - 1 : start, -1LL, (ssz)mLen - 1);
+        ssz len = static_cast<ssz>(size()) - 1;
+        start = AppClamp(start < 0 ? len : start, -1LL, len);
+        const T* buf = c_str();
         for (ssz i = start; i >= 0; --i) {
-            if (mBuffer[i] == ch) {
+            if (buf[i] == ch) {
                 return i;
             }
         }
@@ -846,19 +847,20 @@ public:
     }
 
     /**
-    * @brief 查找末尾字符位置
-    * @param cs: 要找的字符，找到任一则结束查找. 例如查找 'a' 或 'b', 参数应为 "ab".
-    * @param count: strlen(cs)
-    * @return 符合任一字符的位置(以0始), 失败则返回-1. */
+     * @brief 查找末尾字符位置
+     * @param cs: 要找的字符，找到任一则结束查找. 例如查找 'a' 或 'b', 参数应为 "ab".
+     * @param count: strlen(cs)
+     * @return 符合任一字符的位置(以0始), 失败则返回-1. */
     ssz findLastChar(const T* const cs, usz count = 1) const {
         if (!cs || 0 == count) {
             return -1;
         }
+        const T* buf = c_str();
         usz j;
-        for (ssz i = (ssz)mLen - 1; i >= 0; --i) {
+        for (ssz pos = static_cast<ssz>(size()) - 1; pos >= 0; --pos) {
             for (j = 0; j < count; ++j) {
-                if (mBuffer[i] == cs[j]) {
-                    return i;
+                if (buf[pos] == cs[j]) {
+                    return pos;
                 }
             }
         }
@@ -866,11 +868,11 @@ public:
     }
 
     /**
-    * @brief finds another TString in this TString
-    * @param str: Another TString
-    * @param start: Start position of the search
-    * @param len: len of str
-    * @return Positions where the TString has been found, or -1 if not found. */
+     * @brief finds another TString in this TString
+     * @param str: Another TString
+     * @param start: Start position of the search
+     * @param len: len of str
+     * @return Positions where the TString has been found, or -1 if not found. */
     template <class B>
     ssz find(const B* const str, const usz start = 0, usz len = 0) const {
         if (str && *str) {
@@ -879,21 +881,23 @@ public:
                     ++len;
                 }
             }
-            if (mLen < start + len) {
+            const T* buf = c_str();
+            usz slen = size();
+            if (slen < start + len) {
                 return -1;
             }
-            ssz ret = AppSundayFind(mBuffer + start, mLen - start, str, len);
+            ssz ret = AppSundayFind(c_str() + start, slen - start, str, len);
             return ret < 0 ? ret : ret + start;
 #if (0)
-            //暴力查找，性能比AppSundayFind()慢一倍以上
-            if (len > mLen) {
+            // 暴力查找，性能比AppSundayFind()慢一倍以上
+            if (len > slen) {
                 return -1;
             }
-            const usz mx = mLen - len;
+            const usz mx = slen - len;
             usz j;
             for (usz i = start; i < mx; ++i) {
                 j = 0;
-                while (str[j] && mBuffer[i + j] == str[j]) {
+                while (str[j] && buf[i + j] == str[j]) {
                     ++j;
                 }
                 if (!str[j]) {
@@ -908,43 +912,35 @@ public:
 
 
     /**
-    * @brief substring
-    * @param begin Start of substring.
-    * @param length Length of substring.
-    * @param iLower copy only lower case
-    * @return a substring */
-    TString<T> subString(usz begin, usz length, bool iLower = false) const {
-        if (0 == length || begin >= mLen) {
+     * @brief substring
+     * @param begin Start of substring.
+     * @param length Length of substring.
+     * @return a substring */
+    TString<T> subString(usz begin, usz length) const {
+        usz len = size();
+        if (0 == length || begin >= len) {
             return TString<T>();
         }
-        if (length > mLen - begin) {
-            length = mLen - begin;
+        len -= begin;
+        if (length > len) {
+            length = len;
         }
         TString<T> ret(length);
-
-        usz i;
-        if (iLower) {
-            for (i = 0; i < length; ++i) {
-                ret.mBuffer[i] = App2Lower(mBuffer[i + begin]);
-            }
-        } else {
-            for (i = 0; i < length; ++i) {
-                ret.mBuffer[i] = mBuffer[i + begin];
-            }
-        }
-
-        ret.mBuffer[length] = 0;
-        ret.mLen = length;
+        T* dest = ret.data();
+        const T* src = c_str() + begin;
+        memcpy(dest, src, length * sizeof(T));
+        ret.cutLen(length);
         return std::move(ret);
     }
 
 
     TString<T, TAlloc>& operator+=(T ch) {
-        if (mLen + 2 > mAllocated) {
-            reallocate(mLen + 2);
+        usz len = size();
+        if (len + 1 > capacity()) {
+            reallocate(len);
         }
-        mBuffer[mLen++] = ch;
-        mBuffer[mLen] = 0;
+        *(data() + len) = ch;
+        cutLen(len + 1);
         return *this;
     }
 
@@ -955,7 +951,7 @@ public:
 
 
     TString<T, TAlloc>& operator+=(const TString<T, TAlloc>& str) {
-        return append(str.mBuffer, str.mLen);
+        return append(str.c_str(), str.size());
     }
 
     TString<T, TAlloc> operator+=(const TStrView<T>& other) {
@@ -964,14 +960,18 @@ public:
 
     TString<T, TAlloc>& operator=(const s32 val) {
         s8 tmpbuf[16];
-        mLen = 0;
-        return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%d", val));
+        usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%d", val);
+        resize(len);
+        copyOtherType(tmpbuf, len, data());
+        return *this;
     }
 
     TString<T, TAlloc>& operator=(const u32 val) {
         s8 tmpbuf[16];
-        mLen = 0;
-        return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%u", val));
+        usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%u", val);
+        resize(len);
+        copyOtherType(tmpbuf, len, data());
+        return *this;
     }
 
     TString<T, TAlloc>& operator+=(const s32 val) {
@@ -979,39 +979,44 @@ public:
         return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%d", val));
     }
 
-
     TString<T, TAlloc>& operator+=(const u32 val) {
         s8 tmpbuf[16];
         return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%u", val));
     }
 
     TString<T, TAlloc>& operator=(const f64 val) {
-        mLen = 0;
-        s8 tmpbuf[317]; //6位小数的DBL_MAX长度为316
-        return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%0.6lf", val));
+        s8 tmpbuf[317]; // 6位小数的DBL_MAX长度为316
+        usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%0.6lf", val);
+        resize(len);
+        copyOtherType(tmpbuf, len, data());
+        return *this;
     }
 
     TString<T, TAlloc>& operator+=(const f64 val) {
-        s8 tmpbuf[317];//6位小数的DBL_MAX长度为316
+        s8 tmpbuf[317]; // 6位小数的DBL_MAX长度为316
         return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%0.6lf", val));
     }
 
     TString<T, TAlloc>& operator=(const f32 val) {
-        mLen = 0;
-        s8 tmpbuf[48];//6位小数的FLT_MAX长度为46
-        return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%0.6f", val));
+        s8 tmpbuf[48]; // 6位小数的FLT_MAX长度为46
+        usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%0.6f", val);
+        resize(len);
+        copyOtherType(tmpbuf, len, data());
+        return *this;
     }
 
     TString<T, TAlloc>& operator+=(const f32 val) {
-        s8 tmpbuf[48];//6位小数的FLT_MAX长度为46
+        s8 tmpbuf[48]; // 6位小数的FLT_MAX长度为46
         return append(tmpbuf, snprintf(tmpbuf, sizeof(tmpbuf), "%0.6f", val));
     }
 
 
     TString<T, TAlloc>& replace(T toReplace, T replaceWith) {
-        for (usz i = 0; i < mLen; ++i) {
-            if (mBuffer[i] == toReplace) {
-                mBuffer[i] = replaceWith;
+        T* buf = data();
+        usz len = size();
+        for (usz i = 0; i < len; ++i) {
+            if (buf[i] == toReplace) {
+                buf[i] = replaceWith;
             }
         }
         return *this;
@@ -1019,43 +1024,44 @@ public:
 
 
     /**
-    * @brief Replaces all instances of a String with another one.
-    * @param toReplace The String to replace.
-    * @param replaceWith The String replacing the old one. */
+     * @brief Replaces all instances of a String with another one.
+     * @param toReplace The String to replace.
+     * @param replaceWith The String replacing the old one. */
     TString<T, TAlloc>& replace(const TString<T, TAlloc>& toReplace, const TString<T, TAlloc>& replaceWith) {
-        if (toReplace.mLen == 0) {
+        if (0 == toReplace.size()) {
             return *this;
         }
-        const T* other = toReplace.mBuffer;
-        const T* replace = replaceWith.mBuffer;
-        const usz other_size = toReplace.mLen;
-        const usz replace_size = replaceWith.mLen;
+        const T* other = toReplace.c_str();
+        const T* replace = replaceWith.c_str();
+        const usz other_size = toReplace.size();
+        const usz replace_size = replaceWith.size();
 
         // Determine the delta.  The algorithm will change depending on the delta.
         ssz delta = replace_size - other_size;
-
-        //The String will not shrink or grow.
-        if (delta == 0) {
+        T* buf = data();
+        // The String will not shrink or grow.
+        if (0 == delta) {
             ssz pos = 0;
-            while ((pos = find(other, pos, toReplace.mLen)) != -1) {
+            while ((pos = find(other, pos, other_size)) != -1) {
                 for (usz i = 0; i < replace_size; ++i) {
-                    mBuffer[pos + i] = replace[i];
+                    buf[pos + i] = replace[i];
                 }
                 ++pos;
             }
             return *this;
         }
 
-        //The String will shrink.
+        // The String will shrink.
+        usz len = size();
         if (delta < 0) {
             usz i = 0;
-            for (usz pos = 0; pos < mLen; ++i, ++pos) {
+            for (usz pos = 0; pos < len; ++i, ++pos) {
                 // Is this potentially a match?
-                if (mBuffer[pos] == *other) {
+                if (buf[pos] == *other) {
                     // Check to see if we have a match.
                     usz j;
                     for (j = 0; j < other_size; ++j) {
-                        if (mBuffer[pos + j] != other[j]) {
+                        if (buf[pos + j] != other[j]) {
                             break;
                         }
                     }
@@ -1063,7 +1069,7 @@ public:
                     // If we have a match, replace characters.
                     if (j == other_size) {
                         for (j = 0; j < replace_size; ++j)
-                            mBuffer[i + j] = replace[j];
+                            buf[i + j] = replace[j];
                         i += replace_size - 1;
                         pos += other_size - 1;
                         continue;
@@ -1071,34 +1077,33 @@ public:
                 }
 
                 // No match found, just copy characters.
-                mBuffer[i] = mBuffer[pos];
+                buf[i] = buf[pos];
             }
-            mLen = i;
-            mBuffer[i] = 0;
+            cutLen(i);
             return *this;
         }
 
-        //The String will grow.
-        // Count the number of times toReplace exists in the TString so we can allocate the new size.
+        // The String will grow.
+        //  Count the number of times toReplace exists in the TString so we can allocate the new size.
         usz find_count = 0;
         ssz pos = 0;
-        while ((pos = find(other, pos, toReplace.mLen)) != -1) {
+        while ((pos = find(other, pos, other_size)) != -1) {
             ++find_count;
-            pos += toReplace.mLen;
+            pos += other_size;
         }
 
         // Re-allocate the TString now, if needed.
-        usz len = delta * find_count;
-        if (mLen + len >= mAllocated) {
-            reallocate(mLen + len);
+        usz addon = delta * find_count;
+        if (len + addon > capacity()) {
+            reallocate(len + addon);
+            buf = data();
         }
-
         // Start replacing.
         pos = 0;
-        while ((pos = find(other, pos, toReplace.mLen)) != -1) {
-            T* start = mBuffer + pos + other_size - 1;
-            T* ptr = mBuffer + mLen - 1;
-            T* end = mBuffer + delta + mLen - 1;
+        while ((pos = find(other, pos, other_size)) != -1) {
+            T* start = buf + pos + other_size - 1;
+            T* ptr = buf + len - 1;
+            T* end = buf + delta + len - 1;
 
             // Shift characters to make room for the TString.
             while (ptr != start) {
@@ -1109,59 +1114,61 @@ public:
 
             // Add the new TString now.
             for (usz i = 0; i < replace_size; ++i) {
-                mBuffer[pos + i] = replace[i];
+                buf[pos + i] = replace[i];
             }
             pos += replace_size;
-            mLen += delta;
+            len += delta;
         }
-        mBuffer[mLen] = 0;
+        cutLen(len);
         return *this;
     }
 
 
     /**
-    * @brief Removes characters from a TString.
-    * @param ch: Character to remove. */
+     * @brief Removes characters from a TString.
+     * @param ch: Character to remove. */
     TString<T, TAlloc>& remove(T ch) {
         usz pos = 0;
         usz found = 0;
-        for (usz i = 0; i < mLen; ++i) {
-            if (mBuffer[i] == ch) {
+        usz len = size();
+        T* buf = data();
+        for (usz i = 0; i < len; ++i) {
+            if (buf[i] == ch) {
                 ++found;
                 continue;
             }
-            mBuffer[pos++] = mBuffer[i];
+            buf[pos++] = buf[i];
         }
-        mLen -= found;
-        mBuffer[mLen] = 0;
+        cutLen(len - found);
         return *this;
     }
 
 
     TString<T, TAlloc>& remove(const TString<T, TAlloc>& toRemove) {
-        usz size = toRemove.getLen();
-        if (size == 0) {
+        usz tlen = toRemove.size();
+        if (tlen == 0) {
             return *this;
         }
         usz pos = 0;
         usz found = 0;
-        for (usz i = 0; i < mLen; ++i) {
+        usz len = size();
+        T* buf = data();
+        for (usz i = 0; i < len; ++i) {
             usz j = 0;
-            while (j < size) {
-                if (mBuffer[i + j] != toRemove[j]) {
+            while (j < tlen) {
+                if (buf[i + j] != toRemove[j]) {
                     break;
                 }
                 ++j;
             }
-            if (j == size) {
-                found += size;
-                i += size - 1;
+            if (j == tlen) {
+                found += tlen;
+                i += tlen - 1;
                 continue;
             }
-            mBuffer[pos++] = mBuffer[i];
+            buf[pos++] = buf[i];
         }
-        mLen -= found;
-        mBuffer[mLen] = 0;
+        cutLen(len - found);
         return *this;
     }
 
@@ -1170,17 +1177,18 @@ public:
      * @brief Removes characters from a TString.
      * @param characters: Characters to remove. */
     TString<T, TAlloc>& removeChars(const TString<T, TAlloc>& characters) {
-        if (characters.getLen() == 0) {
+        usz tlen = characters.size();
+        if (0 == tlen) {
             return *this;
         }
         usz pos = 0;
         usz found = 0;
-        for (usz i = 0; i < mLen; ++i) {
-            // Don't use characters.findFirst as it finds the \0,
-            // causing mLen to become incorrect.
+        usz len = size();
+        T* buf = data();
+        for (usz i = 0; i < len; ++i) {
             bool docontinue = false;
-            for (usz j = 0; j < characters.getLen(); ++j) {
-                if (characters[j] == mBuffer[i]) {
+            for (usz j = 0; j < tlen; ++j) {
+                if (characters[j] == buf[i]) {
                     ++found;
                     docontinue = true;
                     break;
@@ -1189,11 +1197,9 @@ public:
             if (docontinue) {
                 continue;
             }
-            mBuffer[pos++] = mBuffer[i];
+            buf[pos++] = buf[i];
         }
-        mLen -= found;
-        mBuffer[mLen] = 0;
-
+        cutLen(len - found);
         return *this;
     }
 
@@ -1203,15 +1209,18 @@ public:
      * @param characters: Characters to remove. */
     TString<T, TAlloc>& trim(const TString<T, TAlloc>& whitespace = " \t\n\r") {
         // find start and end of the substring without the specified characters
-        const ssz begin = findFirstCharNotInList(whitespace.c_str(), whitespace.mLen);
+        usz tlen = whitespace.size();
+        const ssz begin = findFirstCharNotInList(whitespace.c_str(), tlen);
         if (-1 == begin) {
-            mLen = 0;
-            mBuffer[0] = 0;
+            cutLen(0);
             return (*this);
         }
-        const ssz end = findLastCharNotInList(whitespace.c_str(), whitespace.mLen);
-        mLen = 0;
-        return append(mBuffer + begin, (end + 1) - begin);
+        const ssz end = findLastCharNotInList(whitespace.c_str(), tlen);
+        usz len = (end + 1) - begin;
+        T* buf = data();
+        memmove(buf, buf + begin, len * sizeof(T));
+        cutLen(len);
+        return *this;
     }
 
 
@@ -1219,72 +1228,77 @@ public:
      * @brief Erases a character from the String, maybe slow.
      * @param index Index of element to be erased. */
     TString<T, TAlloc>& erase(usz index) {
-        if (index < mLen) {
-            for (usz i = index + 1; i < mLen; ++i) {
-                mBuffer[i - 1] = mBuffer[i];
+        usz len = size();
+        T* buf = data();
+        if (index < len) {
+            if (index + 1 < len) {
+                memmove(buf + index, buf + index + 1, (len - index - 1) * sizeof(T));
             }
-            --mLen;
-            mBuffer[mLen] = 0;
+            cutLen(len - 1);
         }
         return *this;
     }
 
 
     TString<T, TAlloc>& validate() {
-        for (usz i = 0; i <= mLen; ++i) {
-            if (mBuffer[i] == 0) {
-                mLen = i;
+        usz len = size();
+        T* buf = data();
+        for (usz i = 0; i <= len; ++i) {
+            if (buf[i] == 0) {
+                cutLen(i);
                 return *this;
             }
         }
-        mBuffer[mLen] = 0;
         return *this;
     }
 
     /**
-    * @return last char or null */
+     * @return last char or 0 */
     T lastChar() const {
-        return mLen > 0 ? mBuffer[mLen - 1] : 0;
+        usz len = size();
+        T* buf = data();
+        return len > 0 ? buf[len - 1] : 0;
     }
 
     TString<T>& deletePathFromFilename() {
-        T* s = mBuffer;
-        const T* p = s + mLen;
+        T* buf = data();
+        usz len = size();
+        const T* p = buf + len;
         // search for path separator or beginning
-        while (*p != '/' && *p != '\\' && p != s) {
+        while (*p != '/' && *p != '\\' && p != buf) {
             --p;
         }
-        if (p != s) {
+        if (p != buf) {
             ++p;
-            //*this = p;
-            for (const T* epos = s + mLen + 1; p < epos; ++p) {
-                s[0] = p[0];
-                ++s;
+            len -= p - buf;
+            if (len > 0) {
+                memmove(buf, p, len * sizeof(T));
             }
+            cutLen(len);
         }
         return *this;
     }
 
     TString<T>& deleteFilename() {
-        T* s = mBuffer;
-        const T* p = s + mLen;
+        T* buf = data();
+        const T* p = buf + size();
         // search for path separator or beginning
-        while (*p != '/' && *p != '\\' && p != s) {
+        while (*p != '/' && *p != '\\' && p != buf) {
             --p;
         }
-        mLen = p - s + 1;
-        mBuffer[mLen] = 0;
+        cutLen(p - buf + 1);
         return *this;
     }
 
     TString<T>& deleteFilenameExtension() {
-        s64 pos = findLast('.');
-        mLen = pos < 0 ? mLen : pos;
-        mBuffer[mLen] = 0;
+        ssz pos = findLast('.');
+        if (pos >= 0) {
+            cutLen(pos);
+        }
         return *this;
     }
 
-    bool isFileExtension(const TString<T>& ext)const {
+    bool isFileExtension(const TString<T>& ext) const {
         s64 pos = findLast('.');
         if (pos < 0) {
             return false;
@@ -1292,73 +1306,196 @@ public:
         return equalsSubNocase(ext, pos + 1);
     }
 
-    bool isFileExtension(const T* ext)const {
+    bool isFileExtension(const T* ext) const {
         s64 pos = ext ? findLast('.') : -1;
         if (pos < 0) {
             return false;
         }
-        return 0 == AppStrNocaseCMP(mBuffer + pos + 1, ext, mLen - pos);
+        return 0 == AppStrNocaseCMP(c_str() + pos + 1, ext, size() - pos);
     }
 
     // trim path
     TString<T>& trimPath(s32 pathCount) {
-        s64 i = getLen();
+        s64 i = size();
+        T* buf = data();
         while (i >= 0) {
-            if (mBuffer[i] == '/' || mBuffer[i] == '\\') {
+            if (buf[i] == '/' || buf[i] == '\\') {
                 if (--pathCount <= 0) {
                     break;
                 }
             }
             --i;
         }
-        mLen = (i > 0) ? i + 1 : 0;
-        mBuffer[mLen] = 0;
+        cutLen((i > 0) ? i + 1 : 0);
         return *this;
     }
 
+    bool empty() const {
+        return 0 == size();
+    }
+
+    /**
+     * @return A valid pointer to C-style NULL terminated String.
+     */
+    const T* c_str() const {
+        return data();
+    }
+
+    usz size() const {
+        return isAllocated() ? mBigStr.mLength : (mSmallStr.mLen.mLength >> 1);
+    }
+
+    T* data() const {
+        return const_cast<T*>(isAllocated() ? mBigStr.mBuffer : mSmallStr.mDat.mBuffer);
+    }
+
+    usz capacity() const {
+        return isAllocated() ? mBigStr.mCapacity : G_SMALL_CAPACITY;
+    }
 
 protected:
-    DFINLINE bool isAllocated() const {
-        return reinterpret_cast<const T*>(&mAllocated) != mBuffer;
-    }
-
-    DFINLINE void setBuffer(void* val) {
-        if (isAllocated()) {
-            mAllocator.deallocate(mBuffer);
+    template <class B>
+    void copyOtherType(const B* src, usz len, T* dst) {
+        for (usz i = 0; i < len; ++i) {
+            *dst++ = static_cast<T>(src[i]);
         }
-        mBuffer = reinterpret_cast<T*>(val);
     }
 
-    DFINLINE usz nextAlloc(usz newlen) const {
-        return newlen + (mLen < 512 ? (8 | mLen) : (mLen >> 2));
+    DINLINE bool inCurrentMem(const T* const buf) const {
+        if (isAllocated()) {
+            return buf >= mBigStr.mBuffer && buf <= mBigStr.mBuffer + mBigStr.mCapacity;
+        }
+        return buf >= mSmallStr.mDat.mBuffer && buf <= mSmallStr.mDat.mBuffer + G_SMALL_CAPACITY;
+    }
+    DINLINE void initSmall() {
+        static_assert(sizeof(mSmallStr) == sizeof(mBigStr));
+        static_assert(sizeof(mSmallStr.mLen) == sizeof(mBigStr));
+        static_assert(sizeof(mSmallStr.mDat) == sizeof(mBigStr));
+        static_assert(sizeof(mBigStr) == sizeof(usz) * 3);
+        static_assert(sizeof(mSmallStr.mDat.mBuffer) == (sizeof(mBigStr) - sizeof(T)));
+        static_assert(1 == sizeof(T) || 0 == (sizeof(T) & 1));
+        static_assert(sizeof(TAlloc) <= sizeof(usz));
+        mSmallStr.mLen.mLength = G_SMALL_FLAG;
+        mSmallStr.mDat.mBuffer[0] = 0;
+    }
+    template <class B>
+    void initStr(const B* const str, usz len) noexcept {
+        if (str) {
+            if (len > G_SMALL_CAPACITY) {
+                mBigStr.mCapacity = (len + 1) & G_ALLOC_MASK;
+                mBigStr.mLength = len;
+                mBigStr.mBuffer = mAllocator.allocate(mBigStr.mCapacity | 1);
+                if (sizeof(T) == sizeof(B)) {
+                    memcpy(mBigStr.mBuffer, str, len * sizeof(T));
+                } else {
+                    copyOtherType(str, len, mBigStr.mBuffer);
+                }
+                mBigStr.mBuffer[len] = 0;
+            } else {
+                // initSmall();
+                mSmallStr.mLen.mLength = static_cast<u8>((len << 1) | G_SMALL_FLAG);
+                if (sizeof(T) == sizeof(B)) {
+                    memcpy(mSmallStr.mDat.mBuffer, str, len * sizeof(T));
+                } else {
+                    copyOtherType(str, len, mSmallStr.mDat.mBuffer);
+                }
+                mSmallStr.mDat.mBuffer[len] = 0;
+            }
+        } else {
+            initSmall();
+        }
+    }
+    DINLINE void cutLenBig(usz len) {
+        mBigStr.mLength = len;
+        mBigStr.mBuffer[len] = 0;
+    }
+    DINLINE void cutLenSmall(usz len) {
+        mSmallStr.mLen.mLength = static_cast<u8>((len << 1) | G_SMALL_FLAG);
+        mSmallStr.mDat.mBuffer[len] = 0;
+    }
+    DINLINE void cutLen(usz len) {
+        if (isAllocated()) {
+            mBigStr.mLength = len;
+            mBigStr.mBuffer[len] = 0;
+        } else {
+            mSmallStr.mLen.mLength = static_cast<u8>((len << 1) | G_SMALL_FLAG);
+            mSmallStr.mDat.mBuffer[len] = 0;
+        }
+    }
+
+    DFINLINE bool isAllocated() const {
+        return 0 == (G_SMALL_FLAG & mSmallStr.mLen.mLength);
+    }
+
+    DFINLINE usz nextAlloc(usz newlen, usz currLen) const {
+        return (newlen + (currLen < 512 ? (8 | currLen) : (currLen >> 2))) & G_ALLOC_MASK;
     }
 
     void reallocate(usz newlen) {
-        newlen = nextAlloc(newlen);
-        T* buf = mAllocator.allocate(newlen);
-        mAllocated = newlen;
-
-        usz amount = mLen < newlen ? mLen : newlen - 1;
-        for (usz i = 0; i < amount; ++i) {
-            buf[i] = mBuffer[i];
+        usz len = size();
+        newlen = nextAlloc(newlen, len);
+        T* buf = mAllocator.allocate(newlen | 1);
+        T* oldbuf = data();
+        len = len < newlen ? len : newlen;
+        memcpy(buf, oldbuf, len * sizeof(T));
+        buf[len] = 0;
+        if (isAllocated()) {
+            mAllocator.deallocate(oldbuf);
         }
-        buf[amount] = 0;
-        mLen = amount;
-        setBuffer(buf);
+        mBigStr.mCapacity = newlen;
+        mBigStr.mLength = len;
+        mBigStr.mBuffer = buf;
     }
 
+    union {
+#if defined(DENDIAN_BIG)
+        struct {
+            usz mLength;
+            T* mBuffer;
+            usz mCapacity;
+        } mBigStr;
+        union {
+            struct {
+                u8 mPacked[sizeof(mBigStr) - 1]; // do not use
+                u8 mLength;
+            } mLen;
+            struct {
+                T mBuffer[(sizeof(mBigStr) + sizeof(T) - 1) / sizeof(T) - 1];
+                T mPacked; // do not use
+            } mDat;
+        } mSmallStr;
+#else
+        struct {
+            usz mCapacity;
+            usz mLength;
+            T* mBuffer;
+        } mBigStr;
+        union {
+            struct {
+                u8 mLength;
+                u8 mPacked[sizeof(mBigStr) - 1]; // do not use
+            } mLen;
+            struct {
+                T mPacked; // do not use
+                T mBuffer[(sizeof(mBigStr) + sizeof(T) - 1) / sizeof(T) - 1];
+            } mDat;
+        } mSmallStr;
+#endif
+    };
+    TAlloc mAllocator; // TODO: hide mAllocator in subclass?
 
-    T* mBuffer;
-    usz mAllocated;
-    usz mLen;
-    TAlloc mAllocator;
+    const static usz G_SMALL_CAPACITY = sizeof(mSmallStr.mDat.mBuffer) / sizeof(T) - 1;
+    const static usz G_SMALL_FLAG = 0x1;
+    const static usz G_ALLOC_MASK = ~1ULL;
 };
 
 using StringView = TStrView<s8>;
 using String = TString<s8>;
 using WString = TString<wchar_t>;
+using U16String = TString<s16>;
+using U32String = TString<s32>;
 
-}//namespace app
+} // namespace app
 
 
-#endif //APP_STRINGS_H
+#endif // APP_STRINGS_H

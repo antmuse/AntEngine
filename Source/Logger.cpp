@@ -104,10 +104,10 @@ private:
         Engine& eng = Engine::getInstance();
         String flog(eng.getConfig().mLogPath);
         const usz fmtmax = 260;
-        usz addsz = fmtmax + mFormat.getLen();
-        flog.reserve(flog.getLen() + eng.getAppName().getLen() + addsz);
-        usz len = flog.getLen();
-        flog.setLen(len + Timer::getTimeStr((s8*)flog.c_str() + len, fmtmax, mFormat.c_str()));
+        usz addsz = fmtmax + mFormat.size();
+        flog.reserve(flog.size() + eng.getAppName().size() + addsz);
+        usz len = flog.size();
+        flog.resize(len + Timer::getTimeStr((s8*)flog.c_str() + len, fmtmax, mFormat.c_str()));
         mTodayID = App2Char2S16(flog.c_str() + len + 9);
         flog += eng.getAppName();
         flog.deleteFilenameExtension();

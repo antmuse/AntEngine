@@ -49,19 +49,13 @@ s32 HttpEvtFileSave::onClose() {
 
 void HttpEvtFileSave::onFileClose(Handle* it) {
     if (!mMsg) { // error
-        DLOG(ELL_ERROR, "onFileWrite>>fail msg, file=%p", mFile.getFileName().c_str());
+        DLOG(ELL_ERROR, "onFileWrite>>fail msg, file=%s", mFile.getFileName().c_str());
         drop();
         return;
     }
-    if (!mMsg->getHttpLayer()->getWebsite()) { // error
-        DLOG(ELL_ERROR, "onFileWrite>>fail net, file=%p", mFile.getFileName().c_str());
-        mMsg->drop();
-        mMsg = nullptr;
-        drop();
-        return;
-    }
+    net::Website* site = dynamic_cast<net::Website*>(mMsg->getHttpLayer()->getMsgReceiver());
     net::HttpHead& hed = mMsg->getHeadOut();
-    const String& host = mMsg->getHttpLayer()->getWebsite()->getConfig().mHost;
+    const String& host = site->getConfig().mHost;
     StringView key(DSTRV("Host"));
     StringView val(host.c_str(), host.size());
     hed.add(key, val);
@@ -71,19 +65,19 @@ void HttpEvtFileSave::onFileClose(Handle* it) {
     hed.add(key, val);
 
     val.set(DSTRV("application/json; charset=utf-8"));
-    hed.writeContentType(val);
+    hed.setContentType(val);
 
     const s8* resp = "{\"ecode\":0,\"emsg\":\"success\"}";
     if (mFinish && mBody->getSize() == 0) {
         mMsg->writeStatus(200);
-        DLOG(ELL_INFO, "onFileWrite>>success up, file=%p", mFile.getFileName().c_str());
+        DLOG(ELL_INFO, "onFileWrite>>success up, file=%s", mFile.getFileName().c_str());
     } else {
         mMsg->writeStatus(500);
         resp = "{\"ecode\":500,\"emsg\":\"fail\"}";
     }
     // hed.writeChunked();
     usz rlen = strlen(resp);
-    hed.writeLength(rlen);
+    hed.setLength(rlen);
     mMsg->dumpHeadOut();
     // mMsg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", strlen(resp)));
     mMsg->writeOutBody("\r\n", 2);
@@ -96,7 +90,7 @@ void HttpEvtFileSave::onFileClose(Handle* it) {
 
 void HttpEvtFileSave::onFileWrite(RequestFD* it) {
     if (it->mError) {
-        DLOG(ELL_ERROR, "onFileWrite>>err=%d, file=%p", it->mError, mFile.getFileName().c_str());
+        DLOG(ELL_ERROR, "onFileWrite>>err=%d, file=%s", it->mError, mFile.getFileName().c_str());
         mFile.launchClose();
         return;
     }
@@ -105,7 +99,7 @@ void HttpEvtFileSave::onFileWrite(RequestFD* it) {
     it->mUsed = 0;
 
     if (!mMsg) {
-        DLOG(ELL_ERROR, "onFileWrite>>msg closed, file=%p", mFile.getFileName().c_str());
+        DLOG(ELL_ERROR, "onFileWrite>>msg closed, file=%s", mFile.getFileName().c_str());
         mFile.launchClose();
         return;
     }
@@ -145,7 +139,7 @@ s32 HttpEvtFileSave::launchWrite() {
     mReqs.mAllocated = static_cast<u32>(buf.mLen);
     mReqs.mUsed = mReqs.mAllocated;
     if (EE_OK != mFile.write(&mReqs, mWrited)) {
-        DLOG(ELL_ERROR, "launchWrite>>err=%d, file=%p", mReqs.mError, mFile.getFileName().c_str());
+        DLOG(ELL_ERROR, "launchWrite>>err=%d, file=%s", mReqs.mError, mFile.getFileName().c_str());
         return mFile.launchClose();
     }
     return EE_OK;

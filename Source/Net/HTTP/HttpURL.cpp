@@ -215,7 +215,7 @@ void HttpURL::append(const s8* buf, size_t sz) {
 void HttpURL::clear() {
     mFieldSet = 0;
     memset(&mFieldData, 0, sizeof(mFieldData));
-    mData.setLen(0);
+    mData.resize(0);
 }
 
 
@@ -273,9 +273,9 @@ bool HttpURL::encode(const s8* uri, usz len) {
     if (!uri || 0 == len) {
         return false;
     }
-    mData.setLen(0);
+    mData.resize(0);
     mData.reserve(len * 3 + 4);
-    mData.setLen(encodeURL(uri, len, (s8*)mData.c_str(), mData.getAllocated()));
+    mData.resize(encodeURL(uri, len, (s8*)mData.c_str(), mData.capacity()));
     return parser();
 }
 
@@ -284,9 +284,9 @@ bool HttpURL::decode(const s8* uri, usz len) {
     if (!uri) {
         return false;
     }
-    mData.setLen(0);
+    mData.resize(0);
     mData.append(uri, len);
-    mData.setLen(decodeURL((s8*)mData.c_str(), mData.getLen()));
+    mData.resize(decodeURL((s8*)mData.c_str(), mData.size()));
     return parser();
 }
 
@@ -307,7 +307,7 @@ StringView HttpURL::getNode(u32 idx) const {
 }
 
 bool HttpURL::parser() {
-    s32 ret = parseURL(mData.c_str(), mData.getLen(), 0);
+    s32 ret = parseURL(mData.c_str(), mData.size(), 0);
     if (0 == ret) {
         StringView ret = getNode(UF_SCHEMA);
         ret.toLower();

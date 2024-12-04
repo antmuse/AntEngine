@@ -80,7 +80,7 @@ void Script::unload(lua_State* vm) {
 }
 
 bool Script::compile(lua_State* vm, const String& iName, const s8* buf, usz bufsz, bool pop) {
-    if (!vm || !buf || 0 == bufsz || 0 == iName.getLen()) {
+    if (!vm || !buf || 0 == bufsz || 0 == iName.size()) {
         return false;
     }
     u32 cnt = lua_gettop(vm);

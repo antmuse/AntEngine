@@ -28,7 +28,7 @@ s32 HttpEvtLua::onSent(net::HttpMsg* msg) {
 
 s32 HttpEvtLua::onOpen(net::HttpMsg* msg) {
     mBody = &msg->getCacheOut();
-    net::Website* site = msg->getHttpLayer()->getWebsite();
+    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
     if (!site || mLuaThread.mSubVM) {
         return EE_ERROR;
     }
@@ -106,7 +106,7 @@ void HttpEvtLua::onRead(RequestFD* it) {
         mMsg->setStationID(net::ES_RESP_BODY_DONE);
     }
 
-    net::Website* site = mMsg->getHttpLayer()->getWebsite();
+    net::Website* site = dynamic_cast<net::Website*>(mMsg->getHttpLayer()->getMsgReceiver());
     if (site) {
         if (EE_OK != site->stepMsg(mMsg)) {
             mEvtFlags = true;

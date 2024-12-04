@@ -112,7 +112,7 @@ void AppTestStrFind(s32 cnt) {
     }
     s64 tm1 = Timer::getRelativeTime();
     for (s32 i = 0; i < mx; ++i) {
-        printf("String::find>>src len=%llu, pos[%d] = %lld, %s\n", stdsrc[i].getLen(), i, pos[i],
+        printf("String::find>>src len=%llu, pos[%d] = %lld, %s\n", stdsrc[i].size(), i, pos[i],
             pos[i] < 0 ? "-" : stdsrc[i].c_str() + pos[i]);
     }
     f32 spd = (f32)(tm1 - tm0);
@@ -155,7 +155,10 @@ void AppTestStr(s32 argc, s8** argv) {
     std::string stds1, stds2;
     const s8* ss1 = stds1.c_str();
     const s8* ss2 = stds2.c_str();
-    String null;
+    String smem("12345678901234567890ii");
+    smem += smem.c_str() + 22;
+    smem += smem.c_str();
+    smem += smem.c_str();
     String str1, str2;
     WString wstr1, wstr2;
     DASSERT(str1 != nullptr);
@@ -221,7 +224,7 @@ void AppTestStr(s32 argc, s8** argv) {
     str1 = DBL_MAX;
     printf("str1=%s\n", str1.c_str());
 
-    str1.setLen(20);
+    str1.resize(20);
     *(s8*)(str1.c_str() + 20) = 'E';
     str1.validate();
     str1.erase(2);
@@ -245,16 +248,16 @@ void AppTestStr(s32 argc, s8** argv) {
     printf("str1=%s\n", str1.c_str());
 
     str1 = "fss/filss.doc";
-    StringView mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen());
+    StringView mime = net::HttpMsg::getMimeType(str1.c_str(), str1.size());
     printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
     str1 = "fss/filss.ddnss";
-    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen());
+    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.size());
     printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
     str1 = "fss/filss.HtMl";
-    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen());
+    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.size());
     printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
     str1 = "fss/filss.CPpSSV";
-    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.getLen() - 3);
+    mime = net::HttpMsg::getMimeType(str1.c_str(), str1.size() - 3);
     printf("%s, mime[%llu]=%s\n", str1.c_str(), mime.mLen, mime.mData);
 }
 

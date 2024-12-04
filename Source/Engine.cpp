@@ -97,17 +97,17 @@ void Engine::postCommand(s32 val) {
 void Engine::initPath(const s8* fname) {
     mAppPath.reserve(260);
 #if defined(DOS_WINDOWS)
-    usz len = AppGbkToUTF8(fname, const_cast<s8*>(mAppPath.c_str()), mAppPath.getAllocated());
-    mAppPath.setLen(len);
+    usz len = AppGbkToUTF8(fname, mAppPath.data(), mAppPath.capacity());
+    mAppPath.resize(len);
     mAppPath.deleteFilename();
     mAppPath.replace('\\', '/');
-    mAppName = fname + mAppPath.getLen();
+    mAppName = fname + mAppPath.size();
 #elif defined(DOS_LINUX) || defined(DOS_ANDROID)
     if ('/' == fname[0]) {
         mAppPath = fname;
         mAppPath.deleteFilename();
         mAppPath.replace('\\', '/');
-        mAppName = fname + mAppPath.getLen();
+        mAppName = fname + mAppPath.size();
     } else {
         mAppPath = System::getWorkingPath(); // pwd
         mAppName = fname;

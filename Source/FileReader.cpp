@@ -79,7 +79,7 @@ s64 FileReader::getPos() const {
 }
 
 bool FileReader::openFile(const String& fileName) {
-    if (0 == fileName.getLen()) {
+    if (0 == fileName.size()) {
         return false;
     }
     close();

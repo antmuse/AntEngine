@@ -14,14 +14,14 @@ s32 StationReqPath::onMsg(HttpMsg* msg) {
     DASSERT(msg);
 
     DLOG(ELL_INFO, "ip= %s, url= %s", msg->getHttpLayer()->getHandle().getRemote().getStr(),
-        msg->getURL().get().c_str());
+        msg->getURL().data().c_str());
 
     // reset url
-    net::Website* site = msg->getHttpLayer()->getWebsite();
+    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
     String fnm(site->getConfig().mRootPath);
 
     // default page
-    if (msg->getURL().get() == "/") {
+    if (msg->getURL().data() == "/") {
         fnm += "/index.html";
         // msg->getURL().append("index.html", sizeof("index.html") - 1);
         // msg->getURL().parser();

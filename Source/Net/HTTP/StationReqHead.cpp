@@ -16,7 +16,7 @@ namespace net {
 
 HttpEventer* StationReqHead::createEvt(HttpMsg* msg) {
     HttpEventer* evt = nullptr;
-    net::Website* site = msg->getHttpLayer()->getWebsite();
+    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
     const String& real = msg->getRealPath();
     StringView requrl(
         real.c_str() + site->getConfig().mRootPath.size(), real.size() - site->getConfig().mRootPath.size());
@@ -45,7 +45,7 @@ HttpEventer* StationReqHead::createEvt(HttpMsg* msg) {
     }
 
     const StringView str = HttpMsg::getMimeType(requrl.mData, requrl.mLen);
-    msg->getHeadOut().writeContentType(str);
+    msg->getHeadOut().setContentType(str);
 
     StringView svv("If-Range", sizeof("If-Range") - 1);
     svv = msg->getHeadIn().get(svv);
@@ -65,7 +65,7 @@ s32 StationReqHead::onMsg(HttpMsg* msg) {
         return EE_RETRY;
     }
 
-    msg->getHeadOut().writeKeepAlive(msg->isKeepAlive());
+    msg->getHeadOut().setKeepAlive(msg->isKeepAlive());
 
     if (msg->isChunked()) {
         // msg->getHeadIn().clear();
