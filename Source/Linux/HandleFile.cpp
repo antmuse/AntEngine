@@ -67,7 +67,7 @@ s32 HandleFile::close() {
     if (-1 != mFile) {
         ::close(mFile);
         mFile = -1;
-        mFilename.setLen(0);
+        mFilename.resize(0);
         mFileSize = 0;
     }
     return EE_OK;

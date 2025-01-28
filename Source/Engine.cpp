@@ -116,7 +116,7 @@ void Engine::initPath(const s8* fname) {
 #endif
 }
 
-bool Engine::init(const s8* fname, bool child) {
+bool Engine::init(const s8* fname, bool child, const s8* cfg) {
     if (!fname || 0 == fname[0]) {
         return false;
     }
@@ -124,7 +124,7 @@ bool Engine::init(const s8* fname, bool child) {
     mMain = !child;
     AppStrConverterInit();
     initPath(fname);
-    if (!mConfig.load(mAppPath, G_CFGFILE, mMain)) {
+    if (!mConfig.load(mAppPath, cfg ? cfg : G_CFGFILE, mMain)) {
         mConfig.save(mAppPath + G_CFGFILE + ".gen.json");
         return false;
     }

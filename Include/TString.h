@@ -1372,9 +1372,10 @@ protected:
         static_assert(sizeof(mSmallStr.mLen) == sizeof(mBigStr));
         static_assert(sizeof(mSmallStr.mDat) == sizeof(mBigStr));
         static_assert(sizeof(mBigStr) == sizeof(usz) * 3);
-        static_assert(sizeof(mSmallStr.mDat.mBuffer) == (sizeof(mBigStr) - sizeof(T)));
+        static_assert(sizeof(*this) == sizeof(usz) * 4);
         static_assert(1 == sizeof(T) || 0 == (sizeof(T) & 1));
         static_assert(sizeof(TAlloc) <= sizeof(usz));
+        static_assert(sizeof(T) <= sizeof(usz));
         mSmallStr.mLen.mLength = G_SMALL_FLAG;
         mSmallStr.mDat.mBuffer[0] = 0;
     }
@@ -1456,11 +1457,11 @@ protected:
         } mBigStr;
         union {
             struct {
-                u8 mPacked[sizeof(mBigStr) - 1]; // do not use
+                u8 mPacked[sizeof(usz) * 3 - 1]; // do not use
                 u8 mLength;
             } mLen;
             struct {
-                T mBuffer[(sizeof(mBigStr) + sizeof(T) - 1) / sizeof(T) - 1];
+                T mBuffer[sizeof(usz) * 3 / sizeof(T) - 1];
                 T mPacked; // do not use
             } mDat;
         } mSmallStr;
@@ -1473,11 +1474,11 @@ protected:
         union {
             struct {
                 u8 mLength;
-                u8 mPacked[sizeof(mBigStr) - 1]; // do not use
+                u8 mPacked[sizeof(usz) * 3 - 1]; // do not use
             } mLen;
             struct {
                 T mPacked; // do not use
-                T mBuffer[(sizeof(mBigStr) + sizeof(T) - 1) / sizeof(T) - 1];
+                T mBuffer[sizeof(usz) * 3 / sizeof(T) - 1];
             } mDat;
         } mSmallStr;
 #endif

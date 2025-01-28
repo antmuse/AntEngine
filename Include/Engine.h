@@ -152,7 +152,7 @@ public:
         static Engine it;
         return it;
     }
-    bool init(const s8* fname, bool child = false);
+    bool init(const s8* fname, bool child = false, const s8* cfg = nullptr);
     void run();
     bool step();
     bool uninit();

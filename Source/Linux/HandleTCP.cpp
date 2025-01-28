@@ -75,7 +75,7 @@ s32 HandleTCP::open(const String& addr, RequestFD* it) {
     DASSERT(it);
     mType = EHT_TCP_CONNECT;
     mLoop = &Engine::getInstance().getLoop();
-    if (addr.getLen() > 0) {
+    if (addr.size() > 0) {
         mRemote.setIPort(addr.c_str());
     }
     if (EE_OK != mLoop->openHandle(this)) {

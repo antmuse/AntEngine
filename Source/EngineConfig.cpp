@@ -66,7 +66,7 @@ static DictFunctions gDictCalls = {
 
 EngineConfig::EngineConfig() :
     mDaemon(false),
-    mPrint(0),
+    mPrint(1),
     mMaxPostAccept(10),
     mMaxThread(3),
     mMaxProcess(0),
@@ -121,24 +121,33 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     mPidFile = runPath + mPidFile;
     mMemName = runPath + mMemName;
 
-    FileReader file;
-    if (!file.openFile(cfg)) {
-        return false;
+    s8* tmp = cfg.data();
+    usz len = cfg.size();
+    if (cfg.isFileExtension("json")) {
+        FileReader file;
+        if (!file.openFile(cfg)) {
+            return false;
+        }
+        len = file.getFileSize();
+        tmp = new s8[len];
+        if (file.getFileSize() != file.read(tmp, file.getFileSize())) {
+            delete[] tmp;
+            return false;
+        }
     }
-    s8* tmp = new s8[file.getFileSize()];
-    if (file.getFileSize() != file.read(tmp, file.getFileSize())) {
-        delete[] tmp;
-        return false;
-    }
-
     Json::Value val;
     Json::CharReaderBuilder builder;
     JSONCPP_STRING errs;
     Json::CharReader* reder = builder.newCharReader();
-    bool ret = reder->parse(tmp, tmp + file.getFileSize(), &val, &errs);
-    delete[] tmp;
+    bool ret = reder->parse(tmp, tmp + len, &val, &errs);
     delete reder;
+    if (tmp != cfg.data()) {
+        delete[] tmp;
+    }
     if (ret) {
+        if (val.empty()) {
+            return true;
+        }
         mDaemon = val["Daemon"].asBool();
         mPrint = val["Print"].asInt();
         mLogPath = val["LogPath"].asCString();

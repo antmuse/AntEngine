@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     const s32 cmd = App10StrToS32(argv[1]);
 
     Engine& eng = Engine::getInstance();
-    if (!eng.init(argv[0])) {
+    if (!eng.init(argv[0], false, "{}")) {
         printf("main>> engine init fail\n");
         return 0;
     }

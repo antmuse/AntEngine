@@ -322,12 +322,12 @@ u32 System::getPageSize() {
 }
 
 s32 System::createPath(const String& it) {
-    if (0 == it.getLen()) {
+    if (0 == it.size()) {
         return EE_ERROR;
     }
-    String path(it.getLen());
+    String path(it.size());
     const s8* curr = it.c_str();
-    const s8* end = curr + it.getLen();
+    const s8* end = curr + it.size();
     path += *curr++;
     for (; curr < end; ++curr) {
         if (AppIsPathDelimiter(*curr)) {
@@ -364,7 +364,7 @@ s32 System::isExist(const String& it) {
 
 void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
     tchar fname[260];
-    usz len = AppMin<usz>(sizeof(fname), pth.getLen());
+    usz len = AppMin<usz>(sizeof(fname), pth.size());
     if (0 == len || len + 3 > 260) {
         return;
     }
@@ -383,8 +383,8 @@ void System::getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out) {
 
     FileInfo itm;
     const s8* prefix = pth.c_str() + pos;
-    if (pos < pth.getLen()) {
-        pos = pth.getLen() - pos;
+    if (pos < pth.size()) {
+        pos = pth.size() - pos;
     } else {
         prefix = pth.c_str();
         pos = 0;
@@ -461,13 +461,13 @@ String System::getWorkingPath() {
     wkpath = tmpPath.c_str();
     wkpath.reserve(4 * DSLEN(tmpPath.c_str()));
     usz len = AppWcharToUTF8((tchar*)tmpPath.c_str(), (s8*)wkpath.c_str(), wkpath.getAllocated());
-    wkpath.setLen(len);
+    wkpath.resize(len);
 #else
     while (pathSize < (1 << 16) && NULL == getcwd((s8*)wkpath.c_str(), pathSize)) {
         pathSize <<= 1;
         wkpath.reserve(pathSize);
     }
-    wkpath.setLen(DSLEN(wkpath.c_str()));
+    wkpath.resize(DSLEN(wkpath.c_str()));
 #endif
 
     // wkpath.replace('\\', '/');
