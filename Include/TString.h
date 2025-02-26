@@ -384,11 +384,7 @@ public:
     TString<T, TAlloc>& operator=(const TString<B, A>& it) {
         usz len = it.size();
         resize(len);
-        if (sizeof(T) == sizeof(B)) {
-            memcpy(data(), it.data(), len * sizeof(T));
-        } else {
-            copyOtherType(it.data(), len, data());
-        }
+        copyBufType(it.data(), len, data());
         return *this;
     }
 
@@ -431,11 +427,7 @@ public:
         }
 
         resize(len);
-        if (sizeof(T) == sizeof(B)) {
-            memcpy(data(), ss, len * sizeof(T));
-        } else {
-            copyOtherType(ss, len, data());
-        }
+        copyBufType(ss, len, data());
         cutLen(len);
         return *this;
     }
@@ -468,11 +460,7 @@ public:
         usz mlen = size();
         TString<T, TAlloc> str(mlen + len);
         memcpy(str.data(), data(), sizeof(T) * mlen);
-        if (sizeof(T) == sizeof(B)) {
-            memcpy(str.data() + mlen, ss, sizeof(T) * len);
-        } else {
-            copyOtherType(ss, len, str.data() + mlen);
-        }
+        copyBufType(ss, len, str.data() + mlen);
         str.cutLen(mlen + len);
         return str;
     }
@@ -653,7 +641,7 @@ public:
 
     void resize(usz val) {
         if (val > capacity()) {
-            reallocate(val);
+            reallocateAuto(val, val);
         }
         cutLen(val);
     }
@@ -692,11 +680,7 @@ public:
             memcpy(newbuf, buf, sizeof(T) * slen);
             buf = newbuf;
         }
-        if (sizeof(T) == sizeof(B)) {
-            memcpy(buf + slen, other, sizeof(T) * len);
-        } else {
-            copyOtherType(other, len, buf + slen);
-        }
+        copyBufType(other, len, buf + slen);
         if (newbuf) {
             mBigStr.mCapacity = newcap;
             mBigStr.mBuffer = newbuf;
@@ -937,7 +921,7 @@ public:
     TString<T, TAlloc>& operator+=(T ch) {
         usz len = size();
         if (len + 1 > capacity()) {
-            reallocate(len);
+            reallocateAuto(len + 1, len);
         }
         *(data() + len) = ch;
         cutLen(len + 1);
@@ -962,7 +946,7 @@ public:
         s8 tmpbuf[16];
         usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%d", val);
         resize(len);
-        copyOtherType(tmpbuf, len, data());
+        copyBufType(tmpbuf, len, data());
         return *this;
     }
 
@@ -970,7 +954,7 @@ public:
         s8 tmpbuf[16];
         usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%u", val);
         resize(len);
-        copyOtherType(tmpbuf, len, data());
+        copyBufType(tmpbuf, len, data());
         return *this;
     }
 
@@ -988,7 +972,7 @@ public:
         s8 tmpbuf[317]; // 6位小数的DBL_MAX长度为316
         usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%0.6lf", val);
         resize(len);
-        copyOtherType(tmpbuf, len, data());
+        copyBufType(tmpbuf, len, data());
         return *this;
     }
 
@@ -1001,7 +985,7 @@ public:
         s8 tmpbuf[48]; // 6位小数的FLT_MAX长度为46
         usz len = snprintf(tmpbuf, sizeof(tmpbuf), "%0.6f", val);
         resize(len);
-        copyOtherType(tmpbuf, len, data());
+        copyBufType(tmpbuf, len, data());
         return *this;
     }
 
@@ -1095,7 +1079,7 @@ public:
         // Re-allocate the TString now, if needed.
         usz addon = delta * find_count;
         if (len + addon > capacity()) {
-            reallocate(len + addon);
+            reallocateAuto(len + addon, addon);
             buf = data();
         }
         // Start replacing.
@@ -1355,9 +1339,13 @@ public:
 
 protected:
     template <class B>
-    void copyOtherType(const B* src, usz len, T* dst) {
-        for (usz i = 0; i < len; ++i) {
-            *dst++ = static_cast<T>(src[i]);
+    void copyBufType(const B* src, usz len, T* dst) {
+        if (sizeof(T) == sizeof(B)) {
+            memcpy(dst, src, len * sizeof(T));
+        } else {
+            for (usz i = 0; i < len; ++i) {
+                *dst++ = static_cast<T>(src[i]);
+            }
         }
     }
 
@@ -1386,20 +1374,12 @@ protected:
                 mBigStr.mCapacity = (len + 1) & G_ALLOC_MASK;
                 mBigStr.mLength = len;
                 mBigStr.mBuffer = mAllocator.allocate(mBigStr.mCapacity | 1);
-                if (sizeof(T) == sizeof(B)) {
-                    memcpy(mBigStr.mBuffer, str, len * sizeof(T));
-                } else {
-                    copyOtherType(str, len, mBigStr.mBuffer);
-                }
+                copyBufType(str, len, mBigStr.mBuffer);
                 mBigStr.mBuffer[len] = 0;
             } else {
                 // initSmall();
                 mSmallStr.mLen.mLength = static_cast<u8>((len << 1) | G_SMALL_FLAG);
-                if (sizeof(T) == sizeof(B)) {
-                    memcpy(mSmallStr.mDat.mBuffer, str, len * sizeof(T));
-                } else {
-                    copyOtherType(str, len, mSmallStr.mDat.mBuffer);
-                }
+                copyBufType(str, len, mSmallStr.mDat.mBuffer);
                 mSmallStr.mDat.mBuffer[len] = 0;
             }
         } else {
@@ -1429,14 +1409,18 @@ protected:
     }
 
     DFINLINE usz nextAlloc(usz newlen, usz currLen) const {
-        return (newlen + (currLen < 512 ? (8 | currLen) : (currLen >> 2))) & G_ALLOC_MASK;
+        return (newlen + (currLen < 512 ? (8 | currLen) : (currLen >> 2)));
+    }
+
+    void reallocateAuto(usz newlen, usz len) {
+        reallocate(nextAlloc(newlen, len));
     }
 
     void reallocate(usz newlen) {
-        usz len = size();
-        newlen = nextAlloc(newlen, len);
+        newlen = ((newlen + 1) & G_ALLOC_MASK);
         T* buf = mAllocator.allocate(newlen | 1);
         T* oldbuf = data();
+        usz len = size();
         len = len < newlen ? len : newlen;
         memcpy(buf, oldbuf, len * sizeof(T));
         buf[len] = 0;
@@ -1483,7 +1467,7 @@ protected:
         } mSmallStr;
 #endif
     };
-    TAlloc mAllocator; // TODO: hide mAllocator in subclass?
+    TAlloc mAllocator;
 
     const static usz G_SMALL_CAPACITY = sizeof(mSmallStr.mDat.mBuffer) / sizeof(T) - 1;
     const static usz G_SMALL_FLAG = 0x1;
