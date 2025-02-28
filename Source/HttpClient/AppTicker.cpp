@@ -5,7 +5,7 @@
 #include <chrono>
 #include "Engine.h"
 #include "System.h"
-#include "FileWriter.h"
+#include "FileRWriter.h"
 #include "AppTicker.h"
 #include "Net/HandleTCP.h"
 #include "Net/HTTP/HttpLayer.h"
@@ -63,7 +63,7 @@ public:
     }
 
 private:
-    FileWriter mFile;
+    FileRWriter mFile;
 };
 
 AppTicker::AppTicker() : mLoop(Engine::getInstance().getLoop()) {

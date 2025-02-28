@@ -4,6 +4,7 @@
 #include <string.h>
 #include <float.h>
 #include <vector>
+#include "Logger.h"
 #include "Timer.h"
 #include "TVector.h"
 #include "TList.h"
@@ -12,12 +13,13 @@
 #include "Spinlock.h"
 #include "CodecBase64.h"
 #include "EncoderMD5.h"
-#include "FileReader.h"
-#include "FileWriter.h"
+#include "EncoderSHA1.h"
 #include "Packet.h"
 #include "Net/HTTP/HttpMsg.h"
 #include "gzip/EncoderGzip.h"
 #include "gzip/DecoderGzip.h"
+#include "FileRWriter.h"
+
 
 namespace app {
 
@@ -67,28 +69,64 @@ void AppTestBase64() {
     delete[] decode;
 }
 
-void AppTestMD5(s32 argc, s8** argv) {
+int AppTestMD5(s32 argc, s8** argv) {
     EncoderMD5 md5;
-    // md5 = "9567E4269E9974E8B28C2F903037F501"
-    const s8* src = "base64test";
-    const s32 strsize = (s32)strlen(src);
-    md5.add(src, strsize);
-    ID128 resID;
-    md5.finish(resID);
-    u8* res = (u8*)&resID;
-    printf("str[%d] = %s\n", strsize, src);
-    printf("buf = %lld,%lld\nmd5 = 0x", resID.mLow, resID.mHigh);
-    for (s32 i = 0; i < EncoderMD5::GMD5_LENGTH; ++i) {
-        printf("%.2X", res[i]);
+    EncoderSHA1 sha;
+    if (argc == 3) {
+        FileRWriter rfile;
+        if (!rfile.openFile(argv[2])) {
+            DLOG(ELL_INFO, "md5 or sha1: could not open in file: %s", rfile.getFileName().data());
+        } else {
+            u8 buf[4000 + 7];
+            usz len;
+            do {
+                len = rfile.read(buf, sizeof(buf));
+                sha.add(buf, len);
+                md5.add(buf, len);
+            } while (len > 0);
+            String tmpstr = md5.finish();
+            printf("file: %s\n", rfile.getFileName().data());
+            printf("md5: %s\n", tmpstr.data());
+            tmpstr = sha.finish();
+            printf("sha1: %s\n", tmpstr.data());
+            return 0;
+        }
     }
-    printf("\n");
 
-    s8 hex[EncoderMD5::GMD5_LENGTH * 2 + 1];
-    AppBufToHex(&resID, EncoderMD5::GMD5_LENGTH, hex, sizeof(hex));
-    printf("AppBufToHex = 0x%s\n", hex);
-    resID.clear();
-    AppHexToBuf(hex, sizeof(hex) - 1, &resID, sizeof(resID));
-    printf("re_buf = %lld,%lld\n", resID.mLow, resID.mHigh);
+    String src = "base64test\n";
+    md5.add(src.data(), src.size());
+    String tmpstr = md5.finish();
+    printf("md5(%s) = %s, check = e85f9f623a3183f75b247e735fc67336\n", src.data(), tmpstr.data());
+    sha.add(src.data(), src.size());
+    tmpstr = sha.finish();
+    printf("sha1(%s) = %s, check = 69c9e86cdb4ec43c6de8fb64abec0339d89852d9\n", src.data(), tmpstr.data());
+
+    printf("---------------------------------------------------------------\n");
+    md5.clear();
+    sha.clear();
+    src = "55A8AE0F7BC19FD6A5BC7C9972E3D8D3F52E941A55A8AE0F7BC19FD6A5BC7C9972E3D8D3F52E941"
+          "A55A8AE0F7BC19FD6A5BC7C9972E3D8D3F52E941A55A8AE0F7BC19FD6A5BC7C9972E3D8D3F52E941A\n";
+    md5.add(src.data(), src.size());
+    tmpstr = md5.finish();
+    printf("md5(%s) = %s, check = 054bb3722a6b3829ab3df7b70b161038\n", src.data(), tmpstr.data());
+    sha.add(src.data(), src.size());
+    tmpstr = sha.finish();
+    printf("sha1(%s) = %s, check = fa21ec7727fc5882e9b8fd90b37757c24ef9c1f6\n", src.data(), tmpstr.data());
+
+    printf("---------------------------------------------------------------\n");
+    md5.clear();
+    sha.clear();
+    const usz part1 = 37;
+    md5.add(src.data(), part1);
+    sha.add(src.data(), part1);
+    md5.add(src.data() + part1, src.size() - part1);
+    sha.add(src.data() + part1, src.size() - part1);
+    tmpstr = md5.finish();
+    printf("md5(%s) = %s, check = 054bb3722a6b3829ab3df7b70b161038\n", src.data(), tmpstr.data());
+    tmpstr = sha.finish();
+    printf("sha1(%s) = %s, check = fa21ec7727fc5882e9b8fd90b37757c24ef9c1f6\n", src.data(), tmpstr.data());
+    printf("---------------------------------------------------------------\n");
+    return 0;
 }
 
 // String::find()性能测试
@@ -120,25 +158,13 @@ void AppTestStrFind(s32 cnt) {
 }
 
 void AppTestSimplifyPath(s32 argc, s8** argv) {
-     const s8* egs[] = {
-        "/.",
-        "/..",
-        "/../.",
-        "/./..",
-        "/home/./././yes/../../ink/filesp/./cores",
+    const s8* egs[] = {"/.", "/..", "/../.", "/./..", "/home/./././yes/../../ink/filesp/./cores",
         "y/v/../../../ink/fs././cores"
         "myfile/vals1..ok/test..",
-        "//./win/././//he...///mp3.sd/../",
-        "/home/user/../Pictures",
-        "/.../a/../b/c/../d/./",
-        "/a/./b/../../c/",
-        "/a//b////c/d//././/..",
-        "/home/foo/.ssh/../.ssh2/authorized_keys/",
-        "yes/../../ink/filesp/./cores",
+        "//./win/././//he...///mp3.sd/../", "/home/user/../Pictures", "/.../a/../b/c/../d/./", "/a/./b/../../c/",
+        "/a//b////c/d//././/..", "/home/foo/.ssh/../.ssh2/authorized_keys/", "yes/../../ink/filesp/./cores",
         "C:/App/qv..q\\..\\not-support-win-path\\.\\.\\end\\chunk\\.\\..\\..",
-        "C:\\App/..qq./././///flush\\\\\\\\/my/./../../",
-        "D:\\files\\..\\\\..\\..//\\end/ink"
-    };
+        "C:\\App/..qq./././///flush\\\\\\\\/my/./../../", "D:\\files\\..\\\\..\\..//\\end/ink"};
     const s32 mx = DSIZEOF(egs);
     String val(128);
     for (s32 i = 0; i < mx; ++i) {
@@ -426,14 +452,14 @@ void AppTestVector() {
 // 7 zip Log/ff.ico Log/ff.gz
 // 7 unzip Log/ff.gz Log/ff.ico
 s32 AppTestZlib(s32 argc, s8** argv) {
-    FileReader rfile;
+    FileRWriter rfile;
     if (!rfile.openFile(argv[3])) {
         printf("could not open in file\n");
         return 0;
     }
     printf("in file size = %llu\n", rfile.getFileSize());
-    FileWriter wfile;
-    if (!wfile.openFile(argv[4], false)) {
+    FileRWriter wfile;
+    if (!wfile.openFile(argv[4], "wb")) {
         printf("could not open out file\n");
         return 0;
     }

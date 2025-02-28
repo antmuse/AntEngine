@@ -1367,6 +1367,8 @@ protected:
         mSmallStr.mLen.mLength = G_SMALL_FLAG;
         mSmallStr.mDat.mBuffer[0] = 0;
     }
+
+    // @note this is construct function without init before
     template <class B>
     void initStr(const B* const str, usz len) noexcept {
         if (str) {
@@ -1409,7 +1411,7 @@ protected:
     }
 
     DFINLINE usz nextAlloc(usz newlen, usz currLen) const {
-        return (newlen + (currLen < 512 ? (8 | currLen) : (currLen >> 2)));
+        return (newlen + (currLen < 512 ? (8 | currLen) : (currLen >> 2))) & G_ALLOC_MASK;
     }
 
     void reallocateAuto(usz newlen, usz len) {

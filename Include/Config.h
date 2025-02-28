@@ -222,12 +222,14 @@ const usz GMAX_USIZE = 0xFFFFFFFF;
 using tchar = wchar_t;
 #define DSTR(N) L##N
 #define DSLEN(N) wcslen(N)
+#define DSNPRINTF _snwprintf
 
 #else
 
 using tchar = char;
 #define DSTR(N) N
 #define DSLEN(N) strlen(N)
+#define DSNPRINTF snprintf
 
 #endif
 

@@ -26,7 +26,7 @@
 #include "Engine.h"
 #include "System.h"
 #include "Timer.h"
-#include "FileWriter.h"
+#include "FileRWriter.h"
 #include "Net/TcpProxy.h"
 #include "Net/Acceptor.h"
 #include "Net/HTTP/Website.h"
@@ -191,8 +191,8 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
         getEngineStats().clear();
 
         System::removeFile(mConfig.mPidFile.c_str());
-        FileWriter file;
-        if (file.openFile(mConfig.mPidFile, false)) {
+        FileRWriter file;
+        if (file.openFile(mConfig.mPidFile, "wb")) {
             file.writeParams("%d", mPID);
             file.close();
         } else {

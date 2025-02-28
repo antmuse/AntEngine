@@ -25,7 +25,7 @@
 
 #include "Logger.h"
 #include "Timer.h"
-#include "FileWriter.h"
+#include "FileRWriter.h"
 #include "Engine.h"
 
 
@@ -97,7 +97,7 @@ public:
 private:
     String mFormat;
     s16 mTodayID;
-    FileWriter mFile;
+    FileRWriter mFile;
     usz mFileSize;
 
     void open() {
@@ -112,7 +112,7 @@ private:
         flog += eng.getAppName();
         flog.deleteFilenameExtension();
         flog += ".log";
-        mFile.openFile(flog, true);
+        mFile.openFile(flog, "ab");
         mFileSize = mFile.getFileSize();
     }
 };

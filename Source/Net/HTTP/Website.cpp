@@ -1,6 +1,6 @@
 #include "Net/HTTP/Website.h"
 #include "Logger.h"
-#include "FileReader.h"
+#include "FileRWriter.h"
 #include "Packet.h"
 
 #include "Net/HTTP/StationReqPath.h"
@@ -59,7 +59,7 @@ void Website::loadTLS() {
         return;
     }
     Packet buf(1024);
-    FileReader keyfile;
+    FileRWriter keyfile;
     if (keyfile.openFile(mConfig.mPathTLS + G_CA_FILE)) {
         buf.resize(keyfile.getFileSize());
         if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {

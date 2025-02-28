@@ -20,7 +20,7 @@
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "Synchronization.lib") //futex
+#pragma comment(lib, "Synchronization.lib") // futex
 #endif
 
 
@@ -32,7 +32,7 @@ void AppTestTree2heap();
 void AppTestStrConv();
 void AppTestDict();
 void AppTestBase64();
-void AppTestMD5(s32 argc, s8** argv);
+int AppTestMD5(s32 argc, s8** argv);
 void AppTestStr(s32 argc, s8** argv);
 void AppTestSimplifyPath(s32 argc, s8** argv);
 void AppTestVector();
@@ -47,6 +47,7 @@ s32 AppTestHttpsClient(s32 argc, s8** argv);
 s32 AppTestFile(s32 argc, s8** argv);
 s32 AppTestReadWriteLock(s32 argc, s8** argv);
 s32 AppTestFutex(s32 argc, s8** argv);
+s32 AppTestNode(s32 argc, s8** argv);
 #if defined(DUSE_ZLIB)
 s32 AppTestZlib(s32 argc, s8** argv);
 s32 AppTestRingBlocks(s32 argc, s8** argv);
@@ -111,12 +112,12 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestStr(argc, argv);
-            //AppTestFutex(argc, argv);
+            AppTestMD5(argc, argv);
+            // AppTestNode(argc, argv);
+            // AppTestFutex(argc, argv);
         } else {
             AppTestThreadPool(argc, argv);
             AppTestSimplifyPath(argc, argv);
-            AppTestMD5(argc, argv);
             AppTestRingBlocks(argc, argv);
             AppTestMemPool(argc, argv);
             AppTestStr(argc, argv);

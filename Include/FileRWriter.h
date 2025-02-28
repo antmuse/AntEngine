@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
-#ifndef APP_CFILEWRITER_H
-#define	APP_CFILEWRITER_H
+#ifndef APP_FILERWRITER_H
+#define APP_FILERWRITER_H
 
 #include <stdarg.h>
 #include "TString.h"
@@ -32,11 +32,11 @@
 namespace app {
 
 
-class FileWriter {
+class FileRWriter {
 public:
-    FileWriter();
+    FileRWriter();
 
-    ~FileWriter();
+    ~FileRWriter();
 
     void close();
 
@@ -64,32 +64,43 @@ public:
 
     s64 getPos() const;
 
+    /**
+     * @param fileName
+     * @param mode  can't be nullptr, "rb"= read only, "wb"= write, "ab"= append write, ...
+     */
+    bool openFile(const String& fileName, const s8* mode = "rb");
 
-    bool openFile(const String& fileName, bool append);
+
+    /** @return how much was read*/
+    u64 read(void* buffer, u64 size);
 
 
     const String& getFileName() const {
         return mFilename;
     }
 
-    s64 getFileSize()const {
+    s64 getFileSize() const {
         return mFileSize;
+    }
+
+    s64 getLastSaveTime() const {
+        return mLastSaveTime;
     }
 
 protected:
     String mFilename;
     FILE* mFile;
     s64 mFileSize;
+    s64 mLastSaveTime;
 
 private:
-    FileWriter(const FileWriter&) = delete;
-    FileWriter(const FileWriter&&) = delete;
-    FileWriter& operator=(const FileWriter&) = delete;
-    FileWriter& operator=(const FileWriter&&) = delete;
+    FileRWriter(const FileRWriter&) = delete;
+    FileRWriter(const FileRWriter&&) = delete;
+    FileRWriter& operator=(const FileRWriter&) = delete;
+    FileRWriter& operator=(const FileRWriter&&) = delete;
 };
 
 
 } // end namespace app
 
-#endif //APP_CFILEWRITER_H
-
+#endif // APP_FILERWRITER_H

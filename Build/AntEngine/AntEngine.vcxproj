@@ -36,8 +36,7 @@
     <ClCompile Include="..\..\Source\db\Util.cpp" />
     <ClCompile Include="..\..\Source\db\Value.cpp" />
     <ClCompile Include="..\..\Source\EngineConfig.cpp" />
-    <ClCompile Include="..\..\Source\FileReader.cpp" />
-    <ClCompile Include="..\..\Source\FileWriter.cpp" />
+    <ClCompile Include="..\..\Source\FileRWriter.cpp" />
     <ClCompile Include="..\..\Source\Handle.cpp" />
     <ClCompile Include="..\..\Source\HashDict.cpp" />
     <ClCompile Include="..\..\Source\EncoderMD5.cpp" />
@@ -103,6 +102,7 @@
     <ClCompile Include="..\..\Source\Script\Script.cpp" />
     <ClCompile Include="..\..\Source\Script\ScriptManager.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaRequestFD.cpp" />
+    <ClCompile Include="..\..\Source\EncoderSHA1.cpp" />
     <ClCompile Include="..\..\Source\StrConverterGBK.cpp" />
     <ClCompile Include="..\..\Source\Timer.cpp" />
     <ClCompile Include="..\..\Source\TimerWheel.cpp" />
@@ -150,9 +150,9 @@
     <ClInclude Include="..\..\Include\EncoderMD5.h" />
     <ClInclude Include="..\..\Include\Engine.h" />
     <ClInclude Include="..\..\Include\EngineConfig.h" />
-    <ClInclude Include="..\..\Include\FileReader.h" />
-    <ClInclude Include="..\..\Include\FileWriter.h" />
+    <ClInclude Include="..\..\Include\FileRWriter.h" />
     <ClInclude Include="..\..\Include\FuncSort.h" />
+    <ClInclude Include="..\..\Include\Futex.h" />
     <ClInclude Include="..\..\Include\gzip\CodecGzip.h" />
     <ClInclude Include="..\..\Include\gzip\DecoderGzip.h" />
     <ClInclude Include="..\..\Include\gzip\EncoderGzip.h" />
@@ -223,6 +223,7 @@
     <ClInclude Include="..\..\Include\Script\Script.h" />
     <ClInclude Include="..\..\Include\Script\ScriptManager.h" />
     <ClInclude Include="..\..\Include\Script\HLua.h" />
+    <ClInclude Include="..\..\Include\EncoderSHA1.h" />
     <ClInclude Include="..\..\Include\Spinlock.h" />
     <ClInclude Include="..\..\Include\StrConverter.h" />
     <ClInclude Include="..\..\Include\TString.h" />
@@ -245,6 +246,10 @@
     <None Include="..\..\Depend\jsoncpp\LICENSE" />
     <None Include="..\..\LICENSE" />
     <None Include="..\..\README.md" />
+    <None Include="..\..\Source\Makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\CMakeLists.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

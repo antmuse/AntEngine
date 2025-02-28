@@ -3,7 +3,7 @@
 #include "Script/LuaFunc.h"
 #include "Logger.h"
 #include "Engine.h"
-#include "FileReader.h"
+#include "FileRWriter.h"
 #include "Script/ScriptManager.h"
 
 namespace app {
@@ -52,7 +52,7 @@ bool Script::load(lua_State* vm, const String& iPath, const String& iName, bool 
         }
         lua_pop(vm, 1);
     }
-    FileReader file;
+    FileRWriter file;
     if (!file.openFile(iPath + iName)) {
         Logger::logError("Script::load, open fail, script = %s", iName.c_str());
         return false;

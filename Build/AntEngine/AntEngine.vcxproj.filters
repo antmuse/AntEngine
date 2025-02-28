@@ -119,10 +119,7 @@
     <ClCompile Include="..\..\Source\HashDict.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\FileReader.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\FileWriter.cpp">
+    <ClCompile Include="..\..\Source\FileRWriter.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Windows\Loop.cpp">
@@ -362,6 +359,9 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFilePath.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\EncoderSHA1.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -427,10 +427,7 @@
     <ClInclude Include="..\..\Include\EngineConfig.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\FileReader.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\FileWriter.h">
+    <ClInclude Include="..\..\Include\FileRWriter.h">
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\FuncSort.h">
@@ -715,6 +712,12 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFilePath.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Futex.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\EncoderSHA1.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Depend\jsoncpp\LICENSE">
@@ -730,5 +733,13 @@
       <Filter>Config</Filter>
     </None>
     <None Include="..\..\.clang-format" />
+    <None Include="..\..\Source\Makefile">
+      <Filter>Source</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Source\CMakeLists.txt">
+      <Filter>Source</Filter>
+    </Text>
   </ItemGroup>
 </Project>

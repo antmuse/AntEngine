@@ -79,7 +79,7 @@ void HttpsClient::onConnect(RequestFD* it) {
         s64 len = fnm.findFirst(':');
         fnm.resize(len > 0 ? len : fnm.size());
         fnm += ".html";
-        mFile.openFile(fnm, false);
+        mFile.openFile(fnm, "wb");
         it->mCall = HttpsClient::funcOnRead;
         if (0 == mTCP.read(it)) {
             RequestFD* get = RequestFD::newRequest(1 * 1024);

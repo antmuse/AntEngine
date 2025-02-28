@@ -1,7 +1,7 @@
 #ifndef APP_HTTPSCLIENT_H
 #define	APP_HTTPSCLIENT_H
 
-#include "FileWriter.h"
+#include "FileRWriter.h"
 #include "Net/HandleTLS.h"
 
 namespace app {
@@ -52,7 +52,7 @@ private:
     }
 
     net::HandleTLS mTCP;
-    FileWriter mFile;
+    FileRWriter mFile;
 };
 
 

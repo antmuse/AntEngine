@@ -27,6 +27,7 @@
 #define APP_ENCODERMD5_H
 
 #include "IntID.h"
+#include "TString.h"
 
 namespace app {
 
@@ -43,22 +44,25 @@ public:
 
     void clear();
 
-    void add(const void* data, u32 size);
+    void add(const void* data, usz size);
 
-    //result 16 bytes
-    void finish(u8* result);
+    //@param buf at least 16 bytes buf;
+    void finish(u8 buf[16]);
+
+    //@return the result in hex str, 32 bytes;
+    String finish();
 
     void finish(ID128& result) {
         finish((u8*)& result);
     }
 
 private:
-    const void* body(const void* data, u32 size);
+    const void* transform(const u8* data, usz size);
 
-    u32 lo, hi;
-    u32 a, b, c, d;
-    u8 buffer[64];
-    u32 block[16];
+    u32 mCountLow, mCountHi;
+    u32 mA, mB, mC, mD;
+    u8 mBuffer[64];
+    u32 mBlock[16];
 };
 
 

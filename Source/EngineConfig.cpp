@@ -28,8 +28,7 @@
 #include "Logger.h"
 #include "System.h"
 #include "Timer.h"
-#include "FileWriter.h"
-#include "FileReader.h"
+#include "FileRWriter.h"
 #include "json/json.h"
 
 namespace app {
@@ -87,8 +86,8 @@ EngineConfig::~EngineConfig() {
 
 bool EngineConfig::save(const String& cfg) {
     System::createPath(cfg);
-    FileWriter file;
-    if (!file.openFile(cfg, false)) {
+    FileRWriter file;
+    if (!file.openFile(cfg, "wb")) {
         return false;
     }
 
@@ -124,7 +123,7 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     s8* tmp = cfg.data();
     usz len = cfg.size();
     if (cfg.isFileExtension("json")) {
-        FileReader file;
+        FileRWriter file;
         if (!file.openFile(cfg)) {
             return false;
         }

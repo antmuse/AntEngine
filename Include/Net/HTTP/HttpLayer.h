@@ -30,7 +30,6 @@
 #include "EngineConfig.h"
 #include "Loop.h"
 #include "System.h"
-#include "FileReader.h"
 #include "Net/HandleTLS.h"
 #include "Net/HTTP/HttpMsg.h"
 #include "Net/TlsContext.h"
