@@ -4,6 +4,8 @@
 #include "TString.h"
 #include "BinaryHeap.h"
 #include "TMap.h"
+#include "Timer.h"
+#include "Converter.h"
 
 namespace app {
 
@@ -73,6 +75,85 @@ void AppTestRBTreeMap() {
     printf("node[55]=%s\n", str.c_str());
     printf("max level=%llu\n", maxlev);
 
+}
+
+
+    
+class MyNode : public Node2 {
+public:
+    MyNode(int id) :mID(id) {}
+    int mID;
+    static bool lessThen(const Node2* a, const Node2* b) {
+        return ((MyNode*)a)->mID < ((MyNode*)b)->mID;
+    }
+};
+
+class Queue {
+public:
+    Queue(int mx) {
+        sort();
+        init(mx);
+    }
+
+
+    ~Queue() {}
+
+
+    void sort() {
+        if (0) {
+            Node2* que = Node2::sort(mHead.mNext, &mHead, MyNode::lessThen);
+            mHead.clear();
+            mHead += (*que);
+        } else {
+            Node2* que = mHead.mNext;
+            mHead.delink();
+            que = que->sort(MyNode::lessThen);
+            mHead += (*que);
+        }
+    }
+
+    void show() {
+        MyNode* curr = (MyNode*)(mHead.mNext);
+        int idx = 0;
+        while (curr != &mHead) {
+            printf("%p [%3d] = %32d\n", curr, idx++, curr->mID);
+            curr = (MyNode*)(curr->getNext());
+        }
+    }
+
+private:
+
+    void init(int mx) {
+        bool order = false;
+        if (mx < 0) {
+            order = true;
+            mx = -mx;
+        }
+        int val;
+        srand(Timer::getRelativeTime());
+        MyNode* curr;
+        for (int i = 0; i < mx; ++i) {
+            val = order ? i : rand();
+            curr = new MyNode(val);
+            mHead.pushBack(*curr);
+            //printf("%d = %d\n", i, val);
+        }
+    }
+
+    Node2 mHead;
+};
+
+s32 AppTestNode(s32 argc, s8** argv){
+    printf("argc= %d, %s\n", argc, argv[0]);
+    const s32 count = App10StrToS32(argv[2]);
+    app::Queue que(count);
+    printf("--unsort--------------------------------------------------------------\n");
+    que.show();
+    printf("--sort--------------------------------------------------------------\n");
+    que.sort();
+    que.show();
+    printf("----------------------------------------------------------------\n");
+    return 0;
 }
 
 } //namespace app

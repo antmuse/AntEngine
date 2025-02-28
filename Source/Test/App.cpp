@@ -47,6 +47,7 @@ s32 AppTestHttpsClient(s32 argc, s8** argv);
 s32 AppTestFile(s32 argc, s8** argv);
 s32 AppTestReadWriteLock(s32 argc, s8** argv);
 s32 AppTestFutex(s32 argc, s8** argv);
+s32 AppTestNode(s32 argc, s8** argv);
 #if defined(DUSE_ZLIB)
 s32 AppTestZlib(s32 argc, s8** argv);
 s32 AppTestRingBlocks(s32 argc, s8** argv);
@@ -111,7 +112,7 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestStr(argc, argv);
+            AppTestNode(argc, argv);
             //AppTestFutex(argc, argv);
         } else {
             AppTestThreadPool(argc, argv);
