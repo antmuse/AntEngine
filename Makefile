@@ -20,6 +20,7 @@ MK_DIRS := $(BUILD_DIR)/Source \
 		   $(BUILD_DIR)/Source/HttpClient \
 		   $(BUILD_DIR)/Source/EchoServer \
 		   $(BUILD_DIR)/Source/EchoClient \
+		   $(BUILD_DIR)/Source/ServiceNAT \
 		   $(BUILD_DIR)/Source/Server
 
 

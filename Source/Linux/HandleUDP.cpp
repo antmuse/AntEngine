@@ -48,35 +48,37 @@ s32 HandleUDP::open(RequestUDP* it, const NetAddress* remote, const NetAddress* 
     s32 ret = EE_OK;
     if (!mSock.openSeniorUDP(local ? local->isIPV6() : (remote ? remote->isIPV6() : false))) {
         ret = System::getAppError();
-        Logger::log(ELL_ERROR, "HandleUDP::open>>udp.con, open, addr=%s, ecode=%d", mRemote.getStr(), ret);
+        DLOG(ELL_ERROR, "HandleUDP::open>>udp open, addr=%s, ecode=%d", mRemote.getStr(), ret);
+        return ret;
     }
-    // local
-    if (EE_OK == ret) {
-        if (local) {
-            mLocal = *local;
-        }
-        if ((flag & 1) > 0) {
-            mFlags |= 1;
-            if (0 != mSock.setReuseIP(true)) {
-                ret = System::getAppError();
-                Logger::log(ELL_ERROR, "HandleUDP::open>>reuseIP, addr=%s, ecode=%d", mLocal.getStr(), ret);
-            } else if (0 != mSock.setReusePort(true)) {
-                ret = System::getAppError();
-                Logger::log(ELL_ERROR, "HandleUDP::open>>reusePort, addr=%s, ecode=%d", mLocal.getStr(), ret);
-            }
-        }
-        if (EE_OK == ret && 0 != mSock.bind(mLocal)) {
+    if (local) {
+        mLocal = *local;
+        mRemote.setAddrSize(mLocal.getAddrSize());
+        it->mRemote.setAddrSize(mLocal.getAddrSize());
+    } else {
+        mRemote = *remote;
+        it->mRemote = *remote;
+        mLocal.setAddrSize(mRemote.getAddrSize());
+    }
+    if ((flag & 1) > 0) {
+        mFlags |= 1;
+        if (0 != mSock.setReuseIP(true)) {
             ret = System::getAppError();
-            Logger::log(ELL_ERROR, "HandleUDP::open>>bind, addr=%s, ecode=%d", mRemote.getStr(), ret);
+            Logger::log(ELL_ERROR, "HandleUDP::open>>reuseIP, addr=%s, ecode=%d", mLocal.getStr(), ret);
+        } else if (0 != mSock.setReusePort(true)) {
+            ret = System::getAppError();
+            Logger::log(ELL_ERROR, "HandleUDP::open>>reusePort, addr=%s, ecode=%d", mLocal.getStr(), ret);
         }
-        if (!local) {
-            mSock.getLocalAddress(mLocal);
-        }
+    }
+    if (EE_OK == ret && 0 != mSock.bind(mLocal)) {
+        ret = System::getAppError();
+        Logger::log(ELL_ERROR, "HandleUDP::open>>bind, addr=%s, ecode=%d", mRemote.getStr(), ret);
+    }
+    if (!local) {
+        mSock.getLocalAddress(mLocal);
     }
 
     if (EE_OK == ret && remote && (flag & 2) > 0) {
-        mRemote = *remote;
-        it->mRemote = *remote;
         mFlags |= 2;
         if (0 != mSock.connect(mRemote)) {
             ret = System::getAppError();
