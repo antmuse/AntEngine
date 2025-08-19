@@ -14,7 +14,7 @@ public:
 
     ~ClientNAT();
 
-    s32 start(const s8* ipt);
+    s32 start(const s8* ipt, const s8* userid, const s8* password, const s8* peerid);
 
     bool isActive() {
         return mTime.getGrabCount() > 0;
@@ -47,7 +47,17 @@ private:
         nd.onRead((RequestUDP*)it);
     }
 
+    void processMsg(s32 status, void* msg);
+
     s32 mStatus;
+    u32 mSN;
+    u64 mUserID;
+    u64 mPeerID;
+    String mPassword;
+    s8 mFindCount;
+    s8 mMaxFind;
+    net::NetAddress mServerAddr;
+    net::NetAddress mPeerAddr;
     HandleTime mTime;
     net::HandleUDP mUDP;
     Loop& mLoop;

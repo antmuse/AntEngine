@@ -6,10 +6,10 @@ namespace app {
 namespace net {
 
 enum EStatusNAT{
-    ESN_INIT = 0,
-    ESN_CONNECTING = 1,
-    ESN_CONNECED = 2,
-    ESN_LISTENING  = 3
+    ESN_REGIST = 0,
+    ESN_FIND = 1,
+    ESN_CONNECT = 2,
+    ESN_ACTIVE  = 3
 };
 
 enum EPackType {
@@ -17,10 +17,15 @@ enum EPackType {
 
     EPT_ACTIVE = 0x0001,
     EPT_ACTIVE_RESP = EPT_RESP_BIT | EPT_ACTIVE,
-    EPT_SUBMIT = 0x0002,
+    EPT_REGIST = 0x0002,
+    EPT_REGIST_RESP = EPT_RESP_BIT | EPT_REGIST,
+    EPT_FIND = 0x0003,
+    EPT_FIND_RESP = EPT_RESP_BIT | EPT_FIND,
+    EPT_SUBMIT = 0x0004,
     EPT_SUBMIT_RESP = EPT_RESP_BIT | EPT_SUBMIT,
 
-    EPT_VERSION = 0xF001
+    EPT_VERSION = 0x1,
+    EPT_MAX_SIZE = 1500   // max udp packet
 };
 
 // 心跳包
@@ -35,28 +40,79 @@ struct PackActive : MsgHeader {
 };
 
 
-struct PackSubmit : MsgHeader {
-    s32 mPacketID;
-    s8 mBuffer[1];
+struct PackRegist : MsgHeader {
+    u64 mUserID;
+    s8 mBuffer[128];
     enum EPackItem {
         EI_NAME = 0,
-        EI_VALUE,
+        EI_LOC_ADDR,
         EI_COUNT
     };
 
-    PackSubmit() {
+    PackRegist() {
         clear();
     }
     void clear() {
-        init(EPT_SUBMIT, DOFFSET(PackSubmit, mBuffer), EI_COUNT, 1);
+        init(EPT_REGIST, DOFFSET(PackRegist, mBuffer), EI_COUNT, EPT_VERSION);
     }
     void writeHeader(u32 sn) {
         mSN = sn;
     }
 };
-struct PackSubmitResp : MsgHeader {
+struct PackRegistResp : MsgHeader {
+    u64 mUserID;
+    s8 mBuffer[128];
+    enum EPackItem {
+        EI_NAME = 0,
+        EI_ADDR,
+        EI_COUNT
+    };
+
+    PackRegistResp() {
+        clear();
+    }
+    void clear() {
+        init(EPT_REGIST_RESP, DOFFSET(PackRegistResp, mBuffer), EI_COUNT, EPT_VERSION);
+    }
     void writeHeader(u32 sn) {
-        finish(EPT_SUBMIT_RESP, sn, 1);
+        mSN = sn;
+    }
+};
+
+
+struct PackFind : MsgHeader {
+    u64 mUserID;
+    enum EPackItem {
+        EI_COUNT
+    };
+
+    PackFind() {
+        clear();
+    }
+    void clear() {
+        init(EPT_FIND, sizeof(PackFind), EI_COUNT, EPT_VERSION);
+    }
+    void writeHeader(u32 sn) {
+        mSN = sn;
+    }
+};
+
+struct PackFindResp : MsgHeader {
+    u64 mUserID;
+    s8 mBuffer[128];
+    enum EPackItem {
+        EI_PEER_ADDR,
+        EI_COUNT
+    };
+
+    PackFindResp() {
+        clear();
+    }
+    void clear() {
+        init(EPT_FIND_RESP, DOFFSET(PackFindResp, mBuffer), EI_COUNT, EPT_VERSION);
+    }
+    void writeHeader(u32 sn) {
+        mSN = sn;
     }
 };
 

@@ -4,6 +4,7 @@
 #include "Loop.h"
 #include "Net/NetAddress.h"
 #include "Net/HandleUDP.h"
+#include "TMap.h"
 
 
 namespace app {
@@ -50,6 +51,9 @@ private:
     HandleTime mTime;
     net::HandleUDP mUDP;
     Loop& mLoop;
+    u32 mSN;
+    u64 mUserSN;
+    TMap<u64, String> mBinds;
 };
 
 }//namespace app

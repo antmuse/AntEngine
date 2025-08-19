@@ -39,8 +39,8 @@ const char* const G_CFG = R"(
 using namespace app;
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        printf("usage: ./ServerNat.bin 0.0.0.0:55555\n");
+    if (argc < 5) {
+        printf("usage: ./ServerNat.bin 0.0.0.0:55555 1 pwd 2\n");
         return 0;
     }
     printf("main>>start ClientNAT, argc=%d, argv[0]=%s\n", argc, argv[0]);
@@ -52,12 +52,8 @@ int main(int argc, char** argv) {
         printf("main>> engine init fail\n");
         return 1;
     }
-    /*std::chrono::milliseconds waitms(1000);
-    while (1) {
-        std::this_thread::sleep_for(waitms);
-    }*/
     ClientNAT tick;
-    if (tick.start(cmd)) {
+    if (tick.start(cmd, argv[2], argv[3], argv[4])) {
         DLOG(ELL_INFO, "main>>start fail on: %s", cmd);
     } else {
         DLOG(ELL_INFO, "main>>start success on: %s", cmd);

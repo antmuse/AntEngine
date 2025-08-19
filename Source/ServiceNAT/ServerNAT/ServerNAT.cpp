@@ -16,7 +16,7 @@
 namespace app {
 static s32 G_LOG_FLUSH_CNT = 0;
 
-ServerNAT::ServerNAT() : mLoop(Engine::getInstance().getLoop()) {
+ServerNAT::ServerNAT() : mLoop(Engine::getInstance().getLoop()), mSN(0), mUserSN(0) {
 }
 
 ServerNAT::~ServerNAT() {
@@ -26,7 +26,7 @@ s32 ServerNAT::start(const s8* ipt) {
     if (!ipt || 0 == *ipt) {
         return EE_ERROR;
     }
-    RequestUDP* req = RequestUDP::newRequest(1500);
+    RequestUDP* req = RequestUDP::newRequest(net::EPT_MAX_SIZE);
     req->mUser = this;
     req->mCall = funcOnRead;
     mUDP.setClose(EHT_UDP, ServerNAT::funcOnClose, this);
@@ -49,11 +49,11 @@ void ServerNAT::onClose(Handle* it) {
 
 
 void ServerNAT::onRead(RequestUDP* it) {
-    RequestUDP* req = RequestUDP::newRequest(1500);
+    RequestUDP* req = RequestUDP::newRequest(net::EPT_MAX_SIZE);
     req->mUser = this;
     req->mCall = funcOnRead;
     req->mRemote.setAddrSize(it->mRemote.getAddrSize());
-    //it->mUsed = 0;
+    // it->mUsed = 0;
     s32 ret = mUDP.readFrom(req);
     if (ret) {
         RequestUDP::delRequest(req);
@@ -62,9 +62,66 @@ void ServerNAT::onRead(RequestUDP* it) {
         return;
     }
 
+    if (it->mUsed < sizeof(MsgHeader)) {
+        DLOG(ELL_ERROR, "on read mini msg, %u", it->mUsed);
+        RequestUDP::delRequest(it);
+        return;
+    }
+    MsgHeader& hed = *(MsgHeader*)(it->getBuf());
+    switch (hed.mType) {
+    case net::EPT_ACTIVE:
+    {
+        net::PackActive& msg = (net::PackActive&)(hed);
+        msg.packResp(++mSN);
+        break;
+    }
+    case net::EPT_REGIST:
+    {
+        net::PackRegist& msg0 = (net::PackRegist&)(hed);
+        u64 uid = msg0.mUserID;
+        TMap<u64, String>::Node* nd = mBinds.find(uid);
+        net::PackRegistResp& msg = (net::PackRegistResp&)(hed);
+        msg.clear();
+        it->mRemote.reverse();
+        if (!nd) {
+            mBinds[uid] = it->mRemote.getStr();
+            DLOG(ELL_INFO, "regist, uid=%llu, remote: %s", uid, it->mRemote.getStr());
+        } else {
+            nd->getValue() = it->mRemote.getStr();
+            DLOG(ELL_INFO, "regist_update, uid=%llu, remote: %s", uid, it->mRemote.getStr());
+        }
+        msg.mUserID = uid;
+        msg.writeItem(msg.EI_ADDR, it->mRemote.getStr(), strlen(it->mRemote.getStr()) + 1);
+        msg.writeHeader(++mSN);
+        break;
+    }
+    case net::EPT_FIND:
+    {
+        net::PackFind& msg0 = (net::PackFind&)(hed);
+        net::PackFindResp& msg = (net::PackFindResp&)(hed);
+        TMap<u64, String>::Node* nd = mBinds.find(msg0.mUserID);
+        msg.clear();
+        if (nd) {
+            msg.mUserID = nd->getKey();
+            msg.writeItem(msg.EI_PEER_ADDR, nd->getValue().data(), nd->getValue().size() + 1);
+        } else {
+            msg.mUserID = 0;
+        }
+        msg.writeHeader(++mSN);
+        break;
+    }
+    default:
+    {
+        RequestUDP::delRequest(it);
+        DLOG(ELL_ERROR, "invalid cmd, remote: %s", mUDP.getRemote().getStr());
+        return;
+    }
+    } // switch
+
+    it->mUser = this;
     it->mCall = funcOnWrite;
-    it->mRemote.reverse();
-    it->mUsed = snprintf(it->getBuf(), it->mAllocated, "%s", it->mRemote.getStr());
+    it->mUsed = hed.mSize;
+    DASSERT(hed.mSize <= net::EPT_MAX_SIZE);
     ret = mUDP.writeTo(it);
     if (ret) {
         RequestUDP::delRequest(it);
