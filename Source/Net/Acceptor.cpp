@@ -118,6 +118,7 @@ void Acceptor::onLink(RequestFD* it) {
         return;
     }
     if (mOnLink) {
+        //req->mSocket.setLinger(true, 10);
         mOnLink(it);
     } else {
         s64 sock = req->mSocket.getValue();

@@ -37,20 +37,12 @@
 namespace app {
 namespace net {
 
-class HttpMsgReceiver : public RefCount {
-public:
-    HttpMsgReceiver() {
-    }
-    virtual ~HttpMsgReceiver() {
-    }
-    virtual s32 stepMsg(HttpMsg* msg) = 0;
-};
+class Website;
 
 
 class HttpLayer : public RefCount {
 public:
-    HttpLayer(
-        HttpMsgReceiver* recv, EHttpParserType tp = EHTTP_BOTH, bool https = false, TlsContext* tlsContext = nullptr);
+    HttpLayer(EHttpParserType tp = EHTTP_BOTH, bool https = false, TlsContext* tlsContext = nullptr);
 
     virtual ~HttpLayer();
 
@@ -58,11 +50,11 @@ public:
         return mMsg;
     }
 
-    HttpMsgReceiver* getMsgReceiver() const {
-        return mReceiver;
+    Website* getWebsite() const {
+        return mWebSite;
     }
 
-    s32 post(HttpMsg* msg);
+    s32 launch(HttpMsg* msg);
 
     EHttpParserType getType() const {
         return mPType;
@@ -144,7 +136,7 @@ private:
     bool mHTTPS;
     EHttpParserType mPType;
     TlsContext* mTlsContext;
-    HttpMsgReceiver* mReceiver;
+    Website* mWebSite;
     HandleTLS mTCP;
     HttpMsg* mMsg;
 
@@ -262,7 +254,6 @@ private:
     void msgEnd();
     void msgBody();
     void msgError();
-    void msgStep();
 };
 
 } // namespace net

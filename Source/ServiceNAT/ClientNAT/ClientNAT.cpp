@@ -18,7 +18,7 @@ namespace app {
 static s32 G_LOG_FLUSH_CNT = 0;
 
 ClientNAT::ClientNAT() :
-    mLoop(Engine::getInstance().getLoop()), mStatus(net::ESN_REGIST), mSN(0), mUserID(1), mFindCount(0), mMaxFind(10) {
+    mLoop(Engine::getInstance().getLoop()), mStatus(net::ESN_REGIST), mSN(0), mUserID(1), mFindCount(0), mMaxFind(20) {
 }
 
 ClientNAT::~ClientNAT() {
@@ -37,7 +37,7 @@ s32 ClientNAT::start(const s8* ipt, const s8* userid, const s8* password, const 
     req->mCall = funcOnRead;
     mUDP.setClose(EHT_UDP, ClientNAT::funcOnClose, this);
     mUDP.setTime(ClientNAT::funcOnTime, 100, 1000, -1);
-    s32 ret = mUDP.open(req, ipt, nullptr, 0);
+    s32 ret = mUDP.open(req, ipt, "0.0.0.0:20008", 0);
     if (ret) {
         DLOG(ELL_ERROR, "ClientNAT start fail, remote=%s", ipt);
         RequestUDP::delRequest(req);
@@ -127,7 +127,16 @@ void ClientNAT::processMsg(s32 status, void* resp) {
             s8* addr = msg.readItem(msg.EI_ADDR, len);
             if (addr && msg.mUserID > 0) {
                 mStatus = net::ESN_FIND;
-                DLOG(ELL_INFO, "reg ok, my addr=%s", addr);
+                DLOG(ELL_INFO, "reg ok, act my addr = %s", addr);
+                /*for (s32 i = 0; i < 3; ++i) {
+                    RequestUDP* req = RequestUDP::newRequest(net::EPT_MAX_SIZE);
+                    net::PackActive& msg = *(net::PackActive*)(req->getBuf());
+                    msg.pack(++mSN);
+                    req->mUsed = msg.mSize;
+                    req->mRemote.setIPort(addr);
+                    DASSERT(msg.mSize < net::EPT_MAX_SIZE);
+                    funcsend(req);
+                }*/
             } else {
                 DLOG(ELL_INFO, "reg fail");
             }
@@ -194,6 +203,7 @@ void ClientNAT::processMsg(s32 status, void* resp) {
                 msg.pack(++mSN);
                 req->mRemote = mPeerAddr;
                 req->mUsed = msg.mSize;
+                DLOG(ELL_INFO, "active peer = %s", mPeerAddr.getStr());
                 funcsend(req);
             }
         }

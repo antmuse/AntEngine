@@ -12,11 +12,20 @@ public:
     HttpEvtLua(const StringView& file);
     virtual ~HttpEvtLua();
 
-    virtual s32 onSent(net::HttpMsg* req) override;
-    virtual s32 onFinish(net::HttpMsg* resp) override;
-    virtual s32 onBodyPart(net::HttpMsg* resp) override;
-    virtual s32 onOpen(net::HttpMsg* msg) override;
-    virtual s32 onClose() override;
+    virtual s32 onLayerClose(net::HttpMsg* msg) override;
+
+    // req parse err
+    virtual s32 onReadError(net::HttpMsg* msg) override;
+
+    virtual s32 onRespWrite(net::HttpMsg* msg) override;
+    virtual s32 onRespWriteError(net::HttpMsg* msg) override;
+
+    virtual s32 onReqHeadDone(net::HttpMsg* msg) override;
+    virtual s32 onReqBody(net::HttpMsg* msg) override;
+    virtual s32 onReqBodyDone(net::HttpMsg* msg) override;
+
+    virtual s32 onReqChunkHeadDone(net::HttpMsg* msg) override;
+    virtual s32 onReqChunkBodyDone(net::HttpMsg* msg) override;
 
     //virtual s32 onBackSent(RequestFD* it);
     //virtual s32 onBackFinish(RequestFD* it);

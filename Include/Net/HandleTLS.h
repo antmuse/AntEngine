@@ -42,13 +42,13 @@ public:
     ~HandleTLS();
 
     //connect
-    s32 open(const String& addr, RequestFD* it, const net::TlsContext* tlsctx = nullptr);
+    s32 open(const String& addr, RequestFD* it, const TlsContext* tlsctx = nullptr);
 
     //connect
-    s32 open(const NetAddress& addr, RequestFD* it, const net::TlsContext* tlsctx = nullptr);
+    s32 open(const NetAddress& addr, RequestFD* it, const TlsContext* tlsctx = nullptr);
 
     //link
-    s32 open(const RequestAccept& accp, RequestFD* it, const net::TlsContext* tlsctx = nullptr);
+    s32 open(const RequestAccept& accp, RequestFD* it, const TlsContext* tlsctx = nullptr);
 
     s32 write(RequestFD* it);
 

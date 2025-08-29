@@ -278,16 +278,13 @@
     <ClCompile Include="..\..\Source\MemSlabPool.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileSave.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\MsgStation.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtError.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileRead.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFile.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp">
@@ -329,38 +326,14 @@
     <ClCompile Include="..\..\Source\Windows\Futex.cpp">
       <Filter>Source\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqBodyDone.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationError.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationRespBody.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationRespHead.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationClose.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqBody.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqHead.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqPath.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\StationRespBodyDone.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFilePath.cpp">
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtPath.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\EncoderSHA1.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtShow.cpp">
+      <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -517,7 +490,7 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileSave.h">
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtError.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h">
@@ -530,9 +503,6 @@
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpURL.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\MsgStation.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\Website.h">
@@ -637,7 +607,7 @@
     <ClInclude Include="..\..\Include\RefCount.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileRead.h">
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFile.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h">
@@ -682,34 +652,7 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqBodyDone.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationError.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationRespBody.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationRespHead.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationClose.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqBody.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqHead.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqPath.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\StationRespBodyDone.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFilePath.h">
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtPath.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Futex.h">
@@ -717,6 +660,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\EncoderSHA1.h">
       <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtShow.h">
+      <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

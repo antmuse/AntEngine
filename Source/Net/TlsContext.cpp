@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Net/TlsContext.h"
@@ -39,6 +39,7 @@
 #include "Net/Hostcheck.h"
 #include "Certs.h"
 #include "Spinlock.h"
+#include "Net/TlsSession.h"
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
 #error "openssl version is too low"
@@ -49,14 +50,14 @@
 namespace app {
 namespace net {
 
-//in file Net/TlsSession.cpp
+// in file Net/TlsSession.cpp
 extern void AppInitRingBIO();
 extern void AppUninitRingBIO();
 
 
 static Spinlock G_TLS_LOCK;
 
-//call once
+// call once
 void AppUninitTlsLib() {
     if (!G_TLS_LOCK.tryUnlock()) {
         return;
@@ -74,15 +75,16 @@ void AppUninitTlsLib() {
     CRYPTO_set_id_callback(nullptr);
 }
 
-//call once
+// call once
 void AppInitTlsLib() {
     if (!G_TLS_LOCK.tryLock()) {
         return;
     }
+    //OPENSSL_no_config();
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-    //atexit(AppUninitTlsLib);
+    // atexit(AppUninitTlsLib);
     AppInitRingBIO();
 }
 
@@ -139,9 +141,7 @@ static EVP_PKEY* AppLoadKey(const s8* key, usz length) {
 }
 
 
-TlsContext::TlsContext() :
-    mTlsContext(nullptr),
-    mVerifyFlags(ETLS_VERIFY_NONE) {
+TlsContext::TlsContext() : mTlsContext(nullptr), mVerifyFlags(ETLS_VERIFY_NONE) {
 }
 
 TlsContext::~TlsContext() {
@@ -153,6 +153,7 @@ s32 TlsContext::init(s32 vflag, bool debug) {
     }
     SSL_CTX* ssl_ctx = SSL_CTX_new(TLS_method());
     if (!ssl_ctx) {
+        TlsSession::showError();
         return EE_ERROR;
     }
 
@@ -171,7 +172,7 @@ s32 TlsContext::init(s32 vflag, bool debug) {
     ret = addTrustedCerts(G_CA_ROOT_CERT, strlen(G_CA_ROOT_CERT));
     ret = setCert(G_SERVER_CERT, strlen(G_SERVER_CERT));
     ret = setPrivateKey(G_SERVER_KEY, strlen(G_SERVER_KEY));
-    return 0;
+    return EE_OK;
 }
 
 void TlsContext::uninit() {
@@ -192,11 +193,11 @@ s32 TlsContext::addTrustedCerts(const s8* cert, usz length) {
 
     BIO* bio = BIO_new_mem_buf(cert, (s32)length);
     if (bio == nullptr) {
+        TlsSession::showError();
         return EE_ERROR;
     }
 
-    while ((x509 = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr)) !=
-        nullptr) {
+    while ((x509 = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr)) != nullptr) {
         X509_STORE_add_cert(trusted_store, x509);
         X509_free(x509);
         ncerts++;
@@ -210,6 +211,7 @@ s32 TlsContext::addTrustedCerts(const s8* cert, usz length) {
 s32 TlsContext::setCert(const s8* cert, usz length) {
     X509* x509 = AppLoadCert(cert, length);
     if (x509 == nullptr) {
+        TlsSession::showError();
         return EE_ERROR;
     }
 
@@ -221,6 +223,7 @@ s32 TlsContext::setCert(const s8* cert, usz length) {
 s32 TlsContext::setPrivateKey(const s8* key, usz length) {
     EVP_PKEY* pkey = AppLoadKey(key, length);
     if (pkey == nullptr) {
+        TlsSession::showError();
         return EE_ERROR;
     }
 
@@ -229,6 +232,5 @@ s32 TlsContext::setPrivateKey(const s8* key, usz length) {
     return 0;
 }
 
-
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app

@@ -93,7 +93,7 @@ public:
 
     static s32 removeFile(const String& it);
 
-    //@return -1=不存在，0=file, 1=path
+    //@return 0=不存在，1=file, 2=path
     static s32 isExist(const String& it);
 
     static void getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out);

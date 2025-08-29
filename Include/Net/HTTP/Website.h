@@ -4,7 +4,6 @@
 #include "TVector.h"
 #include "Net/Acceptor.h"
 #include "Net/HTTP/HttpLayer.h"
-#include "Net/HTTP/MsgStation.h"
 #include "Net/TlsContext.h"
 
 namespace app {
@@ -17,27 +16,21 @@ namespace net {
  *        HttpLayer bind with HandleTCP & HttpMsg;
  *        HttpMsg bind with logic worker.
  */
-class Website : public HttpMsgReceiver {
+class Website : public RefCount {
 public:
     Website(EngineConfig::WebsiteCfg& cfg);
     virtual ~Website();
 
-    virtual s32 stepMsg(HttpMsg* msg) override;
+    /**
+    * @brief called when http_req_head is readed.
+     */
+    s32 createMsgEvent(HttpMsg* msg);
 
     static void funcOnLink(RequestFD* it) {
         DASSERT(it && it->mUser);
         net::Acceptor* accp = reinterpret_cast<net::Acceptor*>(it->mUser);
         Website* web = reinterpret_cast<Website*>(accp->getUser());
         web->onLink(it);
-    }
-
-    bool setStation(EStationID id, MsgStation* it);
-
-    MsgStation* getStation(u32 idx) const {
-        if (idx < ES_COUNT) {
-            return mStations[idx];
-        }
-        return nullptr;
     }
 
     const EngineConfig::WebsiteCfg& getConfig() const {
@@ -54,17 +47,12 @@ private:
     void clear();
 
     void onLink(RequestFD* it) {
-        HttpLayer* con = new HttpLayer(this, EHTTP_REQUEST, 1 == getConfig().mType, &mTlsContext);
+        HttpLayer* con = new HttpLayer(EHTTP_REQUEST, 1 == getConfig().mType, &mTlsContext);
         con->onLink(it);
         con->drop();
     }
 
     TlsContext mTlsContext;
-    TVector<MsgStation*> mStations;
-    TVector<MsgStation*> mLineLua;
-    TVector<MsgStation*> mLineStatic;
-    TVector<MsgStation*> mLinePre;
-    TVector<MsgStation*> mLinePost;
     EngineConfig::WebsiteCfg& mConfig;
 };
 

@@ -1,10 +1,8 @@
 #include "Net/HTTP/HttpEvtLua.h"
 #include "RingBuffer.h"
 #include "Net/HTTP/Website.h"
-#include "Net/HTTP/MsgStation.h"
 #include "Script/LuaFunc.h"
 
-// TODO
 
 namespace app {
 
@@ -21,14 +19,21 @@ HttpEvtLua::HttpEvtLua(const StringView& file) :
 HttpEvtLua::~HttpEvtLua() {
 }
 
-s32 HttpEvtLua::onSent(net::HttpMsg* msg) {
+s32 HttpEvtLua::onRespWrite(net::HttpMsg* msg) {
     script::ScriptManager::resumeThread(mLuaThread);
     return EE_OK;
 }
+s32 HttpEvtLua::onReadError(net::HttpMsg* msg) {
+    return EE_OK;
+}
+s32 HttpEvtLua::onRespWriteError(net::HttpMsg* msg) {
+    return EE_OK;
+}
 
-s32 HttpEvtLua::onOpen(net::HttpMsg* msg) {
+
+s32 HttpEvtLua::onReqHeadDone(net::HttpMsg* msg) {
     mBody = &msg->getCacheOut();
-    net::Website* site = dynamic_cast<net::Website*>(msg->getHttpLayer()->getMsgReceiver());
+    net::Website* site = msg->getHttpLayer()->getWebsite();
     if (!site || mLuaThread.mSubVM) {
         return EE_ERROR;
     }
@@ -60,13 +65,13 @@ s32 HttpEvtLua::onOpen(net::HttpMsg* msg) {
     return EE_ERROR;
 }
 
-s32 HttpEvtLua::onClose() {
+s32 HttpEvtLua::onLayerClose(net::HttpMsg* msg) {
     mEvtFlags |= EHF_CLOSE;
     return EE_OK;
 }
 
-s32 HttpEvtLua::onFinish(net::HttpMsg* msg) {
-    return onBodyPart(msg);
+s32 HttpEvtLua::onReqBodyDone(net::HttpMsg* msg) {
+    return onReqBody(msg);
 }
 
 void HttpEvtLua::onClose(Handle* it) {
@@ -85,7 +90,6 @@ void HttpEvtLua::onClose(Handle* it) {
 void HttpEvtLua::onRead(RequestFD* it) {
     if (it->mError) {
         mEvtFlags = true;
-        mMsg->setStationID(net::ES_RESP_BODY_DONE);
         Logger::log(ELL_ERROR, "HttpEvtLua::onRead>>err file=%p", 0);
         return;
     }
@@ -98,19 +102,17 @@ void HttpEvtLua::onRead(RequestFD* it) {
         if (it->mUsed < it->mAllocated) {
             mEvtFlags = true;
             mBody->write("0\r\n\r\n", 5);
-            mMsg->setStationID(net::ES_RESP_BODY_DONE);
         }
     } else {
         mEvtFlags = true;
         mBody->write("0\r\n\r\n", 5);
-        mMsg->setStationID(net::ES_RESP_BODY_DONE);
     }
 
-    net::Website* site = dynamic_cast<net::Website*>(mMsg->getHttpLayer()->getMsgReceiver());
+    net::Website* site = mMsg->getHttpLayer()->getWebsite();
     if (site) {
-        if (EE_OK != site->stepMsg(mMsg)) {
-            mEvtFlags = true;
-        }
+        // if (EE_OK != site->stepMsg(mMsg)) {
+        //     mEvtFlags = true;
+        // }
     } else {
         mEvtFlags = true;
     }
@@ -125,7 +127,7 @@ void HttpEvtLua::onRead(RequestFD* it) {
     }
 }
 
-s32 HttpEvtLua::onBodyPart(net::HttpMsg* msg) {
+s32 HttpEvtLua::onReqBody(net::HttpMsg* msg) {
     if (!0) {
         return EE_ERROR;
     }
@@ -150,6 +152,7 @@ s32 HttpEvtLua::launchRead() {
     return EE_ERROR;
 }
 
+
 void HttpEvtLua::creatCurrContext() {
     // set context for coroutine
     script::ScriptManager::setENV(mLuaThread.mSubVM, false); // don't pop context_table
@@ -160,6 +163,16 @@ void HttpEvtLua::creatCurrContext() {
     script::Script::pushTable(mLuaThread.mSubVM, "vName", "HttpEvtLua");
     lua_pop(mLuaThread.mSubVM, 1); // pop context_table
     // script::LuaDumpStack(mLuaThread.mSubVM);
+}
+
+
+
+s32 HttpEvtLua::onReqChunkHeadDone(net::HttpMsg* msg) {
+    return EE_OK;
+}
+
+s32 HttpEvtLua::onReqChunkBodyDone(net::HttpMsg* msg) {
+    return EE_OK;
 }
 
 

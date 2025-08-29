@@ -34,20 +34,6 @@
 namespace app {
 namespace net {
 
-enum EStationID {
-    ES_INIT = 0,
-    ES_PATH,
-    ES_HEAD,
-    ES_BODY,
-    ES_BODY_DONE,
-    ES_RESP_HEAD,
-    ES_RESP_BODY,
-    ES_RESP_BODY_DONE,
-    ES_ERROR,
-    ES_CLOSE,
-    ES_COUNT
-};
-
 /* Status Codes */
 #define HTTP_STATUS_MAP(XX)                                                                                            \
     XX(100, CONTINUE, Continue)                                                                                        \
@@ -258,11 +244,27 @@ public:
     }
     virtual ~HttpEventer() {
     }
-    virtual s32 onClose() = 0;
-    virtual s32 onOpen(HttpMsg* msg) = 0;
-    virtual s32 onSent(HttpMsg* msg) = 0;
-    virtual s32 onFinish(HttpMsg* msg) = 0;
-    virtual s32 onBodyPart(HttpMsg* msg) = 0;
+    virtual s32 onLayerClose(HttpMsg* msg) = 0;
+ 
+    //req parse err
+    virtual s32 onReadError(HttpMsg* msg) = 0;
+
+    virtual s32 onRespWrite(HttpMsg* msg) = 0;
+    virtual s32 onRespWriteError(HttpMsg* msg) = 0;
+
+    virtual s32 onReqHeadDone(HttpMsg* msg) = 0;
+
+    virtual s32 onReqBody(HttpMsg* msg) = 0;
+    virtual s32 onReqBodyDone(HttpMsg* msg) = 0;
+
+    virtual s32 onReqChunkHeadDone(HttpMsg* msg) {
+        return 0;
+    }
+
+    virtual s32 onReqChunkBodyDone(HttpMsg* msg) {
+        return 0;
+    }
+
 };
 
 
@@ -281,14 +283,6 @@ public:
     static const StringView getMimeType(const s8* filename, usz iLen);
 
     static StringView getMethodStr(EHttpMethod it);
-
-    void setStationID(u8 id) {
-        mStationID = id;
-    }
-
-    s32 getStationID() const {
-        return mStationID;
-    }
 
     void setEvent(HttpEventer* it) {
         if (mEvent) {
@@ -451,7 +445,6 @@ protected:
 
     friend class HttpLayer;
     u8 mRespStatus; // for HttpLayer
-    u8 mStationID;
     u16 mStatusCode;
     u16 mFlags;
     EHttpParserType mType;

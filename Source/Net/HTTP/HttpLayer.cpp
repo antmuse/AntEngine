@@ -10,24 +10,21 @@ namespace net {
 
 u32 HttpLayer::GMAX_HEAD_SIZE = HTTP_MAX_HEADER_SIZE;
 
-HttpLayer::HttpLayer(HttpMsgReceiver* recv, EHttpParserType tp, bool https, TlsContext* tlsContext) :
-    mPType(tp), mReceiver(recv), mMsg(nullptr), mHttpError(HPE_OK), mHTTPS(https), mTlsContext(tlsContext) {
+HttpLayer::HttpLayer(EHttpParserType tp, bool https, TlsContext* tlsContext) :
+    mPType(tp), mWebSite(nullptr), mMsg(nullptr), mHttpError(HPE_OK), mHTTPS(https), mTlsContext(tlsContext) {
     clear();
-    if (recv) {
-        recv->grab();
-    }
 }
 
 
 HttpLayer::~HttpLayer() {
-    if (mReceiver) {
-        mReceiver->drop();
-        mReceiver = nullptr;
+    if (mWebSite) {
+        mWebSite->drop();
+        mWebSite = nullptr;
     }
 }
 
 
-s32 HttpLayer::post(HttpMsg* msg) {
+s32 HttpLayer::launch(HttpMsg* msg) {
     if (mMsg) {
         return EE_ERROR;
     }
@@ -61,22 +58,21 @@ s32 HttpLayer::post(HttpMsg* msg) {
 
 
 void HttpLayer::msgBegin() {
-    if (mMsg) {
-        mHttpError = HPE_CB_MsgBegin;
-        postClose();
-        return; // error
+    if (mWebSite) {
+        if (mMsg) {
+            mHttpError = HPE_CB_MsgBegin;
+            postClose();
+            DLOG(ELL_ERROR, "HttpLayer::msgBegin>> fail pre_msg check");
+            return; // error
+        }
+        mMsg = new HttpMsg(this);
     }
-
-    mMsg = new HttpMsg(this);
-    mMsg->mStationID = ES_INIT;
-    msgStep();
 }
 
 void HttpLayer::msgEnd() {
     DASSERT(mMsg);
     if (mMsg) {
-        mMsg->mStationID = ES_BODY_DONE;
-        msgStep();
+        mMsg->getEvent()->onReqBodyDone(mMsg);
         mMsg->drop();
         mMsg = nullptr;
     }
@@ -88,8 +84,6 @@ void HttpLayer::msgPath() {
     if (mMsg) {
         mMsg->mType = (EHttpParserType)mType;
         mMsg->mFlags = mFlags;
-        mMsg->mStationID = ES_PATH;
-        msgStep();
     }
 }
 
@@ -97,8 +91,12 @@ s32 HttpLayer::headDone() {
     DASSERT(mMsg);
     if (mMsg) {
         mMsg->mFlags = mFlags;
-        mMsg->mStationID = ES_HEAD;
-        msgStep();
+        if (!mMsg->getEvent()) {
+            mWebSite->createMsgEvent(mMsg);
+        }
+        if (EE_OK != mMsg->getEvent()->onReqHeadDone(mMsg)) {
+            postClose();
+        }
     }
     return 0;
 }
@@ -107,44 +105,32 @@ void HttpLayer::chunkHeadDone() {
     DASSERT(mMsg);
     if (mMsg) {
         mMsg->mFlags = mFlags;
-        mMsg->mStationID = ES_HEAD;
-        msgStep();
+        mMsg->getEvent()->onReqChunkHeadDone(mMsg);
     }
 }
 
-void HttpLayer::msgStep() {
-    if (EE_OK != mReceiver->stepMsg(mMsg)) {
-        postClose();
-    }
-}
 
 void HttpLayer::msgBody() {
     if (mMsg) {
-        mMsg->mStationID = ES_BODY;
-        msgStep();
+        mMsg->getEvent()->onReqBody(mMsg);
     }
 }
 
 void HttpLayer::msgError() {
     if (mMsg) {
-        mMsg->mStationID = ES_ERROR;
-        msgStep();
+        mMsg->getEvent()->onReadError(mMsg);
     }
 }
 
 void HttpLayer::chunkMsg() {
     if (mMsg) {
-        mMsg->mStationID = ES_BODY;
-        msgStep();
+        mMsg->getEvent()->onReqBody(mMsg);
     }
 }
 
 void HttpLayer::chunkDone() {
     if (mMsg) {
-        mMsg->mStationID = ES_BODY_DONE;
-        mReceiver->stepMsg(mMsg);
-        mMsg->drop();
-        mMsg = nullptr;
+        mMsg->getEvent()->onReqChunkBodyDone(mMsg);
     }
 }
 
@@ -164,6 +150,7 @@ bool HttpLayer::sendReq() {
             RequestFD::delRequest(nd);
             return false;
         }
+        mMsg->grab();
     }
     return true;
 }
@@ -267,24 +254,25 @@ void HttpLayer::onClose(Handle* it) {
         DASSERT((&mTCP.getHandleTCP() == it) && "HttpLayer::onClose http handle?");
     }
 #endif
-
+    s32 cnt = -99;
     if (mMsg) {
-        mMsg->mStationID = ES_CLOSE;
-        mReceiver->stepMsg(mMsg);
-        mMsg->drop();
+        mMsg->getEvent()->onLayerClose(mMsg);
+        cnt = mMsg->drop();
         mMsg = nullptr;
     }
-
-    drop();
-    Logger::log(ELL_ERROR, "HttpLayer::onClose>>null website");
+    s32 my = drop();
+    DLOG(ELL_INFO, "onClose>> my_grab= %d, msg_grab= %d", my, cnt);
 }
 
 
 bool HttpLayer::onLink(RequestFD* it) {
-    DASSERT(mReceiver);
     net::Acceptor* accp = (net::Acceptor*)(it->mUser);
     RequestAccept& req = *(RequestAccept*)it;
-    // mReceiver = reinterpret_cast<Website*>(accp->getUser());
+    mWebSite = reinterpret_cast<Website*>(accp->getUser());
+    if (!mWebSite) {
+        DLOG(ELL_ERROR, "HttpLayer::onLink>> invalid website");
+        return false;
+    }
     if (mHTTPS) {
         mTCP.setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
@@ -297,9 +285,11 @@ bool HttpLayer::onLink(RequestFD* it) {
     nd->mCall = HttpLayer::funcOnRead;
     s32 ret = mHTTPS ? mTCP.open(req, nd, mTlsContext) : mTCP.getHandleTCP().open(req, nd);
     if (0 == ret) {
+        mWebSite->grab();
         grab();
         Logger::log(ELL_INFO, "HttpLayer::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
+        mWebSite = nullptr;
         RequestFD::delRequest(nd);
         Logger::log(ELL_ERROR, "HttpLayer::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(),
             mTCP.getLocal().getStr(), ret);
@@ -317,25 +307,26 @@ void HttpLayer::onConnect(RequestFD* it) {
             }
         }
     }
-    DLOG(ELL_ERROR, "HttpLayer::onConnect>> [url=%d] [ip=%s], ecode=%d", mMsg->getURL().data().c_str(),
+    DLOG(ELL_ERROR, "HttpLayer::onConnect>> [url=%d] [ip=%s], ecode=%d", mMsg->getURL().data().data(),
         mTCP.getRemote().getStr(), it->mError);
     RequestFD::delRequest(it);
 }
 
 void HttpLayer::onWrite(RequestFD* it, HttpMsg* msg) {
     if (EE_OK != it->mError) {
-        Logger::log(ELL_ERROR, "HttpLayer::onWrite>>size=%u, ecode=%d, msg=%s", it->mUsed, it->mError,
-            msg->getRealPath().c_str());
-        msg->setStationID(ES_CLOSE);
-        mReceiver->stepMsg(msg);
+        DLOG(ELL_ERROR, "onWrite>>size=%u, ecode=%d, msg=%s", it->mUsed, it->mError, msg->getRealPath().data());
+        msg->getEvent()->onRespWriteError(msg);
     } else {
         msg->setRespStatus(0);
         msg->getCacheOut().commitHead(static_cast<s32>(it->mUsed));
         if (msg->getCacheOut().getSize() > 0) {
             sendResp(msg);
         } else {
-            if (EE_OK != mReceiver->stepMsg(msg)) {
-                postClose();
+            if (EE_OK != msg->getEvent()->onRespWrite(msg)) {
+                if (!msg->isKeepAlive()) {
+                    // mTCP.setTimeout(10000);  TODO
+                    // postClose();  //delay close on timeout
+                }
             }
         }
     }
@@ -2798,14 +2789,14 @@ bool HttpLayer::needEOF() const {
 
 bool HttpLayer::shouldKeepAlive() const {
     if (mVersionMajor > 0 && mVersionMinor > 0) {
-        /* HTTP/1.1 */
+        // HTTP/1.1
         if (mFlags & F_CONNECTION_CLOSE) {
             return false;
         }
     } else {
-        /* HTTP/1.0 or earlier */
-        if (!(mFlags & F_CONNECTION_KEEP_ALIVE)) {
-            return false;
+        // HTTP/1.0 or earlier
+        if (mFlags & F_CONNECTION_KEEP_ALIVE) {
+            return true;
         }
     }
     return !needEOF();

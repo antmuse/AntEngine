@@ -45,21 +45,12 @@
     <ClCompile Include="..\..\Source\MemoryPool.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFilePath.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtPath.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtShow.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileRead.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileSave.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationClose.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationError.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqBody.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqBodyDone.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqHead.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationReqPath.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationRespBody.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationRespBodyDone.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\StationRespHead.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\MsgStation.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFile.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtError.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp" />
     <ClCompile Include="..\..\Source\Net\KCProtocal.cpp" />
     <ClCompile Include="..\..\Source\Net\TlsContext.cpp" />
@@ -162,17 +153,9 @@
     <ClInclude Include="..\..\Include\HashFunctions.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFilePath.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtPath.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtShow.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationClose.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationError.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqBody.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqBodyDone.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqHead.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationReqPath.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationRespBody.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationRespBodyDone.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\StationRespHead.h" />
     <ClInclude Include="..\..\Include\ReadWriteLock.h" />
     <ClInclude Include="..\..\Include\Logger.h" />
     <ClInclude Include="..\..\Include\Loop.h" />
@@ -190,13 +173,12 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileRead.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileSave.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFile.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtError.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLayer.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpMsg.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpURL.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\MsgStation.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\Website.h" />
     <ClInclude Include="..\..\Include\Net\KCProtocal.h" />
     <ClInclude Include="..\..\Include\Net\NetAddress.h" />
@@ -331,7 +313,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <StringPooling>true</StringPooling>
@@ -395,7 +377,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <StringPooling>true</StringPooling>

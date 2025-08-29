@@ -156,7 +156,10 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
     }
 
     net::AppInitTlsLib();
-    mTlsENG.init();
+    if (EE_OK != mTlsENG.init()) {
+        Logger::log(ELL_ERROR, "Engine::init>>default TLS fail");
+        return false;
+    }
 
     if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
         if (mMain) {

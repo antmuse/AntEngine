@@ -8,7 +8,8 @@ AntEngine
 
 ## Depends
 ----
-openssl, zlib, jsoncpp, mysql
++ 1. openssl-3.5.2, commit_id: 0893a62353583343eb712adef6debdfbe597c227
++ 2. zlib, jsoncpp, mysqlclient
 
 ## Development environment
 ----
@@ -19,16 +20,20 @@ openssl, zlib, jsoncpp, mysql
 ----
 
 ```cpp
-//demo 1: TLS-server
+void once_task(void* data){
+    DLOG(ELL_INFO, "once_task done: %p", data);
+}
 int main(int argc, char** argv) {
     Engine& eng = Engine::getInstance();
-    eng.init(argv[0]);
-    Loop& loop = eng.getLoop();
-    net::Acceptor* conn= new net::Acceptor(loop, net::Linker::funcOnLink, true?"TLS":nullptr);
-    succ = conn->open("0.0.0.0:443");
-    conn->drop();
-    while (loop.run()) {    }
+    if (!eng.init(argv[0], false, "{}")) {
+        printf("main>> engine init fail\n");
+        return -1;
+    }
+    eng.getLoop().postTask(once_task, (void*)nullptr);
+    eng.run();
+    DLOG(ELL_INFO, "main>>exit...");
     eng.uninit();
+    printf("main>>stop\n");
     return 0;
 }
 ```

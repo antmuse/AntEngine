@@ -345,6 +345,7 @@ s32 TlsSession::verify(s32 verify_flags, const s8* hostname) {
 }
 
 
+
 void TlsSession::showError() {
     const s8* data;
     s32 flags;
@@ -353,16 +354,17 @@ void TlsSession::showError() {
 #if (OPENSSL_VERSION_MAJOR >= 3)
     while ((err = ERR_get_error_all(nullptr, nullptr, nullptr, &data, &flags)) != 0) {
         ERR_error_string_n(err, buf, sizeof(buf));
-        Logger::logError("TlsSession::showError, %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
+        DLOG(ELL_ERROR, "showError: %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
     }
 #else
     while ((err = ERR_get_error_line_data(nullptr, nullptr, &data, &flags)) != 0) {
         ERR_error_string_n(err, buf, sizeof(buf));
-        Logger::logError("TlsSession::showError, %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
+        DLOG(ELL_ERROR, "showError: %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
     }
 #endif
     ERR_clear_error();
 }
+
 
 }//namespace net
 }//namespace app

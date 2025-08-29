@@ -351,9 +351,9 @@ s32 System::isExist(const String& it) {
 #endif
     DWORD attr = GetFileAttributes(fname);
     if (INVALID_FILE_ATTRIBUTES == attr) {
-        return -1;
+        return 0;
     }
-    return (FILE_ATTRIBUTE_DIRECTORY & attr) > 0 ? 1 : 0;
+    return (FILE_ATTRIBUTE_DIRECTORY & attr) > 0 ? 2 : 1;
 }
 
 

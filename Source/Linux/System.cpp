@@ -354,11 +354,11 @@ s32 System::isExist(const String& it) {
     struct stat statbuf;
     if (0 == stat(it.c_str(), &statbuf)) {
         if (0 != (S_IFDIR & statbuf.st_mode)) {
-            return 1;
+            return 2;
         }
-        return (0 != (S_IFREG & statbuf.st_mode)) ? 0 : -1;
+        return (0 != (S_IFREG & statbuf.st_mode)) ? 1 : 0;
     }
-    return -1;
+    return 0;
 }
 
 

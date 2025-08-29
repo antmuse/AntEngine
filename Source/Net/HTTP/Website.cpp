@@ -2,18 +2,11 @@
 #include "Logger.h"
 #include "FileRWriter.h"
 #include "Packet.h"
+#include "Net/HTTP/HttpEvtPath.h"
+#include "Net/HTTP/HttpEvtFile.h"
+#include "Net/HTTP/HttpEvtError.h"
+#include "Net/HTTP/HttpEvtLua.h"
 
-#include "Net/HTTP/StationReqPath.h"
-#include "Net/HTTP/StationReqHead.h"
-#include "Net/HTTP/StationReqBody.h"
-#include "Net/HTTP/StationReqBodyDone.h"
-
-#include "Net/HTTP/StationRespHead.h"
-#include "Net/HTTP/StationRespBody.h"
-#include "Net/HTTP/StationRespBodyDone.h"
-
-#include "Net/HTTP/StationError.h"
-#include "Net/HTTP/StationClose.h"
 
 
 namespace app {
@@ -31,26 +24,81 @@ Website::~Website() {
     clear();
 }
 
-s32 Website::stepMsg(HttpMsg* msg) {
+s32 Website::createMsgEvent(HttpMsg* msg) {
     if (!msg) {
-        DLOG(ELL_ERROR, "HttpLayer::stepMsg>> msg=null");
+        DLOG(ELL_ERROR, "HttpLayer::createMsgEvent>> msg=null");
         return EE_ERROR;
     }
-    s32 ret;
-    do {
-        ret = getStation(msg->getStationID())->onMsg(msg);
-    } while (EE_RETRY == ret);
+    s32 ret = EE_OK;
+
+    DLOG(ELL_INFO, "ip= %s, url= %s", msg->getHttpLayer()->getHandle().getRemote().getStr(),
+        msg->getURL().data().c_str());
+
+    // reset url
+    String real(getConfig().mRootPath);
+    if (msg->getURL().data() == "/") {
+        real += "/index.html";
+        // msg->getURL().append("index.html", sizeof("index.html") - 1);
+        // msg->getURL().parser();
+    } else {
+        StringView path = msg->getURL().getPath();
+        path.simplifyPath();
+        real += path;
+    }
+    msg->setRealPath(real);
+    StringView requrl(real.data() + getConfig().mRootPath.size(), real.size() - getConfig().mRootPath.size());
+
+    net::HttpEventer* evt = nullptr;
+    net::EHttpMethod cmd = msg->getMethod();
+
+    if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
+        evt = new HttpEvtLua(requrl);
+    } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
+        s32 ck = System::isExist(real);
+        if (1 == ck) {
+            if (net::HTTP_GET == cmd) {
+                evt = new HttpEvtFile();
+            } else {
+                evt = new HttpEvtError(401);
+            }
+        } else if (2 == ck) {
+            if (net::HTTP_GET == cmd) {
+                evt = new HttpEvtPath();
+            } else {
+                evt = new HttpEvtError(401);
+            }
+        } else {
+            if (net::HTTP_POST == cmd || net::HTTP_PUT == cmd) {
+                evt = new HttpEvtFile(); // upload
+            } else {
+                evt = new HttpEvtError(404);
+            }
+        }
+    } else { // readonly
+        if (0 == System::isExist(real)) {
+            evt = new HttpEvtFile();
+        } else {
+            evt = new HttpEvtError(404);
+        }
+    }
+
+    const StringView str = HttpMsg::getMimeType(requrl.mData, requrl.mLen);
+    msg->getHeadOut().setContentType(str);
+
+    StringView svv("If-Range", sizeof("If-Range") - 1);
+    svv = msg->getHeadIn().get(svv);
+    if (svv.mLen > 0) {
+        svv.set("Range", sizeof("Range") - 1);
+        // msg->getHeadOut().add()
+    }
+
+    msg->setEvent(evt);
+    evt->drop();
     return ret;
 }
 
 
 void Website::clear() {
-    for (s32 i = 0; i < ES_COUNT; ++i) {
-        if (mStations[i]) {
-            mStations[i]->drop();
-            mStations[i] = nullptr;
-        }
-    }
 }
 
 
@@ -90,65 +138,8 @@ void Website::loadTLS() {
 void Website::init() {
     mTlsContext.init(ETLS_VERIFY_CERT);
     loadTLS();
-
-    mStations.resize(ES_COUNT);
-    memset(mStations.getPointer(), 0, sizeof(mStations[0]) * mStations.size());
-
-    MsgStation* nd = new StationInit();
-    setStation(ES_INIT, nd);
-    nd->drop();
-
-    nd = new StationReqPath();
-    setStation(ES_PATH, nd);
-    nd->drop();
-
-    nd = new StationReqHead();
-    setStation(ES_HEAD, nd);
-    nd->drop();
-
-    nd = new StationReqBody();
-    setStation(ES_BODY, nd);
-    nd->drop();
-
-    nd = new StationReqBodyDone();
-    setStation(ES_BODY_DONE, nd);
-    nd->drop();
-
-    nd = new StationRespHead();
-    setStation(ES_RESP_HEAD, nd);
-    nd->drop();
-
-    nd = new StationRespBody();
-    setStation(ES_RESP_BODY, nd);
-    nd->drop();
-
-    nd = new StationRespBodyDone();
-    setStation(ES_RESP_BODY_DONE, nd);
-    nd->drop();
-
-    nd = new StationError();
-    setStation(ES_ERROR, nd);
-    nd->drop();
-
-    nd = new StationClose();
-    setStation(ES_CLOSE, nd);
-    nd->drop();
 }
 
-
-bool Website::setStation(EStationID id, MsgStation* it) {
-    if (id >= ES_COUNT || !it) {
-        return false;
-    }
-    if (mStations[id]) {
-        mStations[id]->drop();
-    }
-    if (it) {
-        it->grab();
-    }
-    mStations[id] = it;
-    return true;
-}
 
 
 } // namespace net

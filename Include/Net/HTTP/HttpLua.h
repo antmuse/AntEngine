@@ -2,7 +2,6 @@
 #define APP_HTTPLUA_H
 
 #include "TVector.h"
-#include "Net/HTTP/MsgStation.h"
 
 namespace app {
 namespace net {

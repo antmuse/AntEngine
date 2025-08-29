@@ -1,7 +1,12 @@
 #ture = debug
 #false = release with symbol
 #release = release without symbol
-DEBUG ?= true
+
+#DEBUG ?= true
+ifeq (${DEBUG},)
+export DEBUG = true
+endif
+
 export BUILD_DIR := $(shell pwd)
 
 export COLOR_BLACK = "\e[30;1m"
