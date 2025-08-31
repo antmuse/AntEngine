@@ -75,7 +75,7 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
             }
         }
     } else { // readonly
-        if (0 == System::isExist(real)) {
+        if (1 == System::isExist(real)) {
             evt = new HttpEvtFile();
         } else {
             evt = new HttpEvtError(404);

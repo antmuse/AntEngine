@@ -8,20 +8,23 @@ main(){
             shift 1
             echo "post: upload $2 -> $1"
             if [ 1 == $# ]; then
-                curl -k -X POST http://127.0.0.1:8000/fs/$1
+                curl -k -X POST https://127.0.0.1:8443/fs/$1
             else
-                curl -k -X POST http://127.0.0.1:8000/fs/$2 -T $1
+                curl -k -X POST https://127.0.0.1:8443/fs/$2 -T $1
             fi
             ;;
         "put")
             shift 1
             echo "put: upload $2 -> $1"
-            curl -k -X PUT http://127.0.0.1:8000/fs/$2 -T $1
+            curl -k -X PUT https://127.0.0.1:8443/fs/$2 -T $1 \
+                --header "Connection: keep-alive" 
             ;;
         "get")
             shift 1
             echo "get: $1"
-            curl -k -X GET http://127.0.0.1:8000/fs/$1
+            curl -k -X GET https://127.0.0.1:8443/$1 \
+                --header "Connection: close" \
+                --header "User-Agent: cccl"
             ;;
         "strip")
             shift 1
