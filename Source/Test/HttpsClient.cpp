@@ -70,7 +70,7 @@ void HttpsClient::onRead(RequestFD* it) {
 
 void HttpsClient::onConnect(RequestFD* it) {
     if (0 == it->mError) {
-        s32 ret = mTCP.verify(net::ETLS_VERIFY_CERT_HOST);
+        s32 ret = mTCP.verify(net::ETLS_VERIFY_NONE);
         if (EE_OK != ret) {
             Logger::log(ELL_ERROR, "HttpsClient::onConnect>>verify fail, ecode=%d", ret);
         }

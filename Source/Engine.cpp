@@ -56,15 +56,18 @@ void Engine::clear() {
 void Engine::postCommand(s32 val) {
     MsgHeader cmd;
     switch (val) {
-    case ECT_EXIT: {
+    case ECT_EXIT:
+    {
         cmd.finish(ECT_EXIT, ++cmd.gSharedSN, ECT_VERSION);
         break;
     }
-    case ECT_ACTIVE: {
+    case ECT_ACTIVE:
+    {
         cmd.finish(ECT_ACTIVE, ++cmd.gSharedSN, ECT_VERSION);
         break;
     }
-    case ECT_RESPAWN: {
+    case ECT_RESPAWN:
+    {
         if (mMain && mConfig.mMaxProcess > 0) {
             ++mProcResponCount;
         }
@@ -156,7 +159,7 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
     }
 
     net::AppInitTlsLib();
-    if (EE_OK != mTlsENG.init()) {
+    if (EE_OK != mTlsENG.init(mConfig.mEngTlsConfig)) {
         Logger::log(ELL_ERROR, "Engine::init>>default TLS fail");
         return false;
     }

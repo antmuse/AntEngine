@@ -1,7 +1,5 @@
 #include "Net/HTTP/Website.h"
 #include "Logger.h"
-#include "FileRWriter.h"
-#include "Packet.h"
 #include "Net/HTTP/HttpEvtPath.h"
 #include "Net/HTTP/HttpEvtFile.h"
 #include "Net/HTTP/HttpEvtError.h"
@@ -11,10 +9,6 @@
 
 namespace app {
 namespace net {
-
-static const s8* G_CA_FILE = "ca.crt";
-static const s8* G_CERT_FILE = "server.crt";
-static const s8* G_PRIVATE_FILE = "server.unsecure.key";
 
 Website::Website(EngineConfig::WebsiteCfg& cfg) : mConfig(cfg) {
     init();
@@ -99,45 +93,17 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
 
 
 void Website::clear() {
-}
-
-
-void Website::loadTLS() {
-    if (1 != mConfig.mType) { // ssl
+    if (1 != mConfig.mType) { // not TLS
         return;
     }
-    Packet buf(1024);
-    FileRWriter keyfile;
-    if (keyfile.openFile(mConfig.mPathTLS + G_CA_FILE)) {
-        buf.resize(keyfile.getFileSize());
-        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            if (EE_OK != mTlsContext.addTrustedCerts(buf.getPointer(), buf.size())) {
-                Logger::logError("Website::init, host=%s, ca err=%s", mConfig.mLocal.getStr(), G_CERT_FILE);
-            }
-        }
-    }
-    if (keyfile.openFile(mConfig.mPathTLS + G_CERT_FILE)) {
-        buf.resize(keyfile.getFileSize());
-        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            if (EE_OK != mTlsContext.setCert(buf.getPointer(), buf.size())) {
-                Logger::logError("Website::init, host=%s, server ca err=%s", mConfig.mLocal.getStr(), G_CERT_FILE);
-            }
-        }
-    }
-    if (keyfile.openFile(mConfig.mPathTLS + G_PRIVATE_FILE)) {
-        buf.resize(keyfile.getFileSize());
-        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            if (EE_OK != mTlsContext.setPrivateKey(buf.getPointer(), buf.size())) {
-                Logger::logError("Website::init, host=%s, private err=%s", mConfig.mLocal.getStr(), G_PRIVATE_FILE);
-            }
-        }
-    }
+    mTlsContext.uninit();
 }
 
-
 void Website::init() {
-    mTlsContext.init(ETLS_VERIFY_CERT);
-    loadTLS();
+    if (1 != mConfig.mType) { // not TLS
+        return;
+    }
+    mTlsContext.init(mConfig.mTLS);
 }
 
 

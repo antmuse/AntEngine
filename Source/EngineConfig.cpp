@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "EngineConfig.h"
@@ -52,28 +52,15 @@ static void* keyValueDump(void* iUserData, const void* kval) {
     return ret;
 }
 
-static DictFunctions gDictCalls = {
-    hashCallback,
-    keyValueDump,
-    keyValueDump,
-    compareCallback,
-    freeCallback,
-    freeCallback
-};
+static DictFunctions gDictCalls
+    = {hashCallback, keyValueDump, keyValueDump, compareCallback, freeCallback, freeCallback};
 
 
 
 EngineConfig::EngineConfig() :
-    mDaemon(false),
-    mPrint(1),
-    mMaxPostAccept(10),
-    mMaxThread(3),
-    mMaxProcess(0),
-    mMemSize(1024 * 1024 * 1),
-    mLogPath("Log/"),
-    mPidFile("Log/PID.txt"),
-    mMemName("GMAP/MainMem.map") {
-    //memset(this, 0, sizeof(*this));
+    mDaemon(false), mPrint(1), mMaxPostAccept(10), mMaxThread(3), mMaxProcess(0), mMemSize(1024 * 1024 * 1),
+    mLogPath("Log/"), mPidFile("Log/PID.txt"), mMemName("GMAP/MainMem.map") {
+    // memset(this, 0, sizeof(*this));
 
     s8 sed[20];
     Timer::getTimeStr(sed, sizeof(sed));
@@ -81,7 +68,6 @@ EngineConfig::EngineConfig() :
 }
 
 EngineConfig::~EngineConfig() {
-
 }
 
 bool EngineConfig::save(const String& cfg) {
@@ -187,16 +173,18 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
                     nd.mRootPath.resize(nd.mRootPath.size() - 1);
                 }
                 if (1 == nd.mType) {
-                    if (!val["Website"][i].isMember("PathTLS")) {
-                        Logger::logError("EngineConfig::load, website[%u][%s] PathTLS err",
-                            i, nd.mLocal.getStr());
+                    if (!val["Website"][i].isMember("TLS")) {
+                        DLOG(ELL_INFO, "EngineConfig::load, website[%u][%s] TLS err", i, nd.mLocal.getStr());
                         continue;
                     }
-                    nd.mPathTLS = val["Website"][i]["PathTLS"].asCString();
-                    nd.mPathTLS.replace('\\', '/');
-                    if ('/' != mLogPath.lastChar()) {
-                        mLogPath += '/';
-                    }
+                    Json::Value& tls = val["Website"][i]["TLS"];
+                    nd.mTLS.mTlsPathCA = tls["CA"].asCString();
+                    nd.mTLS.mTlsPathCert = tls["Cert"].asCString();
+                    nd.mTLS.mTlsPathKey = tls["Key"].asCString();
+                    nd.mTLS.mTlsVerify = tls["Verify"].asInt();
+                    nd.mTLS.mTlsVersionOff = tls["VersionOff"].asCString();
+                    nd.mTLS.mTlsCiphers = tls["Ciphers"].asCString();
+                    nd.mTLS.mTlsCiphersuites = tls["Ciphersuites"].asCString();
                 }
                 mWebsite.pushBack(nd);
                 mWebsite.getLast().mDict = new HashDict(gDictCalls, nullptr);
@@ -207,4 +195,4 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
 }
 
 
-} //namespace app
+} // namespace app

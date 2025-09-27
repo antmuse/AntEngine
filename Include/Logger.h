@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_LOGGER_H
-#define	APP_LOGGER_H
+#define APP_LOGGER_H
 
 #include <stdarg.h>
 #include <mutex>
@@ -32,9 +32,11 @@
 #include "TString.h"
 
 #if defined(DOS_WINDOWS)
-#define DBFILE(N) (strrchr(N,'\\')?strrchr(N,'\\')+1:N)
+#define DBFILE(N) (strrchr(N, '\\') ? strrchr(N, '\\') + 1 : N)
+// #define DLOG(LV, FMT, ...) Logger::log(LV, "%s,%s:%d " FMT, DBFILE(__FILE__), __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define DLOG(LV, FMT, ...) Logger::log(LV, "%s:%d " FMT, DBFILE(__FILE__), __LINE__, ##__VA_ARGS__)
 #else
+// #define DLOG(LV, FMT, ...) Logger::log(LV, __BASE_FILE__ "," __FUNCTION__ ":%d, " FMT, __LINE__, ##__VA_ARGS__)
 #define DLOG(LV, FMT, ...) Logger::log(LV, __BASE_FILE__ ":%d, " FMT, __LINE__, ##__VA_ARGS__)
 #endif
 
@@ -48,20 +50,20 @@
 
 namespace app {
 
-//error code of app
+// error code of app
 enum EErrorCode {
     EE_OK = 0,
-    EE_NO_OPEN = -1,         //未打开FD
-    EE_NO_READABLE = -2,     //FD不可读
-    EE_NO_WRITEABLE = -3,    //FD不可写
-    EE_CLOSING = -4,         //FD已关闭
-    EE_INVALID_HANDLE = -5,  //FD无效
-    EE_INVALID_PARAM = -6,   //参数无效
+    EE_NO_OPEN = -1,        // 未打开FD
+    EE_NO_READABLE = -2,    // FD不可读
+    EE_NO_WRITEABLE = -3,   // FD不可写
+    EE_CLOSING = -4,        // FD已关闭
+    EE_INVALID_HANDLE = -5, // FD无效
+    EE_INVALID_PARAM = -6,  // 参数无效
     EE_RETRY = -7,
     EE_TIMEOUT = -8,
-    EE_INTR = -10,           //中断
-    EE_POSTED = -11,         //发起异步请求成功
-    EE_TOO_MANY_FD = -24,    //打开过多句柄, ulimit -n
+    EE_INTR = -10,        // 中断
+    EE_POSTED = -11,      // 发起异步请求成功
+    EE_TOO_MANY_FD = -24, // 打开过多句柄, ulimit -n
     EE_ERROR = -1
 };
 
@@ -76,30 +78,24 @@ enum ELogLevel {
 };
 
 /// Contains strings for each log level to make them easier to print to a stream.
-const s8* const AppLogLevelNames[] = {
-    "Debug",
-    "Info",
-    "Warn",
-    "Error",
-    "Critical",
-    0
-};
-
+const s8* const AppLogLevelNames[] = {"Debug", "Info", "Warn", "Error", "Critical", 0};
 
 
 
 class ILogReceiver {
 public:
-    ILogReceiver() { }
+    ILogReceiver() {
+    }
 
-    virtual ~ILogReceiver() { }
+    virtual ~ILogReceiver() {
+    }
 
     virtual void log(usz len, const s8* msg) = 0;
 
     virtual void flush() = 0;
 
 protected:
-    //against to the format in Logger::postLog()
+    // against to the format in Logger::postLog()
     DFINLINE static s16 getDay(const s8* msg) {
         DASSERT(msg);
         // offset = 8 = 2022-11-27 22:52:59 [2] Engine::init>>pid
@@ -147,8 +143,8 @@ public:
     static void setLogLevel(const ELogLevel logLevel);
 
     /**
-    * @brief Register a Log Receiver.
-    * @param iLog: The log receiver to Regist. */
+     * @brief Register a Log Receiver.
+     * @param iLog: The log receiver to Regist. */
     static const ILogReceiver* add(ILogReceiver* iLog);
 
     static const ILogReceiver* addPrintReceiver();
@@ -156,13 +152,13 @@ public:
     static const ILogReceiver* addFileReceiver();
 
     /**
-    * @brief Unregister a Log Receiver.
-    * @param iLog: The log receiver to remove. */
+     * @brief Unregister a Log Receiver.
+     * @param iLog: The log receiver to remove. */
     static void remove(const ILogReceiver* iLog);
 
     /**
-    * @brief remove all log receivers.
-    */
+     * @brief remove all log receivers.
+     */
     static void clear();
 
     static void setPID(s32 id);
@@ -187,7 +183,6 @@ private:
 };
 
 
-} //namespace app
+} // namespace app
 
-#endif	/* APP_LOGGER_H */
-
+#endif /* APP_LOGGER_H */

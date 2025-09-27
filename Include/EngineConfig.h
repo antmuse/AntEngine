@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_ENGINECONFIG_H
-#define	APP_ENGINECONFIG_H
+#define APP_ENGINECONFIG_H
 
 #include "TString.h"
 #include "TVector.h"
@@ -36,6 +36,43 @@ namespace app {
 
 class EngineConfig {
 public:
+    struct TlsConfig {
+        bool mDebug = false;
+        s32 mTlsVerify = 0;                // tls verify
+        String mTlsPathCA;                 // tls ca.crt
+        String mTlsPathCert;               // tls server.crt
+        String mTlsPathKey;                // tls server.key
+        String mTlsVersionOff = "v1.0, v1.1"; // tls disable version:  v1.0, v1.1, v1.2, v1.3
+        String mTlsCiphers;
+        String mTlsCiphersuites;
+    };
+    struct WebsiteCfg {
+        u8 mType;     // 0=http, 1=https
+        u32 mTimeout; // in milliseconds
+        u32 mSpeed;   // in bytes per seconds
+        String mRootPath;
+        TlsConfig mTLS;
+        String mHost;
+        net::NetAddress mLocal;
+        HashDict* mDict; // cache of site
+        WebsiteCfg() : mType(0), mTimeout(20 * 1000), mSpeed(1024 * 4), mDict(nullptr) {
+        }
+        ~WebsiteCfg() {
+            if (mDict) {
+                delete mDict;
+                mDict = nullptr;
+            }
+        }
+    };
+    struct ProxyCfg {
+        u8 mType;     // 0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
+        u32 mTimeout; // in milliseconds
+        u32 mSpeed;   // in bytes per seconds
+        net::NetAddress mLocal;
+        net::NetAddress mRemote;
+    };
+
+
     EngineConfig();
 
     ~EngineConfig();
@@ -53,40 +90,12 @@ public:
     String mLogPath;
     String mPidFile;
     String mMemName;
-    struct WebsiteCfg {
-        u8 mType;               //0=http, 1=https
-        u32 mTimeout;           //in milliseconds
-        u32 mSpeed;             //in bytes per seconds
-        String mRootPath;
-        String mPathTLS;
-        String mHost;
-        net::NetAddress mLocal;
-        HashDict* mDict;         //cache of site
-        WebsiteCfg() :
-            mType(0),
-            mTimeout(20*1000),
-            mSpeed(1024 * 4),
-            mDict(nullptr) {
-        }
-        ~WebsiteCfg() {
-            if (mDict) {
-                delete mDict;
-                mDict = nullptr;
-            }
-        }
-    };
-    struct ProxyCfg {
-        u8 mType;    //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
-        u32 mTimeout; //in milliseconds
-        u32 mSpeed;  //in bytes per seconds
-        net::NetAddress mLocal;
-        net::NetAddress mRemote;
-    };
+    TlsConfig mEngTlsConfig; // the default cfg for engine
     TVector<WebsiteCfg> mWebsite;
     TVector<ProxyCfg> mProxy;
 };
 
 
-} //namespace app
+} // namespace app
 
-#endif //APP_ENGINECONFIG_H
+#endif // APP_ENGINECONFIG_H

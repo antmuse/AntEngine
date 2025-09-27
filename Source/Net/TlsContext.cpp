@@ -40,6 +40,8 @@
 #include "Certs.h"
 #include "Spinlock.h"
 #include "Net/TlsSession.h"
+#include "FileRWriter.h"
+#include "Packet.h"
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
 #error "openssl version is too low"
@@ -80,7 +82,7 @@ void AppInitTlsLib() {
     if (!G_TLS_LOCK.tryLock()) {
         return;
     }
-    //OPENSSL_no_config();
+    // OPENSSL_no_config();
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
@@ -147,7 +149,7 @@ TlsContext::TlsContext() : mTlsContext(nullptr), mVerifyFlags(ETLS_VERIFY_NONE) 
 TlsContext::~TlsContext() {
 }
 
-s32 TlsContext::init(s32 vflag, bool debug) {
+s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     if (mTlsContext) {
         return 0;
     }
@@ -158,20 +160,69 @@ s32 TlsContext::init(s32 vflag, bool debug) {
     }
 
     mTlsContext = ssl_ctx;
-    mVerifyFlags = vflag;
-
-    if (debug) {
+    if (cfg.mDebug) {
         SSL_CTX_set_info_callback(ssl_ctx, AppFunTlsDebug);
     }
-
     SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
-    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, nullptr);
-
+    setVerifyFlags(cfg.mTlsVerify);
+    if (EE_OK != setVersion(cfg.mTlsVersionOff)) {
+        DLOG(ELL_ERROR, "set version off err = %s", cfg.mTlsVersionOff.data());
+    }
     s32 ret = addTrustedCerts(G_CA_CERT, strlen(G_CA_CERT));
     ret = addTrustedCerts(G_CA_CERT1, strlen(G_CA_CERT1));
     ret = addTrustedCerts(G_CA_ROOT_CERT, strlen(G_CA_ROOT_CERT));
-    ret = setCert(G_SERVER_CERT, strlen(G_SERVER_CERT));
-    ret = setPrivateKey(G_SERVER_KEY, strlen(G_SERVER_KEY));
+    Packet buf(1024);
+    FileRWriter keyfile;
+    if (keyfile.openFile(cfg.mTlsPathCA)) {
+        buf.resize(keyfile.getFileSize());
+        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
+            if (EE_OK != addTrustedCerts(buf.getPointer(), buf.size())) {
+                DLOG(ELL_ERROR, "set CA err = %s", cfg.mTlsPathCA.data());
+            }
+        }
+    } else {
+        DLOG(ELL_ERROR, "fail to open CA file = %s", cfg.mTlsPathCA.data());
+    }
+    if (keyfile.openFile(cfg.mTlsPathCert)) {
+        buf.resize(keyfile.getFileSize());
+        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
+            if (EE_OK != setCert(buf.getPointer(), buf.size())) {
+                DLOG(ELL_ERROR, "set cert err = %s", cfg.mTlsPathCert.data());
+            }
+        }
+    } else {
+        ret = setCert(G_SERVER_CERT, strlen(G_SERVER_CERT));
+        DLOG(ELL_ERROR, "fail to open cert file = %s", cfg.mTlsPathCert.data());
+    }
+    if (keyfile.openFile(cfg.mTlsPathKey)) {
+        buf.resize(keyfile.getFileSize());
+        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
+            if (EE_OK != setPrivateKey(buf.getPointer(), buf.size())) {
+                DLOG(ELL_ERROR, "set key err = %s", cfg.mTlsPathKey.data());
+            }
+        }
+    } else {
+        ret = setPrivateKey(G_SERVER_KEY, strlen(G_SERVER_KEY));
+        DLOG(ELL_ERROR, "fail to open key file = %s", cfg.mTlsPathKey.data());
+    }
+    if (!cfg.mTlsCiphers.empty()) {
+        if (!SSL_CTX_set_cipher_list((SSL_CTX*)mTlsContext, cfg.mTlsCiphers.data())) {
+            DLOG(ELL_ERROR, "fail to set ciphers = %s", cfg.mTlsCiphers.data());
+        } else {
+            DLOG(ELL_INFO, "set ciphers = %s", cfg.mTlsCiphers.data());
+        }
+    }
+    if (!cfg.mTlsCiphersuites.empty()) {
+#ifdef TLS1_3_VERSION
+        if (!SSL_CTX_set_ciphersuites((SSL_CTX*)mTlsContext, cfg.mTlsCiphersuites.data())) {
+            DLOG(ELL_ERROR, "fail to set ciphersuites = %s", cfg.mTlsCiphersuites.data());
+        } else {
+            DLOG(ELL_INFO, "set ciphersuites = %s", cfg.mTlsCiphersuites.data());
+        }
+#else
+        DLOG(ELL_WARN, "TLS v1.3 is not support, on ciphersuites set");
+#endif
+    }
     return EE_OK;
 }
 
@@ -182,8 +233,64 @@ void TlsContext::uninit() {
     }
 }
 
-void TlsContext::setVerifyFlags(s32 iflags) {
+
+s32 TlsContext::setVersion(const String& it) {
+    if (!mTlsContext) {
+        DLOG(ELL_ERROR, "invalid TLS Context");
+        return EE_ERROR;
+    }
+    String logs("disable TLS Version:");
+    if (it.find("v1.0") >= 0) {
+        logs += " v1.0";
+        SSL_CTX_set_options((SSL_CTX*)mTlsContext, SSL_OP_NO_TLSv1);
+    }
+    if (it.find("v1.1") >= 0) {
+        logs += " v1.1";
+        SSL_CTX_set_options((SSL_CTX*)mTlsContext, SSL_OP_NO_TLSv1_1);
+    }
+    if (it.find("v1.2") >= 0) {
+        logs += " v1.2";
+        SSL_CTX_set_options((SSL_CTX*)mTlsContext, SSL_OP_NO_TLSv1_2);
+    }
+    if (it.find("v1.3") >= 0) {
+#ifdef SSL_OP_NO_TLSv1_3
+        logs += " v1.3";
+        SSL_CTX_set_options((SSL_CTX*)mTlsContext, SSL_OP_NO_TLSv1_3);
+#else
+        DLOG(ELL_WARN, "TLS v1.3 is not support, on version set");
+#endif
+    }
+    DLOG(ELL_INFO, "%s", logs.data());
+    return EE_OK;
+}
+
+
+s32 TlsContext::setVerifyFlags(s32 iflags) {
+    if (!mTlsContext) {
+        DLOG(ELL_ERROR, "invalid TLS Context");
+        return EE_ERROR;
+    }
     mVerifyFlags = iflags;
+    DLOG(ELL_INFO, "TLS VerifyFlags = %d", iflags);
+    switch (iflags) {
+    case ETLS_VERIFY_PEER:
+        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_PEER, nullptr);
+        break;
+    case ETLS_VERIFY_FAIL_IF_NO_PEER_CERT:
+        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
+        break;
+    case ETLS_VERIFY_CLIENT_ONCE:
+        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_CLIENT_ONCE, nullptr);
+        break;
+    case ETLS_VERIFY_POST_HANDSHAKE:
+        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_POST_HANDSHAKE, nullptr);
+        break;
+    case ETLS_VERIFY_NONE:
+    default:
+        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_NONE, nullptr);
+        break;
+    };
+    return EE_OK;
 }
 
 s32 TlsContext::addTrustedCerts(const s8* cert, usz length) {

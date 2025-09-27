@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Engine.h"
@@ -41,7 +41,7 @@ static RingBuffer* AppGetBufOfBIO(BIO* bio) {
 static s32 AppCreateBIOBuffer(BIO* bio) {
     BIO_set_shutdown(bio, 1);
     BIO_set_init(bio, 1);
-    //AppGetBufOfBIO(bio)->init();
+    // AppGetBufOfBIO(bio)->init();
     return 1;
 }
 
@@ -49,7 +49,7 @@ static s32 AppDeleteBIOBuffer(BIO* bio) {
     if (bio == nullptr) {
         return 0;
     }
-    //AppGetBufOfBIO(bio)->uninit();
+    // AppGetBufOfBIO(bio)->uninit();
     return 1;
 }
 
@@ -119,8 +119,7 @@ static long AppBIOCtrl(BIO* bio, s32 cmd, long num, void* ptr) {
         ret = BIO_get_shutdown(bio);
         break;
     case BIO_CTRL_SET_CLOSE:
-        DASSERT(num <= INT_MAX && num >= INT_MIN &&
-            "BIO ctrl value is too big or too small");
+        DASSERT(num <= INT_MAX && num >= INT_MIN && "BIO ctrl value is too big or too small");
         BIO_set_shutdown(bio, (s32)num);
         break;
     case BIO_CTRL_WPENDING:
@@ -143,7 +142,7 @@ static long AppBIOCtrl(BIO* bio, s32 cmd, long num, void* ptr) {
 }
 
 static BIO_METHOD* G_TLS_FUNC = nullptr;
-//call once
+// call once
 void AppInitRingBIO() {
     G_TLS_FUNC = BIO_meth_new(BIO_TYPE_MEM, "RingBuffer");
     if (G_TLS_FUNC) {
@@ -157,7 +156,7 @@ void AppInitRingBIO() {
     }
 }
 
-//call once
+// call once
 void AppUninitRingBIO() {
     if (G_TLS_FUNC) {
         BIO_meth_free(G_TLS_FUNC);
@@ -181,8 +180,8 @@ enum EHostMatch {
 
 static EHostMatch AppScanHost(X509* peer_cert, const s8* mHostName) {
     EHostMatch result = EHM_NO_MATCH;
-    STACK_OF(GENERAL_NAME)* names = (STACK_OF(GENERAL_NAME)*) (X509_get_ext_d2i(
-        peer_cert, NID_subject_alt_name, nullptr, nullptr));
+    STACK_OF(GENERAL_NAME)* names
+        = (STACK_OF(GENERAL_NAME)*)(X509_get_ext_d2i(peer_cert, NID_subject_alt_name, nullptr, nullptr));
     if (names == nullptr) {
         return EHM_NO_SAN_PRESENT;
     }
@@ -258,7 +257,6 @@ static EHostMatch AppMatchHost(X509* peer_cert, const s8* mHostName) {
 
 
 
-
 TlsSession::TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers) {
     DASSERT(ssl_ctx);
     SSL_CTX_up_ref(ssl_ctx);
@@ -271,9 +269,9 @@ TlsSession::TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outB
 
 TlsSession::~TlsSession() {
     SSL_CTX_free(SSL_get_SSL_CTX(mSSL));
-    SSL_free(mSSL);//here have freed mOutBIO and mInBIO already.
-    //BIO_free(mOutBIO);
-    //BIO_free(mInBIO);
+    SSL_free(mSSL); // here have freed mOutBIO and mInBIO already.
+    // BIO_free(mOutBIO);
+    // BIO_free(mInBIO);
 }
 
 
@@ -297,7 +295,7 @@ s32 TlsSession::read(void* buf, s32 len) {
     return SSL_read(mSSL, buf, len);
 }
 
-s32 TlsSession::getError(s32 nread)const {
+s32 TlsSession::getError(s32 nread) const {
     return SSL_get_error(mSSL, nread);
 }
 
@@ -310,7 +308,7 @@ bool TlsSession::isInitFinished() {
 }
 
 s32 TlsSession::verify(s32 verify_flags, const s8* hostname) {
-    if (!verify_flags) {
+    if (ETLS_VERIFY_NONE == verify_flags) {
         return EE_OK;
     }
 
@@ -319,25 +317,21 @@ s32 TlsSession::verify(s32 verify_flags, const s8* hostname) {
         return EE_ERROR;
     }
 
-    if (verify_flags & ETLS_VERIFY_CERT) {
-        long rc = SSL_get_verify_result(mSSL);
-        if (rc != X509_V_OK) {
-            X509_free(peer_cert);
-            return ETLS_VERIFY_CERT;
-        }
+    long rc = SSL_get_verify_result(mSSL);
+    if (rc != X509_V_OK) {
+        X509_free(peer_cert);
+        return EE_ERROR;
     }
 
-    s32 ret = EE_OK;
-    if (verify_flags & ETLS_VERIFY_HOST) {
-        ret = ETLS_VERIFY_HOST;
-        switch (AppMatchHost(peer_cert, hostname)) {
-        case EHM_MATCH:
-            ret = EE_OK;
-            break;
-        case EHM_NO_MATCH:
-        case EHM_BAD_CERT:
-        default: break;
-        }
+    s32 ret = EE_ERROR;
+    switch (AppMatchHost(peer_cert, hostname)) {
+    case EHM_MATCH:
+        ret = EE_OK;
+        break;
+    case EHM_NO_MATCH:
+    case EHM_BAD_CERT:
+    default:
+        break;
     }
 
     X509_free(peer_cert);
@@ -366,5 +360,5 @@ void TlsSession::showError() {
 }
 
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app

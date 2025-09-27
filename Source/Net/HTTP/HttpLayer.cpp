@@ -118,7 +118,11 @@ void HttpLayer::msgBody() {
 
 void HttpLayer::msgError() {
     if (mMsg) {
-        mMsg->getEvent()->onReadError(mMsg);
+        if (mMsg->getEvent()) {
+            mMsg->getEvent()->onReadError(mMsg);
+        }
+        mMsg->drop();
+        mMsg = nullptr;
     }
 }
 

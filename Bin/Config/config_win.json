@@ -8,7 +8,15 @@
     "AcceptPost": 10, //[1-255]监听端口上侯命的请求数
     "ThreadPool": 3, //[1-255]
     "Process": 0, //进程数
-
+    "TLS": {
+        "Ciphers": "", //"DEFAULT:!MEDIUM",
+        "Ciphersuites": "", //"TLS_CHACHA20_POLY1305_SHA256",
+        "CA": "ca.crt",
+        "Cert": "server.crt",
+        "Key": "server.unsecure.key",
+        "VersionOff": "v1.0, v1.1",
+        "Verify": 0
+    },
     "Website": [
         {
             "Lisen": "0.0.0.0:8000",
@@ -23,7 +31,16 @@
             "Timeout": 30, //秒,0不超时
             "Path": "D:/Code/My/AntEngine/Bin/Web/",
             "PathTLS": "D:/Code/My/AntEngine/Bin/Web/TLS",
-            "Host": "local.cn"
+            "Host": "local.cn",
+            "TLS": {
+                "Ciphers": "", //"DEFAULT:!MEDIUM",
+                "Ciphersuites": "", //"TLS_CHACHA20_POLY1305_SHA256",
+                "CA": "ca.crt",
+                "Cert": "server.crt",
+                "Key": "server.unsecure.key",
+                "VersionOff": "v1.0, v1.1",
+                "Verify": 0
+            }
         }
     ],
 
@@ -37,4 +54,3 @@
         }
     ]
 }
-

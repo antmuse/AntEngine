@@ -9,8 +9,6 @@
 namespace app {
 namespace net {
 
-
-
 /**
  * @brief Website bind with Acceptor & HttpLayer.
  *        HttpLayer bind with HandleTCP & HttpMsg;
@@ -22,7 +20,7 @@ public:
     virtual ~Website();
 
     /**
-    * @brief called when http_req_head is readed.
+     * @brief called when http_req_head is readed.
      */
     s32 createMsgEvent(HttpMsg* msg);
 
@@ -43,7 +41,6 @@ public:
 
 private:
     void init();
-    void loadTLS();
     void clear();
 
     void onLink(RequestFD* it) {
