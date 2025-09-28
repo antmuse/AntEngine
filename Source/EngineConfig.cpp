@@ -146,7 +146,16 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
         mMaxPostAccept = AppClamp<u8>(val["AcceptPost"].asInt(), 1, 255);
         mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
         mMaxProcess = AppClamp<s16>(val["Process"].asInt(), -1024, 1024);
-
+        if (val.isMember("TLS")) {
+            Json::Value& tls = val["TLS"];
+            mEngTlsConfig.mTlsPathCA = tls["CA"].asCString();
+            mEngTlsConfig.mTlsPathCert = tls["Cert"].asCString();
+            mEngTlsConfig.mTlsPathKey = tls["Key"].asCString();
+            mEngTlsConfig.mTlsVerify = tls["Verify"].asInt();
+            mEngTlsConfig.mTlsVersionOff = tls["VersionOff"].asCString();
+            mEngTlsConfig.mTlsCiphers = tls["Ciphers"].asCString();
+            mEngTlsConfig.mTlsCiphersuites = tls["Ciphersuites"].asCString();
+        }
         if (val.isMember("Proxy")) {
             ProxyCfg nd;
             u32 mx = val["Proxy"].size();
@@ -174,7 +183,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
                 }
                 if (1 == nd.mType) {
                     if (!val["Website"][i].isMember("TLS")) {
-                        DLOG(ELL_INFO, "EngineConfig::load, website[%u][%s] TLS err", i, nd.mLocal.getStr());
+                        nd.mTLS = mEngTlsConfig;
+                        DLOG(ELL_INFO, "EngineConfig::load, website[%u][%s] TLS use default", i, nd.mLocal.getStr());
                         continue;
                     }
                     Json::Value& tls = val["Website"][i]["TLS"];

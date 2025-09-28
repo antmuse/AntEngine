@@ -36,15 +36,18 @@ namespace app {
 
 class EngineConfig {
 public:
+    /**
+     * @see Ciphers config https://wiki.mozilla.org/Security/Server_Side_TLS
+     */
     struct TlsConfig {
         bool mDebug = false;
-        s32 mTlsVerify = 0;                // tls verify
-        String mTlsPathCA;                 // tls ca.crt
-        String mTlsPathCert;               // tls server.crt
-        String mTlsPathKey;                // tls server.key
+        s32 mTlsVerify = 0;                   // tls verify
+        String mTlsPathCA;                    // tls ca.crt
+        String mTlsPathCert;                  // tls server.crt
+        String mTlsPathKey;                   // tls server.key
         String mTlsVersionOff = "v1.0, v1.1"; // tls disable version:  v1.0, v1.1, v1.2, v1.3
-        String mTlsCiphers;
-        String mTlsCiphersuites;
+        String mTlsCiphers;                   // for TLSv1.2 and below
+        String mTlsCiphersuites;              // for TLSv1.3
     };
     struct WebsiteCfg {
         u8 mType;     // 0=http, 1=https
