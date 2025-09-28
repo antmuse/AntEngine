@@ -20,11 +20,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_NOCOPY_H
-#define	APP_NOCOPY_H
+#define APP_NOCOPY_H
 
 #include "Config.h"
 
@@ -32,15 +32,18 @@ namespace app {
 
 class Nocopy {
 public:
-    Nocopy() { }
-    ~Nocopy(){ }
+    Nocopy() {
+    }
+    ~Nocopy() {
+    }
+
 protected:
     Nocopy(const Nocopy&) = delete;
-    Nocopy(const Nocopy&&) = delete;
+    Nocopy(Nocopy&&) = delete;
     const Nocopy& operator=(const Nocopy&) = delete;
-    const Nocopy& operator=(const Nocopy&&) = delete;
+    Nocopy& operator=(Nocopy&&) = delete;
 };
 
-}
+} // namespace app
 
-#endif //APP_NOCOPY_H
+#endif // APP_NOCOPY_H

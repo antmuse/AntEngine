@@ -155,6 +155,9 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
             mEngTlsConfig.mTlsVersionOff = tls["VersionOff"].asCString();
             mEngTlsConfig.mTlsCiphers = tls["Ciphers"].asCString();
             mEngTlsConfig.mTlsCiphersuites = tls["Ciphersuites"].asCString();
+            if (tls.isMember("KeyPassword")) {
+                mEngTlsConfig.mTlsPassword = tls["KeyPassword"].asCString();
+            }
         }
         if (val.isMember("Proxy")) {
             ProxyCfg nd;
@@ -195,6 +198,9 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
                     nd.mTLS.mTlsVersionOff = tls["VersionOff"].asCString();
                     nd.mTLS.mTlsCiphers = tls["Ciphers"].asCString();
                     nd.mTLS.mTlsCiphersuites = tls["Ciphersuites"].asCString();
+                    if (tls.isMember("KeyPassword")) {
+                        nd.mTLS.mTlsPassword = tls["KeyPassword"].asCString();
+                    }
                 }
                 mWebsite.pushBack(nd);
                 mWebsite.getLast().mDict = new HashDict(gDictCalls, nullptr);

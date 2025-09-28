@@ -24,6 +24,7 @@
 
 
 #include "Net/TlsContext.h"
+#include <cstring>
 #include <openssl/bio.h>
 #include <openssl/conf.h>
 #include <openssl/engine.h>
@@ -143,6 +144,19 @@ static EVP_PKEY* AppLoadKey(const s8* key, usz length) {
 }
 
 
+/* Callback for passing a keyfile password stored as an str to OpenSSL */
+static s32 AppTlsPasswordCallback(s8* buf, s32 size, s32 rwflag, void* user) {
+    if (!user) {
+        return -1;
+    }
+    const String* pass = reinterpret_cast<String*>(user);
+    if (pass->size() > (size_t)size) {
+        return -1;
+    }
+    memcpy(buf, pass, pass->size());
+    return (s32)pass->size();
+}
+
 TlsContext::TlsContext() : mTlsContext(nullptr), mVerifyFlags(ETLS_VERIFY_NONE) {
 }
 
@@ -173,6 +187,10 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     ret = addTrustedCerts(G_CA_ROOT_CERT, strlen(G_CA_ROOT_CERT));
     Packet buf(1024);
     FileRWriter keyfile;
+    if (!cfg.mTlsPassword.empty()) { // TODO make safe pass loader
+        SSL_CTX_set_default_passwd_cb((SSL_CTX*)mTlsContext, AppTlsPasswordCallback);
+        SSL_CTX_set_default_passwd_cb_userdata((SSL_CTX*)mTlsContext, (void*)(&cfg.mTlsPassword));
+    }
     if (keyfile.openFile(cfg.mTlsPathCA)) {
         buf.resize(keyfile.getFileSize());
         if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {

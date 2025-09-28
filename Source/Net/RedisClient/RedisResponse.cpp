@@ -26,7 +26,7 @@
 #include "Net/RedisClient/RedisResponse.h"
 #include "Converter.h"
 #include <string.h>
-
+#include <stdio.h>
 
 namespace app {
 namespace net {
