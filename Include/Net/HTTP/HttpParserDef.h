@@ -48,85 +48,86 @@ namespace net {
 
 
 enum EPareState {
-    s_dead = 1, // important that this is > 0
+    PS_DEAD = 1, // important that this is > 0
 
-    s_start_resp_or_req,
-    s_res_or_resp_H,
-    s_start_resp, // response start
-    s_res_H,
-    s_res_HT,
-    s_res_HTT,
-    s_res_HTTP,
-    s_res_http_major,
-    s_res_http_dot,
-    s_res_http_minor,
-    s_res_http_end,
-    s_res_first_status_code,
-    s_res_status_code,
-    s_res_status_start,
-    s_res_status,
-    s_res_line_almost_done,
+    PS_START_MSG,
+    PS_START_H,
 
-    s_start_req, // request start
+    PS_RESP_START, // response start
+    PS_RESP_H,
+    PS_RESP_HT,
+    PS_RESP_HTT,
+    PS_RESP_HTTP,
+    PS_RESP_VER_MAJOR,
+    PS_RESP_VER_DOT,
+    PS_RESP_VER_MINOR,
+    PS_RESP_VER_END,
+    PS_RESP_CODE_PRE,
+    PS_RESP_CODE,
+    PS_RESP_DESC_PRE,
+    PS_RESP_DESC,
+    PS_RESP_LINE_END,
 
-    s_req_method,
-    s_req_spaces_before_url,
-    s_req_schema,
-    s_req_schema_slash,
-    s_req_schema_slash2,
-    s_req_server_start,
-    s_req_server,
-    s_req_server_with_at,
-    s_req_path,
-    s_req_query_string_start,
-    s_req_query_string,
-    s_req_fragment_start,
-    s_req_fragment,
-    s_req_http_start,
-    s_req_http_H,
-    s_req_http_HT,
-    s_req_http_HTT,
-    s_req_http_HTTP,
-    s_req_http_I,
-    s_req_http_IC,
-    s_req_http_major,
-    s_req_http_dot,
-    s_req_http_minor,
-    s_req_http_end,
-    s_req_line_almost_done,
+    PS_REQ_START, // request start
+    PS_REQ_METHOD,
+    PS_REQ_URL_PRE,
+    PS_REQ_URL_SCHEMA, // http
+    PS_REQ_URL_SLASH,  // http:/
+    PS_REQ_URL_SLASH2, // http://
+    PS_REQ_URL_HOST,
+    PS_REQ_SERVER,
+    PS_REQ_SERVER_AT, //@
+    PS_REQ_URL_PATH,
+    PS_REQ_URL_QUERY, //?
+    PS_REQ_URL_QUERY_KEY,
+    PS_REQ_URL_FRAG, // #
+    PS_REQ_URL_FRAGMENT,
+    PS_REQ_HTTP_START, // HTTP/1.1
+    PS_REQ_H,
+    PS_REQ_HT,
+    PS_REQ_HTT,
+    PS_REQ_HTTP,
+    PS_REQ_I,  // ICE
+    PS_REQ_IC, // ICE
+    PS_REQ_VER_MAJOR,
+    PS_REQ_VER_DOT,
+    PS_REQ_VER_MINOR,
+    PS_REQ_VER_END,
+    PS_REQ_LINE_END,
 
-    s_header_field_start,
-    s_header_field,
-    s_header_value_discard_ws, // 丢弃head field & value 之间的间隔字符
-    s_header_value_discard_ws_almost_done,
-    s_header_value_discard_lws, // 丢弃value末尾的间隔字符
-    s_header_value_start,
-    s_header_value,
-    s_header_value_lws,
+    PS_HEAD_FIELD_PRE,
+    PS_HEAD_FIELD,
+    PS_HEAD_2DOT,             // : head field & value 之间的间隔字符
+    PS_HEAD_VALUE_WILL_END_X, // will empty value
+    PS_HEAD_VALUE_END_X,      // empty value
+    PS_HEAD_VALUE_PRE,
+    PS_HEAD_VALUE,
+    PS_HEAD_VALUE_WILL_END,
+    PS_HEAD_VALUE_END,
 
-    s_header_almost_done,
-    s_chunk_size_start,
-    s_chunk_size,
-    s_chunk_parameters,
-    s_chunk_size_almost_done,
+    PS_CHUNK_SIZE_START,
+    PS_CHUNK_SIZE,
+    PS_CHUNK_SIZE_PARAM, // discard
+    PS_CHUNK_SIZE_WILL_END,
 
-    s_headers_almost_done,
-    s_headers_done,
-    /*@note 's_headers_done' must be the last 'header' state. All
+    PS_HEAD_WILL_END, // \r\n\r
+
+    /* @note 'PS_HEAD_DONE' must be the last 'header' state. All
      * states beyond this must be 'body' states. It is used for overflow
      * checking. See the @note PARSING_HEADER.
      */
+    PS_HEAD_DONE,
 
-    s_chunk_data, // 只要有数据就需要回调，避免缓存区满时仍然不能触发回调
-    s_chunk_data_almost_done,
-    s_chunk_data_done,
+    PS_CHUNK_DATA, // 只要有数据就需要回调，避免缓存区满时仍然不能触发回调
+    PS_CHUNK_DATA_WILL_END,
+    PS_CHUNK_DATA_END,
+    PS_BODY_BOUNDARY, // 只要有数据就需要回调，避免缓存区满时仍然不能触发回调
 
-    s_boundary_body, // 只要有数据就需要回调，避免缓存区满时仍然不能触发回调
+    PS_BODY_HAS_LEN, // Content-Length header given and non-zero
 
-    s_body_identity,     // content_length有效
-    s_body_identity_eof, // 无content-length/chunck等信息，靠断开连接表示body结束
+    PS_BODY_EOF, // 无content-length/chunck等信息，靠断开连接表示body结束
 
-    s_message_done
+    PS_MSG_DONE
 };
 
 enum EHttpHostState {

@@ -8,107 +8,107 @@ namespace net {
 // not strict check
 static EPareState AppParseUrlChar2(EPareState s, const s8 ch) {
     if (ch == ' ' || ch == '\r' || ch == '\n') {
-        return s_dead;
+        return PS_DEAD;
     }
 
 #if DHTTP_PARSE_STRICT
     if (ch == '\t' || ch == '\f') {
-        return s_dead;
+        return PS_DEAD;
     }
 #endif
 
     switch (s) {
-    case s_req_spaces_before_url:
+    case PS_REQ_URL_PRE:
         /* Proxied requests are followed by scheme of an absolute URI (alpha).
          * All methods except CONNECT are followed by '/' or '*'.
          */
         if (ch == '/' || ch == '*') {
-            return s_req_path;
+            return PS_REQ_URL_PATH;
         }
         if (IS_ALPHA(ch)) {
-            return s_req_schema;
+            return PS_REQ_URL_SCHEMA;
         }
         break;
 
-    case s_req_schema:
+    case PS_REQ_URL_SCHEMA:
         if (IS_ALPHA(ch)) {
             return s;
         }
         if (ch == ':') {
-            return s_req_schema_slash;
+            return PS_REQ_URL_SLASH;
         }
         break;
 
-    case s_req_schema_slash:
+    case PS_REQ_URL_SLASH:
         if (ch == '/') {
-            return s_req_schema_slash2;
+            return PS_REQ_URL_SLASH2;
         }
         break;
 
-    case s_req_schema_slash2:
+    case PS_REQ_URL_SLASH2:
         if (ch == '/') {
-            return s_req_server_start;
+            return PS_REQ_URL_HOST;
         }
         break;
 
-    case s_req_server_with_at:
+    case PS_REQ_SERVER_AT:
         if (ch == '@') {
-            return s_dead;
+            return PS_DEAD;
         }
 
         /* fall through */
-    case s_req_server_start:
-    case s_req_server:
+    case PS_REQ_URL_HOST:
+    case PS_REQ_SERVER:
         if (ch == '/') {
-            return s_req_path;
+            return PS_REQ_URL_PATH;
         }
         if (ch == '?') {
-            return s_req_query_string_start;
+            return PS_REQ_URL_QUERY;
         }
         if (ch == '@') {
-            return s_req_server_with_at;
+            return PS_REQ_SERVER_AT;
         }
         if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
-            return s_req_server;
+            return PS_REQ_SERVER;
         }
         break;
 
-    case s_req_path:
+    case PS_REQ_URL_PATH:
         switch (ch) {
         case '?':
-            return s_req_query_string_start;
+            return PS_REQ_URL_QUERY;
         case '#':
-            return s_req_fragment_start;
+            return PS_REQ_URL_FRAG;
         default:
             return s;
         }
         break;
 
-    case s_req_query_string_start:
-    case s_req_query_string:
+    case PS_REQ_URL_QUERY:
+    case PS_REQ_URL_QUERY_KEY:
         switch (ch) {
         case '?':
             // allow extra '?' in query string
-            return s_req_query_string;
+            return PS_REQ_URL_QUERY_KEY;
         case '#':
-            return s_req_fragment_start;
+            return PS_REQ_URL_FRAG;
         default:
-            return s_req_query_string;
+            return PS_REQ_URL_QUERY_KEY;
         }
         break;
 
-    case s_req_fragment_start:
+    case PS_REQ_URL_FRAG:
         switch (ch) {
         case '?':
-            return s_req_fragment;
+            return PS_REQ_URL_FRAGMENT;
         case '#':
             return s;
         default:
-            return s_req_fragment;
+            return PS_REQ_URL_FRAGMENT;
         }
         break;
 
-    case s_req_fragment:
+    case PS_REQ_URL_FRAGMENT:
         switch (ch) {
         case '?':
         case '#':
@@ -121,7 +121,7 @@ static EPareState AppParseUrlChar2(EPareState s, const s8 ch) {
         break;
     }
 
-    return s_dead;
+    return PS_DEAD;
 }
 
 
@@ -413,7 +413,7 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
     memset(&mFieldData, 0, sizeof(mFieldData));
 
     s32 found_at = 0;
-    EPareState s = is_connect ? s_req_server_start : s_req_spaces_before_url;
+    EPareState s = is_connect ? PS_REQ_URL_HOST : PS_REQ_URL_PRE;
     EHttpUrlFields uf;
     EHttpUrlFields old_uf = UF_MAX;
     for (const s8* p = buf; p < buf + buflen; p++) {
@@ -421,37 +421,37 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
 
         // Figure out the next field that we're operating on
         switch (s) {
-        case s_dead:
+        case PS_DEAD:
             return 1;
 
             // Skip delimeters
-        case s_req_schema_slash:
-        case s_req_schema_slash2:
-        case s_req_server_start:
-        case s_req_query_string_start:
-        case s_req_fragment_start:
+        case PS_REQ_URL_SLASH:
+        case PS_REQ_URL_SLASH2:
+        case PS_REQ_URL_HOST:
+        case PS_REQ_URL_QUERY:
+        case PS_REQ_URL_FRAG:
             continue;
 
-        case s_req_schema:
+        case PS_REQ_URL_SCHEMA:
             uf = UF_SCHEMA;
             break;
 
-        case s_req_server_with_at:
+        case PS_REQ_SERVER_AT:
             found_at = 1;
             // break; fall through
-        case s_req_server:
+        case PS_REQ_SERVER:
             uf = UF_HOST;
             break;
 
-        case s_req_path:
+        case PS_REQ_URL_PATH:
             uf = UF_PATH;
             break;
 
-        case s_req_query_string:
+        case PS_REQ_URL_QUERY_KEY:
             uf = UF_QUERY;
             break;
 
-        case s_req_fragment:
+        case PS_REQ_URL_FRAGMENT:
             uf = UF_FRAGMENT;
             break;
 

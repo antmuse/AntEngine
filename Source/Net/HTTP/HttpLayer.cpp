@@ -260,7 +260,9 @@ void HttpLayer::onClose(Handle* it) {
 #endif
     s32 cnt = -99;
     if (mMsg) {
-        mMsg->getEvent()->onLayerClose(mMsg);
+        if (mMsg->getEvent()) {
+            mMsg->getEvent()->onLayerClose(mMsg);
+        }
         cnt = mMsg->drop();
         mMsg = nullptr;
     }
@@ -387,15 +389,11 @@ void HttpLayer::postClose() {
 
 /////////////////////////
 
-#ifndef ULLONG_MAX
-#define ULLONG_MAX ((u64)-1) /* 2^64-1 */
-#endif
-
 #define COUNT_HEADER_SIZE(V)                                                                                           \
     do {                                                                                                               \
         nread += (u32)(V);                                                                                             \
         if (UNLIKELY(nread > GMAX_HEAD_SIZE)) {                                                                        \
-            mHttpError = (HPE_HEADER_OVERFLOW);                                                                        \
+            mHttpError = HPE_HEADER_OVERFLOW;                                                                          \
             goto GT_ERROR;                                                                                             \
         }                                                                                                              \
     } while (0)
@@ -523,6 +521,8 @@ static const u8 G_NORMAL_URL_CHAR[32] = {
 #undef T
 // DHTTP_PARSE_STRICT
 
+
+
 /**
  * @brief used for parse value
  *   Content-Type: multipart/mixed; boundary="yyds"
@@ -547,9 +547,9 @@ enum EHeadValueState {
     EHV_VALUE,
 
     // for boundary body
-    EHV_BOUNDARY_CMP_PRE,  //\n in body
+    EHV_BOUNDARY_CMP_PRE,  // \n in body
     EHV_BOUNDARY_CMP_PRE1, // first "-"
-    EHV_BOUNDARY_CMP_PRE2, // 2nd "-"
+    EHV_BOUNDARY_CMP_PRE2, // 2nd   "-"
     EHV_BOUNDARY_CMP,      // compare multipart's boundary
     EHV_BOUNDARY_CMP_DONE,
     EHV_BOUNDARY_CMP_TAIL, // compare the tail "--"
@@ -564,40 +564,40 @@ enum EHeadValueState {
 };
 
 enum EHttpHeaderState {
-    h_general = 0,
-    h_C,
-    h_CO,
-    h_CON,
+    EH_NORMAL = 0,
+    EH_C,
+    EH_CO,
+    EH_CON,
 
-    h_matching_connection,
-    h_matching_proxy_connection,
-    h_matching_content_,     // Content-
-    h_matching_content_type, // Content-Type
-    h_matching_content_disp, // content-disposition
-    h_matching_content_length,
-    h_matching_transfer_encoding,
-    h_matching_upgrade,
+    EH_CMP_CONNECTION,
+    EH_CMP_PROXY_CONNECTION,
+    EH_CMP_CONTENT,      // Content-
+    EH_CMP_CONTENT_TYPE, // Content-Type
+    EH_CMP_CONTENT_DISP, // content-disposition
+    EH_CMP_CONTENT_LEN,
+    EH_CMP_TRANSFER_ENCODING,
+    EH_CMP_UPGRADE,
 
-    h_connection,
-    h_content_type, // Content-Type
-    h_content_disp, // content-disposition
-    h_content_length,
-    h_content_length_num,
-    h_content_length_ws,
-    h_transfer_encoding,
-    h_upgrade,
-    h_matching_transfer_encoding_token_start,
-    h_matching_transfer_encoding_chunked,
-    h_matching_transfer_encoding_token,
-    h_matching_connection_token_start,
-    h_matching_connection_keep_alive,
-    h_matching_connection_close,
-    h_matching_connection_upgrade,
-    h_matching_connection_token,
-    h_transfer_encoding_chunked,
-    h_connection_keep_alive,
-    h_connection_close,
-    h_connection_upgrade
+    EH_CONNECTION,
+    EH_CONTENT_TYPE, // Content-Type
+    EH_CONTENT_DISP, // content-disposition
+    EH_CONTENT_LEN,
+    EH_CONTENT_LEN_NUM,
+    EH_CONTENT_LEN_WS,
+    EH_TRANSFER_ENCODING,
+    EH_UPGRADE,
+    EH_CMP_TRANSFER_ENCODING_TOKEN_START,
+    EH_CMP_TRANSFER_ENCODING_TOKEN,
+    EH_CMP_TRANSFER_ENCODING_CHUNCKED,
+    EH_CMP_CONNECTION_TOKEN_START,
+    EH_CMP_CONNECTION_KEEP_ALIVE,
+    EH_CMP_CONNECTION_CLOSE,
+    EH_CMP_CONNECTION_UPGRADE,
+    EH_CMP_CONNECTION_TOKEN,
+    EH_TRANSFER_ENCODING_CHUNCKED,
+    EH_CONNECTION_KEEP_ALIVE,
+    EH_CONNECTION_CLOSE,
+    EH_CONNECTION_UPGRADE
 };
 
 
@@ -614,11 +614,11 @@ enum EHttpHeaderState {
         }                                                                                                              \
     } while (0)
 
-#define NEW_MESSAGE() (shouldKeepAlive() ? (mType == EHTTP_REQUEST ? s_start_req : s_start_resp) : s_dead)
+#define NEW_MESSAGE() (shouldKeepAlive() ? (mType == EHTTP_REQUEST ? PS_REQ_START : PS_RESP_START) : PS_DEAD)
 
 #else
 #define STRICT_CHECK(cond)
-#define NEW_MESSAGE() (mType == EHTTP_REQUEST ? s_start_req : s_start_resp)
+#define NEW_MESSAGE() (mType == EHTTP_REQUEST ? PS_REQ_START : PS_RESP_START)
 #endif
 
 
@@ -635,110 +635,110 @@ enum EHttpHeaderState {
  */
 static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
     if (ch == ' ' || ch == '\r' || ch == '\n') {
-        return s_dead;
+        return PS_DEAD;
     }
 
 #if DHTTP_PARSE_STRICT
     if (ch == '\t' || ch == '\f') {
-        return s_dead;
+        return PS_DEAD;
     }
 #endif
 
     switch (s) {
-    case s_req_spaces_before_url:
+    case PS_REQ_URL_PRE:
         /* Proxied requests are followed by scheme of an absolute URI (alpha).
          * All methods except CONNECT are followed by '/' or '*'.
          */
         if (ch == '/' || ch == '*') {
-            return s_req_path;
+            return PS_REQ_URL_PATH;
         }
         if (IS_ALPHA(ch)) {
-            return s_req_schema;
+            return PS_REQ_URL_SCHEMA;
         }
         break;
 
-    case s_req_schema:
+    case PS_REQ_URL_SCHEMA:
         if (IS_ALPHA(ch)) {
             return s;
         }
         if (ch == ':') {
-            return s_req_schema_slash;
+            return PS_REQ_URL_SLASH;
         }
         break;
 
-    case s_req_schema_slash:
+    case PS_REQ_URL_SLASH:
         if (ch == '/') {
-            return s_req_schema_slash2;
+            return PS_REQ_URL_SLASH2;
         }
         break;
 
-    case s_req_schema_slash2:
+    case PS_REQ_URL_SLASH2:
         if (ch == '/') {
-            return s_req_server_start;
+            return PS_REQ_URL_HOST;
         }
         break;
 
-    case s_req_server_with_at:
+    case PS_REQ_SERVER_AT:
         if (ch == '@') {
-            return s_dead;
+            return PS_DEAD;
         }
 
         /* fall through */
-    case s_req_server_start:
-    case s_req_server:
+    case PS_REQ_URL_HOST:
+    case PS_REQ_SERVER:
         if (ch == '/') {
-            return s_req_path;
+            return PS_REQ_URL_PATH;
         }
         if (ch == '?') {
-            return s_req_query_string_start;
+            return PS_REQ_URL_QUERY;
         }
         if (ch == '@') {
-            return s_req_server_with_at;
+            return PS_REQ_SERVER_AT;
         }
         if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
-            return s_req_server;
+            return PS_REQ_SERVER;
         }
         break;
 
-    case s_req_path:
+    case PS_REQ_URL_PATH:
         if (IS_URL_CHAR(ch)) {
             return s;
         }
         switch (ch) {
         case '?':
-            return s_req_query_string_start;
+            return PS_REQ_URL_QUERY;
         case '#':
-            return s_req_fragment_start;
+            return PS_REQ_URL_FRAG;
         }
         break;
 
-    case s_req_query_string_start:
-    case s_req_query_string:
+    case PS_REQ_URL_QUERY:
+    case PS_REQ_URL_QUERY_KEY:
         if (IS_URL_CHAR(ch)) {
-            return s_req_query_string;
+            return PS_REQ_URL_QUERY_KEY;
         }
         switch (ch) {
         case '?':
             /* allow extra '?' in query string */
-            return s_req_query_string;
+            return PS_REQ_URL_QUERY_KEY;
         case '#':
-            return s_req_fragment_start;
+            return PS_REQ_URL_FRAG;
         }
         break;
 
-    case s_req_fragment_start:
+    case PS_REQ_URL_FRAG:
         if (IS_URL_CHAR(ch)) {
-            return s_req_fragment;
+            return PS_REQ_URL_FRAGMENT;
         }
         switch (ch) {
         case '?':
-            return s_req_fragment;
+            return PS_REQ_URL_FRAGMENT;
         case '#':
             return s;
         }
         break;
 
-    case s_req_fragment:
+    case PS_REQ_URL_FRAGMENT:
         if (IS_URL_CHAR(ch)) {
             return s;
         }
@@ -754,7 +754,7 @@ static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
     }
 
     /* We should never fall out of the switch above unless there's an error */
-    return s_dead;
+    return PS_DEAD;
 }
 
 const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, s32& omax, s32& vflag) {
@@ -886,7 +886,7 @@ void HttpLayer::clear() {
     mVersionMinor = 0;
     mStatusCode = 0;
     mMethod = HTTP_GET;
-    mState = (mType == EHTTP_REQUEST ? s_start_req : (mType == EHTTP_RESPONSE ? s_start_resp : s_start_resp_or_req));
+    mState = (mType == EHTTP_REQUEST ? PS_REQ_START : (mType == EHTTP_RESPONSE ? PS_RESP_START : PS_START_MSG));
     mUpgrade = 0;
     mUseTransferEncode = 0;
     mAllowChunkedLen = 0;
@@ -899,7 +899,7 @@ void HttpLayer::reset() {
     mReadSize = 0;
     mFlags = 0;
     mUseTransferEncode = 0;
-    mContentLen = ULLONG_MAX;
+    mContentLen = GMAX_USIZE;
     mBoundaryLen = 0;
     mBoundary[0] = 0;
 
@@ -916,201 +916,175 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
         return 0;
     }
 
-    s8 ch; // raw byte
-    s8 c;  // low char of ch
+    s8 ch;   // raw byte
+    s8 lowc; // low char of ch
     u8 unhex_val;
-    StringView headkey;
-    StringView headval;
-    StringView tbody;
-    StringView tstat;
-    StringView turl;
-    const s8* p = data;
+    StringView tmpkey(data, 0);
+    StringView tmpval(data, 0);
+    StringView tbody(data, 0);
+    const s8* pp = data;
+    const s8* pe = data; // for return len
     const s8* const end = data + len;
-    EPareState p_state = (EPareState)mState;
+    mHeaderState = EH_NORMAL;
+    EPareState tmpstate = (EPareState)mState;
     const u32 lenient = mLenientHeaders;
     const u32 allow_chunked_length = mAllowChunkedLen;
 
     u32 nread = mReadSize;
 
     if (len == 0) {
-        switch (p_state) {
-        case s_body_identity_eof:
+        switch (tmpstate) {
+        case PS_BODY_EOF:
             msgEnd();
             return 0;
 
-        case s_dead:
-        case s_start_resp_or_req:
-        case s_start_resp:
-        case s_start_req:
+        case PS_DEAD:
+        case PS_START_MSG:
+        case PS_RESP_START:
+        case PS_REQ_START:
             return 0;
 
         default:
             mReadSize = nread;
             mHttpError = HPE_INVALID_EOF_STATE;
-            return 1;
+            return 0;
         }
     }
 
-    if (p_state == s_header_field_start) {
-        headkey.set(data, 0);
-    }
-
-    switch (p_state) {
-    case s_req_path:
-    case s_req_schema:
-    case s_req_schema_slash:
-    case s_req_schema_slash2:
-    case s_req_server_start:
-    case s_req_server:
-    case s_req_server_with_at:
-    case s_req_query_string_start:
-    case s_req_query_string:
-    case s_req_fragment_start:
-    case s_req_fragment:
-        turl.set(p, 0);
-        break;
-    case s_res_status:
-        tstat.set(p, 0);
-        break;
-    default:
-        break;
-    } // switch
-
-    for (p = data; p != end; ++p) {
-        ch = *p;
-        if (p_state <= s_headers_done) { //@note PARSING_HEADER
+    for (pp = data; pp < end; ++pp) {
+        ch = *pp;
+        if (tmpstate <= PS_HEAD_DONE) { //@note PARSING_HEADER
             COUNT_HEADER_SIZE(1);
         }
 
 GT_REPARSE: // recheck current byte
-        switch (p_state) {
-        case s_dead:
+        switch (tmpstate) {
+        case PS_DEAD:
             /* this state is used after a 'Connection: close' message
              * the parser will error out if it reads another message
              */
             if (LIKELY(ch == CR || ch == LF)) {
                 break;
             }
-            mHttpError = (HPE_CLOSED_CONNECTION);
+            mHttpError = HPE_CLOSED_CONNECTION;
             goto GT_ERROR;
 
-        case s_start_resp_or_req:
+        case PS_START_MSG:
         {
             if (ch == CR || ch == LF) {
                 break;
             }
             reset();
             if (ch == 'H') {
-                p_state = (s_res_or_resp_H);
+                tmpstate = PS_START_H;
                 msgBegin();
-                mState = p_state;
-                if (HPE_OK != mHttpError) {
-                    return p - data + 1;
-                }
+                mState = tmpstate;
+                pe = pp + 1;
             } else {
                 mType = EHTTP_REQUEST;
-                p_state = (s_start_req);
+                tmpstate = PS_REQ_START;
                 goto GT_REPARSE;
             }
             break;
         }
 
-        case s_res_or_resp_H:
+        case PS_START_H:
             if (ch == 'T') {
                 mType = EHTTP_RESPONSE;
-                p_state = (s_res_HT);
+                tmpstate = PS_RESP_HT;
             } else {
                 if (UNLIKELY(ch != 'E')) {
-                    mHttpError = (HPE_INVALID_CONSTANT);
+                    mHttpError = HPE_INVALID_CONSTANT;
                     goto GT_ERROR;
                 }
                 mType = EHTTP_REQUEST;
                 mMethod = HTTP_HEAD;
                 mIndex = 2;
-                p_state = (s_req_method);
+                tmpstate = PS_REQ_METHOD;
             }
             break;
 
-        case s_start_resp:
+        case PS_RESP_START:
         {
             if (ch == CR || ch == LF) {
                 break;
             }
             reset();
             if (ch == 'H') {
-                p_state = s_res_H;
+                tmpstate = PS_RESP_H;
             } else {
-                mHttpError = (HPE_INVALID_CONSTANT);
+                mHttpError = HPE_INVALID_CONSTANT;
                 goto GT_ERROR;
             }
 
             msgBegin();
-            mState = p_state;
+            mState = tmpstate;
+            pe = pp + 1;
             if (HPE_OK != mHttpError) {
-                return p - data + 1;
+                return pp - data + 1;
             }
             break;
         }
 
-        case s_res_H:
+        case PS_RESP_H:
             STRICT_CHECK(ch != 'T');
-            p_state = (s_res_HT);
+            tmpstate = (PS_RESP_HT);
             break;
 
-        case s_res_HT:
+        case PS_RESP_HT:
             STRICT_CHECK(ch != 'T');
-            p_state = (s_res_HTT);
+            tmpstate = PS_RESP_HTT;
             break;
 
-        case s_res_HTT:
+        case PS_RESP_HTT:
             STRICT_CHECK(ch != 'P');
-            p_state = (s_res_HTTP);
+            tmpstate = PS_RESP_HTTP;
             break;
 
-        case s_res_HTTP:
+        case PS_RESP_HTTP:
             STRICT_CHECK(ch != '/');
-            p_state = (s_res_http_major);
+            tmpstate = PS_RESP_VER_MAJOR;
             break;
 
-        case s_res_http_major:
+        case PS_RESP_VER_MAJOR:
             if (UNLIKELY(!IS_NUM(ch))) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
             mVersionMajor = ch - '0';
-            p_state = (s_res_http_dot);
+            tmpstate = PS_RESP_VER_DOT;
             break;
 
-        case s_res_http_dot:
+        case PS_RESP_VER_DOT:
         {
             if (UNLIKELY(ch != '.')) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
-            p_state = (s_res_http_minor);
+            tmpstate = PS_RESP_VER_MINOR;
             break;
         }
 
-        case s_res_http_minor:
+        case PS_RESP_VER_MINOR:
             if (UNLIKELY(!IS_NUM(ch))) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
             mVersionMinor = ch - '0';
-            p_state = (s_res_http_end);
+            tmpstate = PS_RESP_VER_END;
             break;
 
-        case s_res_http_end:
+        case PS_RESP_VER_END:
         {
             if (UNLIKELY(ch != ' ')) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
-            p_state = (s_res_first_status_code);
+            tmpstate = PS_RESP_CODE_PRE;
             break;
         }
 
-        case s_res_first_status_code:
+        case PS_RESP_CODE_PRE:
         {
             if (!IS_NUM(ch)) {
                 if (ch == ' ') {
@@ -1120,24 +1094,25 @@ GT_REPARSE: // recheck current byte
                 goto GT_ERROR;
             }
             mStatusCode = ch - '0';
-            p_state = s_res_status_code;
+            tmpstate = PS_RESP_CODE;
+            mState = PS_RESP_CODE; // steped
             break;
         }
 
-        case s_res_status_code:
+        case PS_RESP_CODE:
         {
             if (!IS_NUM(ch)) {
                 switch (ch) {
                 case ' ':
-                    p_state = (s_res_status_start);
+                    tmpstate = PS_RESP_DESC_PRE;
                     break;
                 case CR:
                 case LF:
-                    p_state = (s_res_status_start);
+                    tmpstate = PS_RESP_DESC_PRE; // empty desc
                     goto GT_REPARSE;
                     break;
                 default:
-                    mHttpError = (HPE_INVALID_STATUS);
+                    mHttpError = HPE_INVALID_STATUS;
                     goto GT_ERROR;
                 }
                 break;
@@ -1145,21 +1120,18 @@ GT_REPARSE: // recheck current byte
 
             mStatusCode *= 10;
             mStatusCode += ch - '0';
-
             if (UNLIKELY(mStatusCode > 999)) {
-                mHttpError = (HPE_INVALID_STATUS);
+                mHttpError = HPE_INVALID_STATUS;
                 goto GT_ERROR;
             }
             break;
         }
 
-        case s_res_status_start:
+        case PS_RESP_DESC_PRE:
         {
             mMsg->setStatus(mStatusCode);
-            if (!tstat.mData) {
-                tstat.set(p, 0);
-            }
-            p_state = (s_res_status);
+            tmpval.set(pp, 0);
+            tmpstate = PS_RESP_DESC;
             mIndex = 0;
             if (ch == CR || ch == LF) {
                 goto GT_REPARSE;
@@ -1167,36 +1139,33 @@ GT_REPARSE: // recheck current byte
             break;
         }
 
-        case s_res_status:
+        case PS_RESP_DESC:
             if (ch == CR || ch == LF) {
-                p_state = (CR == ch ? s_res_line_almost_done : s_header_field_start);
-                // CALLBACK_DATA(Status);
+                tmpstate = (CR == ch ? PS_RESP_LINE_END : PS_HEAD_FIELD_PRE);
+                mState = tmpstate;
+                pe = pp + 1; // steped
                 DASSERT(mHttpError == HPE_OK);
-                if (tstat.mData) {
-                    if (LIKELY(mMsg)) {
-                        tstat.mLen = p - tstat.mData;
-                        mState = p_state;
-                        mMsg->setBrief(tstat.mData, tstat.mLen);
-                    }
-                    tstat.set(nullptr, 0);
+                if (LIKELY(mMsg)) {
+                    tmpval.mLen = pp - tmpval.mData;
+                    mMsg->setBrief(tmpval.mData, tmpval.mLen);
                 }
                 break;
             }
             break;
 
-        case s_res_line_almost_done:
+        case PS_RESP_LINE_END:
             STRICT_CHECK(ch != LF);
-            p_state = (s_header_field_start);
+            tmpstate = PS_HEAD_FIELD_PRE;
             break;
 
-        case s_start_req:
+        case PS_REQ_START:
         {
             if (ch == CR || ch == LF) {
                 break;
             }
             reset();
             if (UNLIKELY(!IS_ALPHA(ch))) {
-                mHttpError = (HPE_INVALID_METHOD);
+                mHttpError = HPE_INVALID_METHOD;
                 goto GT_ERROR;
             }
             mMethod = (enum EHttpMethod)0;
@@ -1249,29 +1218,27 @@ GT_REPARSE: // recheck current byte
                 mMethod = HTTP_UNLOCK; /* or UNSUBSCRIBE, UNBIND, UNLINK */
                 break;
             default:
-                mHttpError = (HPE_INVALID_METHOD);
+                mHttpError = HPE_INVALID_METHOD;
                 goto GT_ERROR;
             }
-            p_state = s_req_method;
+            tmpstate = PS_REQ_METHOD;
             msgBegin();
-            mState = p_state;
-            if (HPE_OK != mHttpError) {
-                return p - data + 1;
-            }
+            mState = tmpstate;
+            pe = pp + 1;
             break;
         }
 
-        case s_req_method:
+        case PS_REQ_METHOD:
         {
-            const s8* matcher;
             if (UNLIKELY(ch == '\0')) {
-                mHttpError = (HPE_INVALID_METHOD);
+                mHttpError = HPE_INVALID_METHOD;
                 goto GT_ERROR;
             }
-
-            matcher = GHTTP_METHOD_STRS[mMethod];
+            const s8* matcher = GHTTP_METHOD_STRS[mMethod];
             if (ch == ' ' && matcher[mIndex] == '\0') {
-                p_state = (s_req_spaces_before_url);
+                tmpstate = PS_REQ_URL_PRE;
+                mState = tmpstate;
+                pe = pp + 1;
                 mMsg->setMethod(mMethod);
             } else if (ch == matcher[mIndex]) {
                 ; /* nada */
@@ -1304,109 +1271,107 @@ GT_REPARSE: // recheck current byte
                     XX(UNLOCK, 3, 'I', UNLINK)
 #undef XX
                 default:
-                    mHttpError = (HPE_INVALID_METHOD);
+                    mHttpError = HPE_INVALID_METHOD;
                     goto GT_ERROR;
                 }
             } else {
-                mHttpError = (HPE_INVALID_METHOD);
+                mHttpError = HPE_INVALID_METHOD;
                 goto GT_ERROR;
             }
             ++mIndex;
             break;
         }
 
-        case s_req_spaces_before_url:
+        case PS_REQ_URL_PRE:
         {
             if (ch == ' ') {
                 break;
             }
-            if (!turl.mData) {
-                turl.set(p, 0);
-            }
+            tmpval.set(pp, 0);
             if (mMethod == HTTP_CONNECT) {
-                p_state = (s_req_server_start);
+                tmpstate = PS_REQ_URL_HOST;
             }
-            p_state = (AppParseUrlChar(p_state, ch));
-            if (UNLIKELY(p_state == s_dead)) {
-                mHttpError = (HPE_INVALID_URL);
+            tmpstate = AppParseUrlChar(tmpstate, ch);
+            if (UNLIKELY(tmpstate == PS_DEAD)) {
+                mHttpError = HPE_INVALID_URL;
                 goto GT_ERROR;
             }
             break;
         }
 
-        case s_req_schema:
-        case s_req_schema_slash:
-        case s_req_schema_slash2:
-        case s_req_server_start:
+        case PS_REQ_URL_SCHEMA:
+        case PS_REQ_URL_SLASH:
+        case PS_REQ_URL_SLASH2:
+        case PS_REQ_URL_HOST:
         {
             switch (ch) {
             case ' ': // No whitespace allowed here
             case CR:
             case LF:
-                mHttpError = (HPE_INVALID_URL);
+                mHttpError = HPE_INVALID_URL;
                 goto GT_ERROR;
             default:
-                p_state = (AppParseUrlChar(p_state, ch));
-                if (UNLIKELY(p_state == s_dead)) {
-                    mHttpError = (HPE_INVALID_URL);
+                tmpstate = AppParseUrlChar(tmpstate, ch);
+                if (UNLIKELY(tmpstate == PS_DEAD)) {
+                    mHttpError = HPE_INVALID_URL;
                     goto GT_ERROR;
                 }
             }
             break;
         }
 
-        case s_req_server:
-        case s_req_server_with_at:
-        case s_req_path:
-        case s_req_query_string_start:
-        case s_req_query_string:
-        case s_req_fragment_start:
-        case s_req_fragment:
+        case PS_REQ_SERVER:
+        case PS_REQ_SERVER_AT:
+        case PS_REQ_URL_PATH:
+        case PS_REQ_URL_QUERY:
+        case PS_REQ_URL_QUERY_KEY:
+        case PS_REQ_URL_FRAG:
+        case PS_REQ_URL_FRAGMENT:
         {
             switch (ch) {
             case ' ':
-                p_state = (s_req_http_start);
-                turl.mLen = 1; // turl.mLen>0表示需要回调
+                tmpstate = PS_REQ_HTTP_START;
+                tmpval.mLen = 1; // tmpval.mLen>0表示需要回调
                 break;
             case CR:
             case LF:
                 mVersionMajor = 0;
                 mVersionMinor = 9;
-                p_state = (ch == CR ? s_req_line_almost_done : s_header_field_start);
-                turl.mLen = 1; // turl.mLen>0表示需要回调
+                tmpstate = (ch == CR ? PS_REQ_LINE_END : PS_HEAD_FIELD_PRE);
+                tmpval.mLen = 1; // tmpval.mLen>0表示需要回调
                 break;
             default:
-                p_state = (AppParseUrlChar(p_state, ch));
-                if (UNLIKELY(p_state == s_dead)) {
-                    mHttpError = (HPE_INVALID_URL);
+                tmpstate = AppParseUrlChar(tmpstate, ch);
+                if (UNLIKELY(tmpstate == PS_DEAD)) {
+                    mHttpError = HPE_INVALID_URL;
                     goto GT_ERROR;
                 }
             }
-            if (1 == turl.mLen && turl.mData) {
+            if (1 == tmpval.mLen) {
                 DASSERT(mHttpError == HPE_OK);
-                turl.mLen = p - turl.mData; // 重新计算长度
-                mState = p_state;
-                if (UNLIKELY(!mMsg->mURL.decode(turl.mData, turl.mLen))) {
+                tmpval.mLen = pp - tmpval.mData; // 重新计算长度
+                mState = tmpstate;
+                pe = pp + 1; // steped
+                if (UNLIKELY(!mMsg->mURL.decode(tmpval.mData, tmpval.mLen))) {
                     mReadSize = nread;
                     mHttpError = HPE_CB_URL;
-                    return (p - data + 1);
+                    return (pe - data);
                 }
-                turl.set(nullptr, 0);
                 msgPath();
             }
             break;
         }
 
-        case s_req_http_start:
+        case PS_REQ_HTTP_START:
             switch (ch) {
             case ' ':
                 break;
             case 'H':
-                p_state = s_req_http_H;
+                tmpstate = PS_REQ_H;
                 break;
             case 'I':
                 if (mMethod == HTTP_SOURCE) {
-                    p_state = s_req_http_I;
+                    tmpstate = PS_REQ_I;
                     break;
                 }
                 /* fall through */
@@ -1416,275 +1381,275 @@ GT_REPARSE: // recheck current byte
             }
             break;
 
-        case s_req_http_H:
+        case PS_REQ_H:
             STRICT_CHECK(ch != 'T');
-            p_state = s_req_http_HT;
+            tmpstate = PS_REQ_HT;
             break;
 
-        case s_req_http_HT:
+        case PS_REQ_HT:
             STRICT_CHECK(ch != 'T');
-            p_state = s_req_http_HTT;
+            tmpstate = PS_REQ_HTT;
             break;
 
-        case s_req_http_HTT:
+        case PS_REQ_HTT:
             STRICT_CHECK(ch != 'P');
-            p_state = s_req_http_HTTP;
+            tmpstate = PS_REQ_HTTP;
             break;
 
-        case s_req_http_I:
+        case PS_REQ_I:
             STRICT_CHECK(ch != 'C');
-            p_state = s_req_http_IC;
+            tmpstate = PS_REQ_IC;
             break;
 
-        case s_req_http_IC:
+        case PS_REQ_IC:
             STRICT_CHECK(ch != 'E');
-            p_state = s_req_http_HTTP; // Treat "ICE" as "HTTP"
+            tmpstate = PS_REQ_HTTP; // Treat "ICE" as "HTTP"
             break;
 
-        case s_req_http_HTTP:
+        case PS_REQ_HTTP:
             STRICT_CHECK(ch != '/');
-            p_state = (s_req_http_major);
+            tmpstate = PS_REQ_VER_MAJOR;
             break;
 
-        case s_req_http_major:
+        case PS_REQ_VER_MAJOR:
             if (UNLIKELY(!IS_NUM(ch))) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
             mVersionMajor = ch - '0';
-            p_state = (s_req_http_dot);
+            tmpstate = PS_REQ_VER_DOT;
             break;
 
-        case s_req_http_dot:
+        case PS_REQ_VER_DOT:
         {
             if (UNLIKELY(ch != '.')) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
-            p_state = (s_req_http_minor);
+            tmpstate = PS_REQ_VER_MINOR;
             break;
         }
 
-        case s_req_http_minor:
+        case PS_REQ_VER_MINOR:
             if (UNLIKELY(!IS_NUM(ch))) {
-                mHttpError = (HPE_INVALID_VERSION);
+                mHttpError = HPE_INVALID_VERSION;
                 goto GT_ERROR;
             }
             mVersionMinor = ch - '0';
-            p_state = (s_req_http_end);
+            tmpstate = PS_REQ_VER_END;
             break;
 
-        case s_req_http_end:
+        case PS_REQ_VER_END:
         {
             if (ch == CR) {
-                p_state = (s_req_line_almost_done);
+                tmpstate = PS_REQ_LINE_END;
                 break;
             }
             if (ch == LF) {
-                p_state = (s_header_field_start);
+                tmpstate = PS_HEAD_FIELD_PRE;
+                mState = tmpstate;
+                pe = pp + 1; // steped
                 break;
             }
-            mHttpError = (HPE_INVALID_VERSION);
+            mHttpError = HPE_INVALID_VERSION;
             goto GT_ERROR;
             break;
         }
 
         /* end of request line */
-        case s_req_line_almost_done:
+        case PS_REQ_LINE_END:
         {
             if (UNLIKELY(ch != LF)) {
-                mHttpError = (HPE_LF_EXPECTED);
+                mHttpError = HPE_LF_EXPECTED;
                 goto GT_ERROR;
             }
-            p_state = (s_header_field_start);
+            tmpstate = PS_HEAD_FIELD_PRE;
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
         }
 
-        case s_header_field_start:
+        case PS_HEAD_FIELD_PRE:
         {
             if (ch == CR) {
-                p_state = (s_headers_almost_done);
+                tmpstate = PS_HEAD_WILL_END;
                 break;
             }
             if (ch == LF) {
                 /* they might be just sending \n instead of \r\n so this would be
                  * the second \n to denote the end of headers*/
-                p_state = (s_headers_almost_done);
+                tmpstate = PS_HEAD_WILL_END;
                 goto GT_REPARSE;
             }
 
-            c = TOKEN(ch);
-            if (UNLIKELY(!c)) {
-                mHttpError = (HPE_INVALID_HEADER_TOKEN);
+            lowc = TOKEN(ch);
+            if (UNLIKELY(!lowc)) {
+                mHttpError = HPE_INVALID_HEADER_TOKEN;
                 goto GT_ERROR;
             }
 
-            if (!headkey.mData) {
-                headkey.set(p, 0);
-            }
-
+            tmpkey.set(pp, 0);
             mIndex = 0;
-            p_state = (s_header_field);
+            tmpstate = PS_HEAD_FIELD;
 
-            switch (c) {
+            switch (lowc) {
             case 'c':
-                mHeaderState = h_C;
+                mHeaderState = EH_C;
                 break;
 
             case 'p':
-                mHeaderState = h_matching_proxy_connection;
+                mHeaderState = EH_CMP_PROXY_CONNECTION;
                 break;
 
             case 't':
-                mHeaderState = h_matching_transfer_encoding;
+                mHeaderState = EH_CMP_TRANSFER_ENCODING;
                 break;
 
             case 'u':
-                mHeaderState = h_matching_upgrade;
+                mHeaderState = EH_CMP_UPGRADE;
                 break;
 
             default:
-                mHeaderState = h_general;
+                mHeaderState = EH_NORMAL;
                 break;
             }
             break;
         }
 
-        case s_header_field:
+        case PS_HEAD_FIELD:
         {
-            const s8* start = p;
-            for (; p != end; p++) {
-                ch = *p;
-                c = TOKEN(ch);
-
-                if (!c) {
+            const s8* start = pp;
+            for (; pp != end; pp++) {
+                ch = *pp;
+                lowc = TOKEN(ch);
+                if (!lowc) {
                     break;
                 }
                 switch (mHeaderState) {
-                case h_general:
+                case EH_NORMAL:
                 {
-                    usz left = end - p;
-                    const s8* pe = p + DMIN(left, GMAX_HEAD_SIZE);
-                    while (p + 1 < pe && TOKEN(p[1])) {
-                        p++;
+                    usz left = end - pp;
+                    const s8* pe2 = pp + DMIN(left, GMAX_HEAD_SIZE);
+                    while (pp + 1 < pe2 && TOKEN(pp[1])) {
+                        pp++;
                     }
                     break;
                 }
 
-                case h_C:
+                case EH_C:
                     mIndex++;
-                    mHeaderState = (c == 'o' ? h_CO : h_general);
+                    mHeaderState = (lowc == 'o' ? EH_CO : EH_NORMAL);
                     break;
 
-                case h_CO:
+                case EH_CO:
                     mIndex++;
-                    mHeaderState = (c == 'n' ? h_CON : h_general);
+                    mHeaderState = (lowc == 'n' ? EH_CON : EH_NORMAL);
                     break;
 
-                case h_CON:
+                case EH_CON:
                     mIndex++;
-                    switch (c) {
+                    switch (lowc) {
                     case 'n':
-                        mHeaderState = h_matching_connection;
+                        mHeaderState = EH_CMP_CONNECTION;
                         break;
                     case 't':
-                        mHeaderState = h_matching_content_;
+                        mHeaderState = EH_CMP_CONTENT;
                         break;
                     default:
-                        mHeaderState = h_general;
+                        mHeaderState = EH_NORMAL;
                         break;
                     }
                     break;
 
-                case h_matching_connection:
+                case EH_CMP_CONNECTION:
                     mIndex++;
-                    if (mIndex > sizeof(CONNECTION) - 1 || c != CONNECTION[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(CONNECTION) - 1 || lowc != CONNECTION[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(CONNECTION) - 2) {
-                        mHeaderState = h_connection;
+                        mHeaderState = EH_CONNECTION;
                     }
                     break;
 
-                case h_matching_proxy_connection:
+                case EH_CMP_PROXY_CONNECTION:
                     mIndex++;
-                    if (mIndex > sizeof(PROXY_CONNECTION) - 1 || c != PROXY_CONNECTION[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(PROXY_CONNECTION) - 1 || lowc != PROXY_CONNECTION[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(PROXY_CONNECTION) - 2) {
-                        mHeaderState = h_connection;
+                        mHeaderState = EH_CONNECTION;
                     }
                     break;
 
-                case h_matching_content_:
+                case EH_CMP_CONTENT:
                     mIndex++;
                     if (mIndex == sizeof(CONTENT_) - 1) {
-                        if ('t' == c) {
-                            mHeaderState = h_matching_content_type;
-                        } else if ('l' == c) {
-                            mHeaderState = h_matching_content_length;
-                        } else if ('d' == c) {
-                            mHeaderState = h_matching_content_disp;
+                        if ('t' == lowc) {
+                            mHeaderState = EH_CMP_CONTENT_TYPE;
+                        } else if ('l' == lowc) {
+                            mHeaderState = EH_CMP_CONTENT_LEN;
+                        } else if ('d' == lowc) {
+                            mHeaderState = EH_CMP_CONTENT_DISP;
                         } else {
-                            mHeaderState = h_general;
+                            mHeaderState = EH_NORMAL;
                         }
-                    } else if (mIndex > sizeof(CONTENT_) - 1 || c != CONTENT_[mIndex]) {
-                        mHeaderState = h_general;
+                    } else if (mIndex > sizeof(CONTENT_) - 1 || lowc != CONTENT_[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     }
                     break;
 
-                case h_matching_content_disp:
+                case EH_CMP_CONTENT_DISP:
                     mIndex++;
-                    if (mIndex > sizeof(CONTENT_DISP) - 1 || c != CONTENT_DISP[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(CONTENT_DISP) - 1 || lowc != CONTENT_DISP[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(CONTENT_DISP) - 2) {
-                        mHeaderState = h_content_disp;
+                        mHeaderState = EH_CONTENT_DISP;
                     }
                     break;
 
-                case h_matching_content_type:
+                case EH_CMP_CONTENT_TYPE:
                     mIndex++;
-                    if (mIndex > sizeof(CONTENT_TYPE) - 1 || c != CONTENT_TYPE[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(CONTENT_TYPE) - 1 || lowc != CONTENT_TYPE[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(CONTENT_TYPE) - 2) {
-                        mHeaderState = h_content_type;
+                        mHeaderState = EH_CONTENT_TYPE;
                     }
                     break;
 
-                case h_matching_content_length:
+                case EH_CMP_CONTENT_LEN:
                     mIndex++;
-                    if (mIndex > sizeof(CONTENT_LENGTH) - 1 || c != CONTENT_LENGTH[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(CONTENT_LENGTH) - 1 || lowc != CONTENT_LENGTH[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(CONTENT_LENGTH) - 2) {
-                        mHeaderState = h_content_length;
+                        mHeaderState = EH_CONTENT_LEN;
                     }
                     break;
 
-                case h_matching_transfer_encoding:
+                case EH_CMP_TRANSFER_ENCODING:
                     mIndex++;
-                    if (mIndex > sizeof(TRANSFER_ENCODING) - 1 || c != TRANSFER_ENCODING[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(TRANSFER_ENCODING) - 1 || lowc != TRANSFER_ENCODING[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(TRANSFER_ENCODING) - 2) {
-                        mHeaderState = h_transfer_encoding;
+                        mHeaderState = EH_TRANSFER_ENCODING;
                         mUseTransferEncode = 1;
                     }
                     break;
 
-                case h_matching_upgrade:
+                case EH_CMP_UPGRADE:
                     mIndex++;
-                    if (mIndex > sizeof(UPGRADE) - 1 || c != UPGRADE[mIndex]) {
-                        mHeaderState = h_general;
+                    if (mIndex > sizeof(UPGRADE) - 1 || lowc != UPGRADE[mIndex]) {
+                        mHeaderState = EH_NORMAL;
                     } else if (mIndex == sizeof(UPGRADE) - 2) {
-                        mHeaderState = h_upgrade;
+                        mHeaderState = EH_UPGRADE;
                     }
                     break;
 
-                case h_connection:
-                case h_content_type:
-                case h_content_disp:
-                case h_content_length:
-                case h_transfer_encoding:
-                case h_upgrade:
+                case EH_CONNECTION:
+                case EH_CONTENT_TYPE:
+                case EH_CONTENT_DISP:
+                case EH_CONTENT_LEN:
+                case EH_TRANSFER_ENCODING:
+                case EH_UPGRADE:
                     if (ch != ' ') {
-                        mHeaderState = h_general;
+                        mHeaderState = EH_NORMAL;
                     }
                     break;
 
@@ -1694,76 +1659,73 @@ GT_REPARSE: // recheck current byte
                 }
             }
 
-            if (p == end) {
-                --p;
-                COUNT_HEADER_SIZE(p - start);
+            if (pp == end) {
+                --pp;
+                COUNT_HEADER_SIZE(pp - start);
                 break;
             }
 
-            COUNT_HEADER_SIZE(p - start);
+            COUNT_HEADER_SIZE(pp - start);
 
             if (ch == ':') {
-                p_state = (s_header_value_discard_ws);
-                headkey.mLen = p - headkey.mData;
+                tmpstate = PS_HEAD_2DOT;
+                tmpkey.mLen = pp - tmpkey.mData;
                 break;
             }
 
-            mHttpError = (HPE_INVALID_HEADER_TOKEN);
+            mHttpError = HPE_INVALID_HEADER_TOKEN;
             goto GT_ERROR;
-        } // s_header_field
+        }
 
-        case s_header_value_discard_ws:
+        case PS_HEAD_2DOT:
         {
             if (ch == ' ' || ch == '\t') {
                 break;
             }
             if (ch == CR) {
-                p_state = (s_header_value_discard_ws_almost_done);
+                tmpstate = PS_HEAD_VALUE_WILL_END_X;
                 break;
             }
             if (ch == LF) {
-                p_state = (s_header_value_discard_lws);
+                tmpstate = PS_HEAD_VALUE_END_X;
                 break;
             }
             // break; fall through
         }
 
-        case s_header_value_start:
+        case PS_HEAD_VALUE_PRE:
         {
-            if (!headval.mData) {
-                headval.set(p, 0);
-            }
-
-            p_state = (s_header_value);
+            tmpval.set(pp, 0);
+            tmpstate = PS_HEAD_VALUE;
             mIndex = 0;
 
-            c = LOWER(ch);
+            lowc = LOWER(ch);
 
             switch (mHeaderState) {
-            case h_upgrade:
+            case EH_UPGRADE:
                 mFlags |= F_UPGRADE;
-                mHeaderState = h_general;
+                mHeaderState = EH_NORMAL;
                 break;
 
-            case h_transfer_encoding:
+            case EH_TRANSFER_ENCODING:
                 /* looking for 'Transfer-Encoding: chunked' */
-                if ('c' == c) {
-                    mHeaderState = h_matching_transfer_encoding_chunked;
+                if ('c' == lowc) {
+                    mHeaderState = EH_CMP_TRANSFER_ENCODING_CHUNCKED;
                 } else {
-                    mHeaderState = h_matching_transfer_encoding_token;
+                    mHeaderState = EH_CMP_TRANSFER_ENCODING_TOKEN;
                 }
                 break;
 
                 /* Multi-value `Transfer-Encoding` header */
-            case h_matching_transfer_encoding_token_start:
+            case EH_CMP_TRANSFER_ENCODING_TOKEN_START:
                 break;
 
-            case h_content_disp:
+            case EH_CONTENT_DISP:
             {
                 StringView vals[6];
                 s32 vcnt = (s32)DSIZEOF(vals);
                 s32 vflags;
-                p = parseValue(p, end, vals, vcnt, vflags);
+                pp = parseValue(pp, end, vals, vcnt, vflags);
                 if (vflags & EHV_DONE) {
                     if (vcnt >= 4) {
                         // name of form
@@ -1780,17 +1742,17 @@ GT_REPARSE: // recheck current byte
                             }
                         }
                     }
-                    mHeaderState = h_general;
+                    mHeaderState = EH_NORMAL;
                 }
                 break;
             }
-            case h_content_type:
+            case EH_CONTENT_TYPE:
             {
-                if ('m' == c) {
+                if ('m' == lowc) {
                     StringView vals[6];
                     s32 vcnt = (s32)DSIZEOF(vals);
                     s32 vflags;
-                    p = parseValue(p, end, vals, vcnt, vflags);
+                    pp = parseValue(pp, end, vals, vcnt, vflags);
                     if ((vflags & EHV_DONE) && (vflags & EHV_CONTENT_TYPE_MULTI)) {
                         if (4 == vcnt && 8 == vals[2].mLen) {
                             if ((mFlags & F_BOUNDARY) || vals[3].mLen > sizeof(mBoundary)) {
@@ -1800,15 +1762,15 @@ GT_REPARSE: // recheck current byte
                             mFlags |= F_BOUNDARY;
                             memcpy(mBoundary, vals[3].mData, vals[3].mLen);
                             mBoundaryLen = (u8)vals[3].mLen;
-                            mHeaderState = h_general;
+                            mHeaderState = EH_NORMAL;
                         }
                     }
                 } else {
-                    mHeaderState = h_general;
+                    mHeaderState = EH_NORMAL;
                 }
                 break;
             }
-            case h_content_length:
+            case EH_CONTENT_LEN:
                 if (UNLIKELY(!IS_NUM(ch))) {
                     mHttpError = HPE_INVALID_CONTENT_LENGTH;
                     goto GT_ERROR;
@@ -1821,91 +1783,84 @@ GT_REPARSE: // recheck current byte
 
                 mFlags |= F_CONTENTLENGTH;
                 mContentLen = ch - '0';
-                mHeaderState = h_content_length_num;
+                mHeaderState = EH_CONTENT_LEN_NUM;
                 break;
 
                 /* when obsolete line folding is encountered for content length
-                 * continue to the s_header_value state */
-            case h_content_length_ws:
+                 * continue to the PS_HEAD_VALUE state */
+            case EH_CONTENT_LEN_WS:
                 break;
 
-            case h_connection:
+            case EH_CONNECTION:
                 /* looking for 'Connection: keep-alive' */
-                if (c == 'k') {
-                    mHeaderState = h_matching_connection_keep_alive;
+                if (lowc == 'k') {
+                    mHeaderState = EH_CMP_CONNECTION_KEEP_ALIVE;
                     /* looking for 'Connection: close' */
-                } else if (c == 'c') {
-                    mHeaderState = h_matching_connection_close;
-                } else if (c == 'u') {
-                    mHeaderState = h_matching_connection_upgrade;
+                } else if (lowc == 'c') {
+                    mHeaderState = EH_CMP_CONNECTION_CLOSE;
+                } else if (lowc == 'u') {
+                    mHeaderState = EH_CMP_CONNECTION_UPGRADE;
                 } else {
-                    mHeaderState = h_matching_connection_token;
+                    mHeaderState = EH_CMP_CONNECTION_TOKEN;
                 }
                 break;
 
                 /* Multi-value `Connection` header */
-            case h_matching_connection_token_start:
+            case EH_CMP_CONNECTION_TOKEN_START:
                 break;
 
             default:
-                mHeaderState = h_general;
+                mHeaderState = EH_NORMAL;
                 break;
             }
             break;
         }
 
-        case s_header_value:
+        case PS_HEAD_VALUE:
         {
-            const s8* start = p;
+            const s8* start = pp;
             EHttpHeaderState h_state = (EHttpHeaderState)mHeaderState;
-            for (; p < end; p++) {
-                ch = *p;
+            for (; pp < end; pp++) {
+                ch = *pp;
                 if (ch == CR) {
-                    p_state = (s_header_almost_done);
+                    tmpstate = PS_HEAD_VALUE_WILL_END;
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
                     mHeaderState = h_state;
-
                     DASSERT(mHttpError == HPE_OK);
-                    if (headkey.mData && headval.mData) {
-                        headval.mLen = p - headval.mData;
-                        mState = p_state;
-                        mMsg->mHeadIn.add(headkey, headval);
-                        headkey.set(nullptr, 0);
-                        headval.set(nullptr, 0);
-                    }
+                    tmpval.mLen = pp - tmpval.mData;
+                    mMsg->mHeadIn.add(tmpkey, tmpval);
                     break;
                 }
 
                 if (ch == LF) {
-                    p_state = (s_header_almost_done);
-                    COUNT_HEADER_SIZE(p - start);
+                    tmpstate = PS_HEAD_VALUE_WILL_END;
+                    COUNT_HEADER_SIZE(pp - start);
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
                     mHeaderState = h_state;
                     DASSERT(mHttpError == HPE_OK);
-                    if (headkey.mData && headval.mData) {
-                        headval.mLen = p - headval.mData;
-                        mState = p_state;
-                        mMsg->mHeadIn.add(headkey, headval);
-                        headkey.set(nullptr, 0);
-                        headval.set(nullptr, 0);
-                    }
+                    tmpval.mLen = pp - tmpval.mData;
+                    mMsg->mHeadIn.add(tmpkey, tmpval);
                     goto GT_REPARSE;
                 }
 
                 if (!lenient && !IS_HEADER_CHAR(ch)) {
-                    mHttpError = (HPE_INVALID_HEADER_TOKEN);
+                    mHttpError = HPE_INVALID_HEADER_TOKEN;
                     goto GT_ERROR;
                 }
 
-                c = LOWER(ch);
+                lowc = LOWER(ch);
 
                 switch (h_state) {
-                case h_general:
+                case EH_NORMAL:
                 {
-                    usz left = end - p;
-                    const s8* pe = p + DMIN(left, GMAX_HEAD_SIZE);
-                    for (; p != pe; p++) {
-                        ch = *p;
+                    usz left = end - pp;
+                    const s8* pe2 = pp + DMIN(left, GMAX_HEAD_SIZE);
+                    for (; pp != pe2; pp++) {
+                        ch = *pp;
                         if (ch == CR || ch == LF) {
-                            --p;
+                            --pp;
                             break;
                         }
                         if (!lenient && !IS_HEADER_CHAR(ch)) {
@@ -1913,300 +1868,295 @@ GT_REPARSE: // recheck current byte
                             goto GT_ERROR;
                         }
                     }
-                    if (p == end) {
-                        --p;
+                    if (pp == end) {
+                        --pp;
                     }
                     break;
                 }
 
-                case h_connection:
-                case h_transfer_encoding:
+                case EH_CONNECTION:
+                case EH_TRANSFER_ENCODING:
                     DASSERT(0 && "Shouldn't get here.");
                     break;
 
-                case h_content_length:
+                case EH_CONTENT_LEN:
                     if (ch == ' ') {
                         break;
                     }
-                    h_state = h_content_length_num;
+                    h_state = EH_CONTENT_LEN_NUM;
                     // break; fall through
 
-                case h_content_length_num:
+                case EH_CONTENT_LEN_NUM:
                 {
                     if (ch == ' ') {
-                        h_state = h_content_length_ws;
+                        h_state = EH_CONTENT_LEN_WS;
                         break;
                     }
 
                     if (UNLIKELY(!IS_NUM(ch))) {
-                        mHttpError = (HPE_INVALID_CONTENT_LENGTH);
+                        mHttpError = HPE_INVALID_CONTENT_LENGTH;
                         mHeaderState = h_state;
                         goto GT_ERROR;
                     }
 
-                    u64 t = mContentLen;
-                    t *= 10;
-                    t += ch - '0';
-
+                    u64 tlen = mContentLen * 10;
+                    tlen += ch - '0';
                     /* Overflow? Test against a conservative limit for simplicity. */
-                    if (UNLIKELY((ULLONG_MAX - 10) / 10 < mContentLen)) {
-                        mHttpError = (HPE_INVALID_CONTENT_LENGTH);
+                    if (UNLIKELY((GMAX_USIZE - 10) / 10 < tlen)) {
+                        mHttpError = HPE_INVALID_CONTENT_LENGTH;
                         mHeaderState = h_state;
                         goto GT_ERROR;
                     }
 
-                    mContentLen = t;
+                    mContentLen = tlen;
                     break;
                 }
 
-                case h_content_length_ws:
+                case EH_CONTENT_LEN_WS:
                     if (ch == ' ') {
                         break;
                     }
-                    mHttpError = (HPE_INVALID_CONTENT_LENGTH);
+                    mHttpError = HPE_INVALID_CONTENT_LENGTH;
                     mHeaderState = h_state;
                     goto GT_ERROR;
 
-                case h_matching_transfer_encoding_token_start:
+                case EH_CMP_TRANSFER_ENCODING_TOKEN_START:
                 {
                     /* looking for 'Transfer-Encoding: chunked' */
-                    if ('c' == c) {
-                        h_state = h_matching_transfer_encoding_chunked;
-                    } else if (STRICT_TOKEN(c)) {
+                    if ('c' == lowc) {
+                        h_state = EH_CMP_TRANSFER_ENCODING_CHUNCKED;
+                    } else if (STRICT_TOKEN(lowc)) {
                         /* TODO(indutny): similar code below does this, but why?
                          * At the very least it seems to be inconsistent given that
-                         * h_matching_transfer_encoding_token does not check for
+                         * EH_CMP_TRANSFER_ENCODING_TOKEN does not check for
                          * `STRICT_TOKEN`
                          */
-                        h_state = h_matching_transfer_encoding_token;
-                    } else if (c == ' ' || c == '\t') {
+                        h_state = EH_CMP_TRANSFER_ENCODING_TOKEN;
+                    } else if (lowc == ' ' || lowc == '\t') {
                         // Skip lws
                     } else {
-                        h_state = h_general;
+                        h_state = EH_NORMAL;
                     }
                     break;
                 }
 
-                case h_matching_transfer_encoding_chunked:
+                case EH_CMP_TRANSFER_ENCODING_CHUNCKED:
                     mIndex++;
-                    if (mIndex > sizeof(CHUNKED) - 1 || c != CHUNKED[mIndex]) {
-                        h_state = h_matching_transfer_encoding_token;
+                    if (mIndex > sizeof(CHUNKED) - 1 || lowc != CHUNKED[mIndex]) {
+                        h_state = EH_CMP_TRANSFER_ENCODING_TOKEN;
                     } else if (mIndex == sizeof(CHUNKED) - 2) {
-                        h_state = h_transfer_encoding_chunked;
+                        h_state = EH_TRANSFER_ENCODING_CHUNCKED;
                     }
                     break;
 
-                case h_matching_transfer_encoding_token:
+                case EH_CMP_TRANSFER_ENCODING_TOKEN:
                     if (ch == ',') {
-                        h_state = h_matching_transfer_encoding_token_start;
+                        h_state = EH_CMP_TRANSFER_ENCODING_TOKEN_START;
                         mIndex = 0;
                     }
                     break;
 
-                case h_matching_connection_token_start:
+                case EH_CMP_CONNECTION_TOKEN_START:
                 {
                     /* looking for 'Connection: keep-alive' */
-                    if (c == 'k') {
-                        h_state = h_matching_connection_keep_alive;
+                    if (lowc == 'k') {
+                        h_state = EH_CMP_CONNECTION_KEEP_ALIVE;
                         /* looking for 'Connection: close' */
-                    } else if (c == 'c') {
-                        h_state = h_matching_connection_close;
-                    } else if (c == 'u') {
-                        h_state = h_matching_connection_upgrade;
-                    } else if (STRICT_TOKEN(c)) {
-                        h_state = h_matching_connection_token;
-                    } else if (c == ' ' || c == '\t') {
+                    } else if (lowc == 'c') {
+                        h_state = EH_CMP_CONNECTION_CLOSE;
+                    } else if (lowc == 'u') {
+                        h_state = EH_CMP_CONNECTION_UPGRADE;
+                    } else if (STRICT_TOKEN(lowc)) {
+                        h_state = EH_CMP_CONNECTION_TOKEN;
+                    } else if (lowc == ' ' || lowc == '\t') {
                         /* Skip lws */
                     } else {
-                        h_state = h_general;
+                        h_state = EH_NORMAL;
                     }
                     break;
                 }
-                case h_matching_connection_keep_alive:
+                case EH_CMP_CONNECTION_KEEP_ALIVE:
                     mIndex++;
-                    if (mIndex > sizeof(KEEP_ALIVE) - 1 || c != KEEP_ALIVE[mIndex]) {
-                        h_state = h_matching_connection_token;
+                    if (mIndex > sizeof(KEEP_ALIVE) - 1 || lowc != KEEP_ALIVE[mIndex]) {
+                        h_state = EH_CMP_CONNECTION_TOKEN;
                     } else if (mIndex == sizeof(KEEP_ALIVE) - 2) {
-                        h_state = h_connection_keep_alive;
+                        h_state = EH_CONNECTION_KEEP_ALIVE;
                     }
                     break;
 
                     // looking for 'Connection: close'
-                case h_matching_connection_close:
+                case EH_CMP_CONNECTION_CLOSE:
                     mIndex++;
-                    if (mIndex > sizeof(CLOSE) - 1 || c != CLOSE[mIndex]) {
-                        h_state = h_matching_connection_token;
+                    if (mIndex > sizeof(CLOSE) - 1 || lowc != CLOSE[mIndex]) {
+                        h_state = EH_CMP_CONNECTION_TOKEN;
                     } else if (mIndex == sizeof(CLOSE) - 2) {
-                        h_state = h_connection_close;
+                        h_state = EH_CONNECTION_CLOSE;
                     }
                     break;
 
-                case h_matching_connection_upgrade:
+                case EH_CMP_CONNECTION_UPGRADE:
                     mIndex++;
-                    if (mIndex > sizeof(UPGRADE) - 1 || c != UPGRADE[mIndex]) {
-                        h_state = h_matching_connection_token;
+                    if (mIndex > sizeof(UPGRADE) - 1 || lowc != UPGRADE[mIndex]) {
+                        h_state = EH_CMP_CONNECTION_TOKEN;
                     } else if (mIndex == sizeof(UPGRADE) - 2) {
-                        h_state = h_connection_upgrade;
+                        h_state = EH_CONNECTION_UPGRADE;
                     }
                     break;
 
-                case h_matching_connection_token:
+                case EH_CMP_CONNECTION_TOKEN:
                     if (ch == ',') {
-                        h_state = h_matching_connection_token_start;
+                        h_state = EH_CMP_CONNECTION_TOKEN_START;
                         mIndex = 0;
                     }
                     break;
 
-                case h_transfer_encoding_chunked:
+                case EH_TRANSFER_ENCODING_CHUNCKED:
                     if (ch != ' ') {
-                        h_state = h_matching_transfer_encoding_token;
+                        h_state = EH_CMP_TRANSFER_ENCODING_TOKEN;
                     }
                     break;
 
-                case h_connection_keep_alive:
-                case h_connection_close:
-                case h_connection_upgrade:
+                case EH_CONNECTION_KEEP_ALIVE:
+                case EH_CONNECTION_CLOSE:
+                case EH_CONNECTION_UPGRADE:
                 {
                     if (ch == ',') {
-                        if (h_state == h_connection_keep_alive) {
+                        if (h_state == EH_CONNECTION_KEEP_ALIVE) {
                             mFlags |= F_CONNECTION_KEEP_ALIVE;
-                        } else if (h_state == h_connection_close) {
+                        } else if (h_state == EH_CONNECTION_CLOSE) {
                             mFlags |= F_CONNECTION_CLOSE;
-                        } else if (h_state == h_connection_upgrade) {
+                        } else if (h_state == EH_CONNECTION_UPGRADE) {
                             mFlags |= F_CONNECTION_UPGRADE;
                         }
-                        h_state = h_matching_connection_token_start;
+                        h_state = EH_CMP_CONNECTION_TOKEN_START;
                         mIndex = 0;
                     } else if (ch != ' ') {
-                        h_state = h_matching_connection_token;
+                        h_state = EH_CMP_CONNECTION_TOKEN;
                     }
                     break;
                 }
                 default:
-                    p_state = (s_header_value);
-                    h_state = h_general;
+                    tmpstate = (PS_HEAD_VALUE);
+                    h_state = EH_NORMAL;
                     break;
                 } // switch(h_state)
             }     // for in val
             mHeaderState = h_state;
 
-            if (p == end) {
-                --p;
+            if (pp == end) {
+                --pp;
             }
-            COUNT_HEADER_SIZE(p - start);
+            COUNT_HEADER_SIZE(pp - start);
             break;
         }
 
-        case s_header_almost_done:
+        case PS_HEAD_VALUE_WILL_END:
         {
             if (UNLIKELY(ch != LF)) {
-                mHttpError = (HPE_LF_EXPECTED);
+                mHttpError = HPE_LF_EXPECTED;
                 goto GT_ERROR;
             }
-            p_state = s_header_value_lws;
+            tmpstate = PS_HEAD_VALUE_END;
             break;
         }
 
-        case s_header_value_lws:
+        case PS_HEAD_VALUE_END:
         {
             if (ch == ' ' || ch == '\t') {
-                if (mHeaderState == h_content_length_num) {
-                    /* treat obsolete line folding as space */
-                    mHeaderState = h_content_length_ws;
+                if (mHeaderState == EH_CONTENT_LEN_NUM) {
+                    // treat obsolete line folding as space
+                    mHeaderState = EH_CONTENT_LEN_WS;
                 }
-                p_state = (s_header_value_start);
+                tmpstate = PS_HEAD_VALUE_PRE;
                 goto GT_REPARSE;
             }
 
             /* finished the header */
             switch (mHeaderState) {
-            case h_connection_keep_alive:
+            case EH_CONNECTION_KEEP_ALIVE:
                 mFlags |= F_CONNECTION_KEEP_ALIVE;
                 break;
-            case h_connection_close:
+            case EH_CONNECTION_CLOSE:
                 mFlags |= F_CONNECTION_CLOSE;
                 break;
-            case h_transfer_encoding_chunked:
+            case EH_TRANSFER_ENCODING_CHUNCKED:
                 mFlags |= F_CHUNKED;
                 break;
-            case h_connection_upgrade:
+            case EH_CONNECTION_UPGRADE:
                 mFlags |= F_CONNECTION_UPGRADE;
                 break;
             default:
                 break;
             }
 
-            p_state = (s_header_field_start);
+            tmpstate = PS_HEAD_FIELD_PRE;
             goto GT_REPARSE;
         }
 
-        case s_header_value_discard_ws_almost_done:
+        case PS_HEAD_VALUE_WILL_END_X:
         {
             STRICT_CHECK(ch != LF);
-            p_state = (s_header_value_discard_lws);
+            tmpstate = PS_HEAD_VALUE_END_X;
             break;
         }
 
-        case s_header_value_discard_lws:
+        case PS_HEAD_VALUE_END_X:
         {
             if (ch == ' ' || ch == '\t') {
-                p_state = (s_header_value_discard_ws);
+                tmpstate = PS_HEAD_2DOT;
                 break;
             } else {
                 switch (mHeaderState) {
-                case h_connection_keep_alive:
+                case EH_CONNECTION_KEEP_ALIVE:
                     mFlags |= F_CONNECTION_KEEP_ALIVE;
                     break;
-                case h_connection_close:
+                case EH_CONNECTION_CLOSE:
                     mFlags |= F_CONNECTION_CLOSE;
                     break;
-                case h_connection_upgrade:
+                case EH_CONNECTION_UPGRADE:
                     mFlags |= F_CONNECTION_UPGRADE;
                     break;
-                case h_transfer_encoding_chunked:
+                case EH_TRANSFER_ENCODING_CHUNCKED:
                     mFlags |= F_CHUNKED;
                     break;
-                case h_content_length:
+                case EH_CONTENT_LEN:
                     /* do not allow empty content length */
-                    mHttpError = (HPE_INVALID_CONTENT_LENGTH);
+                    mHttpError = HPE_INVALID_CONTENT_LENGTH;
                     goto GT_ERROR;
                     break;
                 default:
                     break;
                 }
 
-                // empty header value
-                if (!headval.mData) {
-                    headval.set(p, 0);
-                }
-                p_state = (s_header_field_start);
+                tmpval.set(pp, 0); // empty header value
+                tmpstate = PS_HEAD_FIELD_PRE;
                 DASSERT(mHttpError == HPE_OK);
-                if (headkey.mData && headval.mData) {
-                    headval.mLen = p - headval.mData;
-                    mState = p_state;
-                    mMsg->mHeadIn.add(headkey, headval);
-                    headkey.set(nullptr, 0);
-                    headval.set(nullptr, 0);
+                if (tmpkey.mLen) {
+                    mState = tmpstate;
+                    mMsg->mHeadIn.add(tmpkey, tmpval);
                 }
                 goto GT_REPARSE;
             }
         }
 
-        case s_headers_almost_done:
+        case PS_HEAD_WILL_END:
         {
             STRICT_CHECK(ch != LF);
             if (mFlags & F_HEAD_DONE) {
                 if (mFlags & F_BOUNDARY) {
-                    p_state = s_boundary_body;
+                    tmpstate = PS_BODY_BOUNDARY;
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
                     mValueState = EHV_BOUNDARY_BODY_PRE;
                     mFlags &= ~F_BOUNDARY_CMP;
                     break;
                 }
                 if (mFlags & (F_CHUNKED | F_TAILING)) {
                     // End of a chunked request
-                    p_state = s_message_done;
+                    tmpstate = PS_MSG_DONE;
                     chunkDone();
-                    mState = p_state;
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
                     goto GT_REPARSE;
                 }
             }
@@ -2218,16 +2168,18 @@ GT_REPARSE: // recheck current byte
                  * not `chunked` or allow_length_with_encoding is set */
                 if (mFlags & F_CHUNKED) {
                     if (!allow_chunked_length) {
-                        mHttpError = (HPE_UNEXPECTED_CONTENT_LENGTH);
+                        mHttpError = HPE_UNEXPECTED_CONTENT_LENGTH;
                         goto GT_ERROR;
                     }
                 } else if (!lenient) {
-                    mHttpError = (HPE_UNEXPECTED_CONTENT_LENGTH);
+                    mHttpError = HPE_UNEXPECTED_CONTENT_LENGTH;
                     goto GT_ERROR;
                 }
             }
 
-            p_state = s_headers_done;
+            tmpstate = PS_HEAD_DONE;
+            mState = tmpstate;
+            pe = pp + 1; // steped
 
             /* Set this here so that headDone() can see it */
             if ((mFlags & F_UPGRADE) && (mFlags & F_CONNECTION_UPGRADE)) {
@@ -2263,29 +2215,29 @@ GT_REPARSE: // recheck current byte
 
             default:
                 mReadSize = nread;
-                mHttpError = (HPE_CB_HeadersComplete);
-                mState = p_state;
-                return (p - data); // Error
+                mHttpError = HPE_CB_HeadersComplete;
+                mState = tmpstate;
+                return (pp - data); // Error
             }
 
             if (mHttpError != HPE_OK) {
                 mReadSize = nread;
-                mState = p_state;
-                return (p - data);
+                mState = tmpstate;
+                return (pp - data);
             }
             goto GT_REPARSE;
         }
 
-        case s_boundary_body:
+        case PS_BODY_BOUNDARY:
         {
-            p = parseBoundBody(p, end, tbody);
-            p_state = (EPareState)(mState);
+            pp = parseBoundBody(pp, end, tbody);
+            tmpstate = (EPareState)(mState);
             if (UNLIKELY(mHttpError != HPE_OK)) {
-                return (p - data);
+                return (pp - data);
             }
             break;
         }
-        case s_headers_done:
+        case PS_HEAD_DONE:
         {
             STRICT_CHECK(ch != LF);
             DASSERT(0 == (F_HEAD_DONE & mFlags));
@@ -2293,28 +2245,32 @@ GT_REPARSE: // recheck current byte
             mReadSize = 0;
             nread = 0;
 
-            s32 hasBody = (mFlags & (F_CHUNKED | F_BOUNDARY)) || (mContentLen > 0 && mContentLen != ULLONG_MAX);
+            s32 hasBody = (mFlags & (F_CHUNKED | F_BOUNDARY)) || (mContentLen > 0 && mContentLen != GMAX_USIZE);
 
             if (mUpgrade && (mMethod == HTTP_CONNECT || (mFlags & F_SKIPBODY) || !hasBody)) {
                 // Exit, the rest of the message is in a different protocol
-                p_state = (NEW_MESSAGE());
+                tmpstate = (NEW_MESSAGE());
                 msgEnd();
                 mReadSize = nread;
-                mState = p_state;
-                return (p - data + 1);
+                mState = tmpstate;
+                return (pp - data + 1);
             }
 
             if (mFlags & F_SKIPBODY) {
-                p_state = (NEW_MESSAGE());
-                // CALLBACK_NOTIFY(MsgComplete);
+                tmpstate = (NEW_MESSAGE());
                 msgEnd();
-                mState = p_state;
+                mState = tmpstate;
+                pe = pp + 1; // steped
             } else if (mFlags & F_CHUNKED) {
                 // chunked encoding, ignore Content-Length header
-                p_state = s_chunk_size_start;
+                tmpstate = PS_CHUNK_SIZE_START;
+                mState = tmpstate;
+                pe = pp + 1; // steped
             } else if (F_BOUNDARY & mFlags) {
                 mIndex = 0;
-                p_state = s_boundary_body;
+                tmpstate = PS_BODY_BOUNDARY;
+                mState = tmpstate;
+                pe = pp + 1; // steped
                 mValueState = EHV_BOUNDARY_CMP_PRE1;
                 mFlags |= F_BOUNDARY_CMP;
             } else if (mUseTransferEncode == 1) {
@@ -2327,9 +2283,9 @@ GT_REPARSE: // recheck current byte
                      * status code and then close the connection.
                      */
                     mReadSize = nread;
-                    mHttpError = (HPE_INVALID_TRANSFER_ENCODING);
-                    mState = p_state;
-                    return (p - data); /* Error */
+                    mHttpError = HPE_INVALID_TRANSFER_ENCODING;
+                    mState = tmpstate;
+                    return (pp - data); /* Error */
                 } else {
                     /* RFC 7230 3.3.3,
                      * If a Transfer-Encoding header field is present in a response and
@@ -2337,53 +2293,54 @@ GT_REPARSE: // recheck current byte
                      * message body length is determined by reading the connection until
                      * it is closed by the server.
                      */
-                    p_state = (s_body_identity_eof);
+                    tmpstate = PS_BODY_EOF;
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
                 }
             } else {
                 if (mContentLen == 0) {
                     /* Content-Length header given but zero: Content-Length: 0\r\n */
-                    p_state = (NEW_MESSAGE());
+                    tmpstate = (NEW_MESSAGE());
                     msgEnd();
-                    mState = p_state;
-                } else if (mContentLen != ULLONG_MAX) {
-                    /* Content-Length header given and non-zero */
-                    p_state = s_body_identity;
+                } else if (mContentLen != GMAX_USIZE) {
+                    tmpstate = PS_BODY_HAS_LEN;
                 } else {
                     if (!needEOF()) {
                         // Assume content-length 0 - read the next
-                        p_state = (NEW_MESSAGE());
+                        tmpstate = (NEW_MESSAGE());
                         msgEnd();
-                        mState = p_state;
+                        mState = tmpstate;
                     } else {
-                        /* Read body until EOF */
-                        p_state = (s_body_identity_eof);
+                        tmpstate = PS_BODY_EOF;
                     }
                 }
+                mState = tmpstate;
+                pe = pp + 1; // steped
             }
             break;
         }
 
-        case s_body_identity:
+        case PS_BODY_HAS_LEN:
         {
-            u64 to_read = DMIN(mContentLen, (u64)(end - p));
-            DASSERT(mContentLen != 0 && mContentLen != ULLONG_MAX);
-
+            DASSERT(mContentLen != 0 && mContentLen != GMAX_USIZE);
+            u64 to_read = end - pp;
+            to_read = AppMin(mContentLen, to_read);
             /* The difference between advancing content_length and p is because
              * the latter will automaticaly advance on the next loop iteration.
              * Further, if content_length ends up at 0, we want to see the last
              * byte again for our message complete callback.
              */
-            if (!tbody.mData) {
-                tbody.set(p, 0);
-            }
+            tbody.set(pp, to_read);
+            mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
             mContentLen -= to_read;
-            p += to_read - 1;
+            pe = pp + to_read; // steped
+            pp = pe - 1;
 
             if (mContentLen == 0) {
-                p_state = (s_message_done);
-
-                /* Mimic CALLBACK_DATA_NOADVANCE() but with one extra byte.
-                 *
+                DASSERT(mHttpError == HPE_OK);
+                tmpstate = PS_MSG_DONE;
+                mState = tmpstate;
+                /*
                  * The alternative to doing this is to wait for the next byte to
                  * trigger the data callback, just as in every other case. The
                  * problem with this is that this makes it difficult for the test
@@ -2391,103 +2348,93 @@ GT_REPARSE: // recheck current byte
                  * complete-on-length. It's not clear that this distinction is
                  * important for applications, but let's keep it for now.
                  */
-
-                // CALLBACK_DATA_(tbody.mData, p - tbody.mData + 1, p - data);
-                DASSERT(mHttpError == HPE_OK);
-                if (tbody.mData) {
-                    tbody.mLen = p - tbody.mData + 1;
-                    mState = p_state;
-                    mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
-                    // if (UNLIKELY(mHttpError != HPE_OK)) {
-                    //     return (p - data);
-                    // }
-                    tbody.set(nullptr, 0);
-                }
                 goto GT_REPARSE;
             }
-
             break;
         }
 
         // read until EOF
-        case s_body_identity_eof:
-            if (!tbody.mData) {
-                tbody.set(p, 0);
-            }
-            p = end - 1;
+        case PS_BODY_EOF:
+            tbody.set(pp, end - pp);
+            mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
+            pp = end - 1;
+            pe = end; // steped
             break;
 
-        case s_message_done:
-            p_state = (NEW_MESSAGE());
+        case PS_MSG_DONE:
+            tmpstate = (NEW_MESSAGE());
             msgEnd();
-            mState = p_state;
+            mState = tmpstate;
             mReadSize = nread;
             if (mUpgrade) {
                 // Exit, the rest of the message is in a different protocol
-                return (p - data + 1);
+                return (pp - data + 1);
             }
             break;
 
-        case s_chunk_size_start:
+        case PS_CHUNK_SIZE_START:
         {
             DASSERT(nread == 1);
             DASSERT(mFlags & F_CHUNKED);
 
             unhex_val = GMAP_UN_HEX[(u8)ch];
             if (UNLIKELY(unhex_val == 0xFF)) {
-                mHttpError = (HPE_INVALID_CHUNK_SIZE);
+                mHttpError = HPE_INVALID_CHUNK_SIZE;
                 goto GT_ERROR;
             }
 
             mContentLen = unhex_val;
-            p_state = (s_chunk_size);
+            tmpstate = PS_CHUNK_SIZE;
             break;
         }
 
-        case s_chunk_size:
+        case PS_CHUNK_SIZE:
         {
             DASSERT(mFlags & F_CHUNKED);
             if (ch == CR) {
-                p_state = (s_chunk_size_almost_done);
+                tmpstate = PS_CHUNK_SIZE_WILL_END;
+                mState = tmpstate;
+                pe = pp + 1; // steped
                 break;
             }
 
             unhex_val = GMAP_UN_HEX[(u8)ch];
             if (unhex_val == 0xFF) {
                 if (ch == ';' || ch == ' ') {
-                    p_state = (s_chunk_parameters);
+                    tmpstate = PS_CHUNK_SIZE_PARAM;
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
                     break;
                 }
                 mHttpError = (HPE_INVALID_CHUNK_SIZE);
                 goto GT_ERROR;
             }
 
-            u64 t = mContentLen;
-            t *= 16;
-            t += unhex_val;
-
-            /* Overflow? Test against a conservative limit for simplicity. */
-            if (UNLIKELY((ULLONG_MAX - 16) / 16 < mContentLen)) {
+            u64 tx = mContentLen * 16;
+            tx += unhex_val;
+            // Overflow? Test against a conservative limit for simplicity
+            if (UNLIKELY((GMAX_USIZE - 16) / 16 < tx)) {
                 mHttpError = (HPE_INVALID_CONTENT_LENGTH);
                 goto GT_ERROR;
             }
-
-            mContentLen = t;
+            mContentLen = tx;
             break;
         }
 
-        case s_chunk_parameters:
+        case PS_CHUNK_SIZE_PARAM:
         {
             DASSERT(mFlags & F_CHUNKED);
-            /* just ignore this shit. TODO check for overflow */
+            // just ignore this shit. TODO check for overflow
             if (ch == CR) {
-                p_state = (s_chunk_size_almost_done);
+                tmpstate = PS_CHUNK_SIZE_WILL_END;
+                mState = tmpstate;
+                pe = pp + 1; // steped
                 break;
             }
             break;
         }
 
-        case s_chunk_size_almost_done:
+        case PS_CHUNK_SIZE_WILL_END:
         {
             DASSERT(mFlags & F_CHUNKED);
             STRICT_CHECK(ch != LF);
@@ -2496,64 +2443,54 @@ GT_REPARSE: // recheck current byte
             nread = 0;
             if (mContentLen == 0) {
                 mFlags |= F_TAILING;
-                p_state = (s_header_field_start);
+                tmpstate = PS_HEAD_FIELD_PRE;
             } else {
-                p_state = (s_chunk_data);
+                tmpstate = PS_CHUNK_DATA;
             }
             chunkHeadDone();
-            mState = p_state;
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
         }
 
-        case s_chunk_data:
+        case PS_CHUNK_DATA:
         {
-            u64 to_read = DMIN(mContentLen, (u64)(end - p));
 
             DASSERT(mFlags & F_CHUNKED);
-            DASSERT(mContentLen != 0 && mContentLen != ULLONG_MAX);
-
-            /* See the explanation in s_body_identity for why the content
-             * length and data pointers are managed this way.
-             */
-            if (!tbody.mData) {
-                tbody.set(p, 0);
-            }
+            DASSERT(mContentLen != 0 && mContentLen != GMAX_USIZE);
+            u64 to_read = end - pp;
+            to_read = AppMin(mContentLen, to_read);
+            tbody.set(pp, to_read);
+            mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
             mContentLen -= to_read;
-            p += to_read - 1;
-
+            pp += to_read - 1;
             if (mContentLen == 0) {
-                p_state = (s_chunk_data_almost_done);
+                tmpstate = PS_CHUNK_DATA_WILL_END;
+                mState = tmpstate;
+                pe = pp + 1; // steped
             }
-
             break;
         }
 
-        case s_chunk_data_almost_done:
+        case PS_CHUNK_DATA_WILL_END:
             DASSERT(mFlags & F_CHUNKED);
             DASSERT(mContentLen == 0);
             STRICT_CHECK(ch != CR);
-            p_state = (s_chunk_data_done);
-
             DASSERT(mHttpError == HPE_OK);
-            if (tbody.mData) {
-                tbody.mLen = p - tbody.mData;
-                mState = p_state;
-                mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
-                // if (UNLIKELY(mHttpError != HPE_OK)) {
-                //     return (p - data+1);
-                // }
-                tbody.set(nullptr, 0);
-            }
+            tmpstate = PS_CHUNK_DATA_END;
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
 
-        case s_chunk_data_done:
+        case PS_CHUNK_DATA_END:
             DASSERT(mFlags & F_CHUNKED);
             STRICT_CHECK(ch != LF);
             mReadSize = 0;
             nread = 0;
-            p_state = (s_chunk_size_start);
+            tmpstate = PS_CHUNK_SIZE_START;
             chunkMsg();
-            mState = p_state;
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
 
         default:
@@ -2561,52 +2498,31 @@ GT_REPARSE: // recheck current byte
             mHttpError = (HPE_INVALID_INTERNAL_STATE);
             goto GT_ERROR;
         } // switch
-    }     // for -------------------------------------------------
+    }     // for
 
 
-    // check the leftover, @note p is out span now
-    if (turl.mData) {
-        len = turl.mData - data;
-        mHeaderState = h_general;
-    } else if (tstat.mData) {
-        len = tstat.mData - data;
-        mHeaderState = h_general;
-        // mState = s_header_field_start;
-    } else if (headkey.mData) {
-        DASSERT(headkey.mData >= data);
-        len = headkey.mData - data;
-        mReadSize = nread - (u32)(p - headkey.mData);
-        mState = s_header_field_start;
-
+    /*{
         // 清除不能重入的状态
         // 判断是不是body中的header
         if (0 == (mFlags & F_HEAD_DONE)) {
             switch (mHeaderState) {
-            case h_content_length:
-            case h_content_length_num:
+            case EH_CONTENT_LEN:
+            case EH_CONTENT_LEN_NUM:
                 mFlags &= (~(u32)(F_CONTENTLENGTH));
                 break;
-            case h_content_type:
+            case EH_CONTENT_TYPE:
                 mFlags &= (~(u32)(F_BOUNDARY));
                 break;
             default:
                 break;
             }
         }
-        mHeaderState = h_general;
-    } else if (tbody.mData) {
-        tbody.mLen = p - tbody.mData;
-        mState = p_state;
-        mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
-        // if (UNLIKELY(mHttpError != HPE_OK)) {
-        //     return (p - data);
-        // }
-        // tbody.set(nullptr, 0);
-    }
+        mHeaderState = EH_NORMAL;
+    }*/
 
     mReadSize = nread;
-    mState = p_state;
-    return len;
+    // mState = tmpstate;
+    return pe - data;
 
 
 GT_ERROR:
@@ -2614,9 +2530,9 @@ GT_ERROR:
         mHttpError = HPE_UNKNOWN;
     }
     mReadSize = nread;
-    mState = p_state;
+    mState = tmpstate;
     msgError();
-    return (p - data);
+    return (pp - data);
 }
 
 
@@ -2723,7 +2639,7 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
                     tbody.set(nullptr, 0);
                 }
                 end = --curr;
-                mState = s_header_field_start;
+                mState = PS_HEAD_FIELD_PRE;
             } else {
                 vstat = mustCMP ? EHV_ERROR : EHV_BOUNDARY_BODY;
             }
@@ -2739,7 +2655,7 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
                     mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
                     tbody.set(nullptr, 0);
                 }
-                mState = s_message_done;
+                mState = PS_MSG_DONE;
                 end = --curr;
             } else {
                 vstat = EHV_BOUNDARY_BODY;
@@ -2778,12 +2694,12 @@ bool HttpLayer::needEOF() const {
         return false;
     }
 
-    /* RFC 7230 3.3.3, see `s_headers_almost_done` */
+    /* RFC 7230 3.3.3, see `PS_HEAD_WILL_END` */
     if ((mUseTransferEncode == 1) && (mFlags & F_CHUNKED) == 0) {
         return true;
     }
 
-    if ((mFlags & F_CHUNKED) || mContentLen != ULLONG_MAX) {
+    if ((mFlags & F_CHUNKED) || mContentLen != GMAX_USIZE) {
         return false;
     }
 
@@ -2817,7 +2733,7 @@ void HttpLayer::pauseParse(bool paused) {
 
 
 bool HttpLayer::isBodyFinal() const {
-    return mState == s_message_done;
+    return mState == PS_MSG_DONE;
 }
 
 const s8* HttpLayer::getErrStr(EHttpError it) {
