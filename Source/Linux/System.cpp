@@ -289,7 +289,10 @@ s32 System::getAppError(s32 err) {
         return EE_ERROR;
     case EINTR:
         return EE_INTR;
-    case EAGAIN:    //case EWOULDBLOCK:
+#if EWOULDBLOCK != EAGAIN
+    case EWOULDBLOCK:
+#endif
+    case EAGAIN: // case EWOULDBLOCK:
         return EE_RETRY;
     case EINPROGRESS:
         return EE_POSTED;

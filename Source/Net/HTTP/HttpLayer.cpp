@@ -367,6 +367,7 @@ void HttpLayer::onRead(RequestFD* it) {
             if (0 == mHttpError && EE_OK == readIF(it)) {
                 return;
             }
+            postClose();
             Logger::logError(
                 "HttpLayer::onRead>>remote=%s, parser err=%d=%s", mTCP.getRemote().getStr(), mHttpError, getErrStr());
         }
@@ -881,14 +882,12 @@ GT_RET:
 
 void HttpLayer::clear() {
     mType = mPType;
-    mIndex = 0;
     mVersionMajor = 0;
     mVersionMinor = 0;
     mStatusCode = 0;
     mMethod = HTTP_GET;
     mState = (mType == EHTTP_REQUEST ? PS_REQ_START : (mType == EHTTP_RESPONSE ? PS_RESP_START : PS_START_MSG));
     mUpgrade = 0;
-    mUseTransferEncode = 0;
     mAllowChunkedLen = 0;
     mLenientHeaders = 0;
     reset();
@@ -898,6 +897,7 @@ void HttpLayer::reset() {
     mHttpError = HPE_OK;
     mReadSize = 0;
     mFlags = 0;
+    mIndex = 0;
     mUseTransferEncode = 0;
     mContentLen = GMAX_USIZE;
     mBoundaryLen = 0;
@@ -961,8 +961,7 @@ GT_REPARSE: // recheck current byte
         switch (tmpstate) {
         case PS_DEAD:
             /* this state is used after a 'Connection: close' message
-             * the parser will error out if it reads another message
-             */
+             * the parser will error out if it reads another message */
             if (LIKELY(ch == CR || ch == LF)) {
                 break;
             }
@@ -974,17 +973,16 @@ GT_REPARSE: // recheck current byte
             if (ch == CR || ch == LF) {
                 break;
             }
-            reset();
             if (ch == 'H') {
                 tmpstate = PS_START_H;
-                msgBegin();
-                mState = tmpstate;
-                pe = pp + 1;
             } else {
                 mType = EHTTP_REQUEST;
                 tmpstate = PS_REQ_START;
                 goto GT_REPARSE;
             }
+            reset();
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
         }
 
@@ -1002,6 +1000,8 @@ GT_REPARSE: // recheck current byte
                 mIndex = 2;
                 tmpstate = PS_REQ_METHOD;
             }
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
 
         case PS_RESP_START:
@@ -1019,9 +1019,9 @@ GT_REPARSE: // recheck current byte
 
             msgBegin();
             mState = tmpstate;
-            pe = pp + 1;
+            pe = pp + 1; // steped
             if (HPE_OK != mHttpError) {
-                return pp - data + 1;
+                return pe - data;
             }
             break;
         }
@@ -1222,9 +1222,8 @@ GT_REPARSE: // recheck current byte
                 goto GT_ERROR;
             }
             tmpstate = PS_REQ_METHOD;
-            msgBegin();
             mState = tmpstate;
-            pe = pp + 1;
+            pe = pp + 1; // steped
             break;
         }
 
@@ -1238,12 +1237,12 @@ GT_REPARSE: // recheck current byte
             if (ch == ' ' && matcher[mIndex] == '\0') {
                 tmpstate = PS_REQ_URL_PRE;
                 mState = tmpstate;
-                pe = pp + 1;
+                pe = pp + 1; // steped
+                msgBegin();
                 mMsg->setMethod(mMethod);
             } else if (ch == matcher[mIndex]) {
-                ; /* nada */
+                // go
             } else if ((ch >= 'A' && ch <= 'Z') || ch == '-') {
-
                 switch (mMethod << 16 | mIndex << 8 | ch) {
 #define XX(meth, pos, ch, new_meth)                                                                                    \
     case (HTTP_##meth << 16 | pos << 8 | ch):                                                                          \
@@ -1279,6 +1278,7 @@ GT_REPARSE: // recheck current byte
                 goto GT_ERROR;
             }
             ++mIndex;
+            pe = pp + 1; // mState = not changed;
             break;
         }
 

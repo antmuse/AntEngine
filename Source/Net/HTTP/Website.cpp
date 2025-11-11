@@ -70,6 +70,7 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
         }
     } else { // readonly
         if (1 == System::isExist(real)) {
+            msg->getHeadOut().add("Cache-Control", "public, max-age=6000");
             evt = new HttpEvtFile();
         } else {
             evt = new HttpEvtError(404);

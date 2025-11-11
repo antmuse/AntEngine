@@ -35,6 +35,20 @@
 
 
 namespace app {
+/**
+ * @brief This function must be called after accept() fails. It returns true if 'err'
+ * indicates accepted connection faced an error, and it's okay to continue
+ * accepting next connection by calling accept() again. Other errors either
+ * indicate programming errors, e.g. calling accept() on a closed fd or indicate
+ * a resource limit has been reached, e.g. -EMFILE, open fd limit has been
+ * reached. In the latter case, caller might wait until resources are available.
+ * See accept() documentation for details. */
+static bool AcceptNeedRetry(s32 err) {
+    // @see "Error handling" in https://man7.org/linux/man-pages/man2/accept.2.html
+    return (EAGAIN == err || EWOULDBLOCK == err || err == ENETDOWN || err == EPROTO || err == ENOPROTOOPT
+            || err == EHOSTDOWN || err == ENONET || err == EHOSTUNREACH || err == EOPNOTSUPP || err == ENETUNREACH);
+}
+
 
 Loop::Loop() :
     mTimeHub(HandleTime::lessTime),
@@ -185,9 +199,9 @@ void Loop::updatePending() {
         {
             RequestFD* nd = (RequestFD*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
-            if (0 == nd->mError) {
+            if (EE_OK == nd->mError) {
                 nd->mError = hnd->getSock().getError();
-                if (0 == nd->mError) {
+                if (EE_OK == nd->mError) {
                     hnd->mFlag |= (EHF_READABLE | EHF_WRITEABLE | EHF_SYNC_WRITE);
                     relinkTime((HandleTime*)hnd);
                 } else {
@@ -206,11 +220,11 @@ void Loop::updatePending() {
             RequestFD* nd = (RequestFD*)req;
             net::HandleTCP* hnd = (net::HandleTCP*)(nd->mHandle);
             s32 err = 0;
+            s32 rdsz = 0;
             StringView buf;
             while (nd) {
                 if (EHF_READABLE & hnd->mFlag) {
                     buf = nd->getWriteBuf();
-                    s32 rdsz;
                     if (EHT_UDP == hnd->mType) {
                         RequestUDP* ndu = (RequestUDP*)req;
                         if ((1 & ndu->mFlags) > 0) {
@@ -351,14 +365,16 @@ void Loop::updatePending() {
                             Logger::log(ELL_ERROR, "Loop::updatePending>>accept unblock sock=%d,err=%d",
                                 nd->mSocket.getValue(), nd->mError);
                             nd->mSocket.close();
+                            continue;
                             //hnd->mFlag &= ~EHF_READABLE;
                         }
                     } else {
-                        err = System::getAppError();
-                        if (EE_INTR == err) {
-                            err = 0;
+                        err = System::getError();
+                        if (EINTR == err) {
+                            err = EE_OK;
                             continue;
-                        } else if (EE_RETRY == err) {
+                        } else if (AcceptNeedRetry(err)) {
+                            err = EE_RETRY;
                             hnd->mFlag &= ~EHF_SYNC_READ;
                             hnd->addReadPendingHead(nd);
                             // Logger::log(ELL_INFO, "Loop::updatePending>>accept retry, ecode=%d", err);
