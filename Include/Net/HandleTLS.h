@@ -70,8 +70,6 @@ public:
 
     s32 setHost(const s8* hostName, usz length);
 
-    s32 verify(s32 vfg);
-
     const NetAddress& getLocal()const {
         return mTCP.getLocal();
     }

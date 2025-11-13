@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Net/HandleTLS.h"
@@ -33,11 +33,7 @@ namespace app {
 namespace net {
 
 HandleTLS::HandleTLS() :
-    mTlsSession(nullptr),
-    mFlyWrites(nullptr),
-    mFlyReads(nullptr),
-    mLandWrites(nullptr),
-    mLandReads(nullptr) {
+    mTlsSession(nullptr), mFlyWrites(nullptr), mFlyReads(nullptr), mLandWrites(nullptr), mLandReads(nullptr) {
     mLoop = &Engine::getInstance().getLoop();
     mHostName[0] = 0;
     mHostName[sizeof(mHostName) - 1] = 0;
@@ -68,8 +64,8 @@ void HandleTLS::init(const TlsContext& tlsCTX) {
         DASSERT(ssl_ctx);
         mTlsSession = new TlsSession(ssl_ctx, &mInBuffers, &mOutBuffers);
     }
-    mRead.mUser = nullptr; //null表示未在使用中，否则为占用中
-    mWrite.mUser = nullptr; //null表示未在使用中，否则为占用中
+    mRead.mUser = nullptr;  // lanuch a read action if nullptr, else can't
+    mWrite.mUser = nullptr; // lanuch a write action if nullptr, else can't
     mHostName[0] = 0;
     mCommitPos = mOutBuffers.getHead();
 }
@@ -85,7 +81,7 @@ s32 HandleTLS::handshake() {
         s32 err = session->getError(rc);
         if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_NONE) {
             TlsSession::showError();
-            //it->mError = EE_ERROR;
+            mLoop->closeHandle(&mTCP);
             return EE_ERROR;
         }
     }
@@ -107,7 +103,7 @@ s32 HandleTLS::postRead() {
             return EE_OK;
         }
     } else {
-        Logger::log(ELL_ERROR, "HandleTLS::postRead>>allocated=0");
+        DLOG(ELL_ERROR, "HandleTLS::postRead>>allocated=0");
     }
     mRead.mError = EE_ERROR;
     return EE_ERROR;
@@ -123,7 +119,7 @@ s32 HandleTLS::postWrite() {
         s32 bufcnt = 1;
         StringView buf;
         mCommitPos = mOutBuffers.peekHeadNode(mOutBuffers.getHead(), &buf, &bufcnt);
-        //mWrite.mCall = HandleTLS::funcOnWrite;
+        // mWrite.mCall = HandleTLS::funcOnWrite;
         mWrite.mData = buf.mData;
         mWrite.mAllocated = (u32)buf.mLen;
         mWrite.mUsed = mWrite.mAllocated;
@@ -137,19 +133,8 @@ s32 HandleTLS::postWrite() {
 }
 
 
-s32 HandleTLS::verify(s32 vfg) {
-    TlsSession* session = (TlsSession*)mTlsSession;
-    if (!session) {
-        return EE_ERROR;
-    }
-    //return session->verify(Engine::getInstance().getTlsContext().getVerifyFlags(), host);
-    return session->verify(vfg, mHostName);
-}
-
-
 void HandleTLS::landQueue(RequestFD*& que) {
-    for (RequestFD* nd = AppPopRingQueueHead_1(que);
-        nd; nd = AppPopRingQueueHead_1(que)) {
+    for (RequestFD* nd = AppPopRingQueueHead_1(que); nd; nd = AppPopRingQueueHead_1(que)) {
         DASSERT(nd->mCall);
         nd->mCall(nd);
     }
@@ -159,37 +144,36 @@ void HandleTLS::landQueue(RequestFD*& que) {
 void HandleTLS::doRead() {
     TlsSession* session = (TlsSession*)mTlsSession;
     bool gogo = true;
-    
+
     do {
-        for (RequestFD* it = AppPopRingQueueHead_1(mFlyReads);
-            it && gogo; it = AppPopRingQueueHead_1(mFlyReads)) {
+        for (RequestFD* it = AppPopRingQueueHead_1(mFlyReads); it && gogo; it = AppPopRingQueueHead_1(mFlyReads)) {
             s32 nread = session->read(it->mData, (s32)it->mAllocated);
             if (nread > 0) {
                 it->mUsed = nread;
                 AppPushRingQueueTail_1(mLandReads, it);
-                //it->mCall(it);
+                // it->mCall(it);
             } else {
                 gogo = false;
                 s32 error = session->getError(nread);
                 if (error == SSL_ERROR_WANT_READ) {
-                    //Wait for next read
+                    // Wait for next read
                     AppPushRingQueueHead_1(mFlyReads, it);
                 } else if (SSL_ERROR_ZERO_RETURN == error) {
-                    //read 0
+                    // read 0
                     close();
                     it->mUsed = 0;
                     AppPushRingQueueTail_1(mLandReads, it);
-                    //it->mCall(it);
+                    // it->mCall(it);
                 } else {
                     close();
                     it->mError = error;
                     it->mUsed = 0;
                     AppPushRingQueueTail_1(mLandReads, it);
-                    //it->mCall(it);
+                    // it->mCall(it);
                 }
                 break;
             }
-        }//for
+        } // for
         landReads();
     } while (gogo && mFlyReads);
 
@@ -305,7 +289,7 @@ s32 HandleTLS::write(RequestFD* req) {
     s32 wsz = session->write(req->mData, (s32)req->mUsed);
     if (wsz > 0) {
         if ((u32)wsz >= req->mUsed) {
-            //done
+            // done
             AppPushRingQueueTail_1(mLandWrites, req);
             postWrite();
             return EE_OK;
@@ -338,7 +322,7 @@ s32 HandleTLS::read(RequestFD* req) {
     if (wsz > 0) {
         req->mUsed = wsz;
         AppPushRingQueueTail_1(mLandReads, req);
-        //done
+        // done
     } else {
         AppPushRingQueueTail_1(mFlyReads, req);
     }
@@ -367,51 +351,53 @@ void HandleTLS::onClose(Handle* it) {
 
 
 void HandleTLS::onWriteHello(RequestFD* it) {
+    DASSERT(it == &mWrite);
+    mWrite.mUser = nullptr;
     if (0 == it->mError) {
-        mWrite.mUser = nullptr;
         mOutBuffers.commitHeadPos(mCommitPos);
         handshake();
         return;
     }
 
     mFlag = mTCP.getFlag();
-    Logger::log(ELL_ERROR, "HandleTLS::onWriteHello>>size=%u, ecode=%d", it->mUsed, it->mError);
+    DLOG(ELL_ERROR, "onWriteHello: size=%u, ecode=%d", it->mUsed, it->mError);
 }
 
 
 void HandleTLS::onWrite(RequestFD* it) {
+    DASSERT(it == &mWrite);
+    mWrite.mUser = nullptr;
     landWrites();
     if (0 == it->mError) {
-        mWrite.mUser = nullptr;
         mOutBuffers.commitHeadPos(mCommitPos);
         postWrite();
         return;
     }
     mFlag = mTCP.getFlag();
-    Logger::log(ELL_ERROR, "HandleTLS::onWrite>>flag=0x%X, size=%u/%u, ecode=%d",
-        mFlag, it->mUsed, it->mAllocated, it->mError);
+    DLOG(ELL_ERROR, "onWrite: flag=0x%X, size=%u/%u, ecode=%d", mFlag, it->mUsed, it->mAllocated, it->mError);
 }
 
 
 void HandleTLS::onRead(RequestFD* it) {
+    DASSERT(it == &mRead);
+    mRead.mUser = nullptr;
     if (it->mUsed > 0) {
         mInBuffers.commitTailPos((s32)it->mUsed);
         doRead();
-        mRead.mUser = nullptr;
         postRead();
         return;
     }
     mInBuffers.setRet(0);
     mFlag = mTCP.getFlag();
     doRead();
-    Logger::log(ELL_ERROR, "HandleTLS::onRead>>read 0/%u, flag=0x%X, ecode=%d",
-        it->mAllocated, mFlag, it->mError);
+    DLOG(ELL_ERROR, "onRead: read 0/%u, flag=0x%X, ecode=%d", it->mAllocated, mFlag, it->mError);
 }
 
 
 void HandleTLS::onReadHello(RequestFD* it) {
+    DASSERT(it == &mRead);
+    mRead.mUser = nullptr;
     if (it->mUsed > 0) {
-        mRead.mUser = nullptr;
         mInBuffers.commitTailPos((s32)it->mUsed);
         s32 ret = handshake();
         if (0 == ret) {
@@ -424,17 +410,16 @@ void HandleTLS::onReadHello(RequestFD* it) {
                     RequestFD* oit = AppPopRingQueueHead_1(mFlyWrites);
                     DASSERT(oit);
                     if (oit) {
-                        //回调中自行决定是否要验证域名证书， HandleTLS::verify(1, "www.baidu.com");
                         oit->mError = 0;
                         oit->mCall(oit);
                     }
                 } else {
-                    //link type
+                    // link type
                     doRead();
                 }
             }
         } else {
-            close();
+            mLoop->closeHandle(&mTCP);
         }
 
         if (EE_OK == postRead()) {
@@ -447,7 +432,7 @@ void HandleTLS::onReadHello(RequestFD* it) {
 
     mInBuffers.setRet(0);
     mFlag = mTCP.getFlag();
-    Logger::log(ELL_INFO, "HandleTLS::onReadHello>>read 0, ecode=%d", it->mError);
+    DLOG(ELL_INFO, "onReadHello: read 0, ecode=%d", it->mError);
 }
 
 
@@ -456,7 +441,7 @@ void HandleTLS::onConnect(RequestFD* it) {
     mWrite.mUser = nullptr;
     mFlag = mTCP.getFlag();
 
-    if (0 == it->mError) {
+    if (EE_OK == it->mError) {
         ((TlsSession*)mTlsSession)->setConnectState();
         mWrite.mCall = HandleTLS::funcOnWriteHello;
         mRead.mCall = HandleTLS::funcOnReadHello;
@@ -465,11 +450,10 @@ void HandleTLS::onConnect(RequestFD* it) {
             return;
         }
     }
-
-    Logger::log(ELL_ERROR, "HandleTLS::onConnect>>ecode=%d", it->mError);
-    //callback on close
+    DLOG(ELL_ERROR, "onConnect: ecode=%d", it->mError);
+    // callback on close
 }
 
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app

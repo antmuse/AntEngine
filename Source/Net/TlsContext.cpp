@@ -289,25 +289,21 @@ s32 TlsContext::setVerifyFlags(s32 iflags) {
         return EE_ERROR;
     }
     mVerifyFlags = iflags;
-    DLOG(ELL_INFO, "TLS VerifyFlags = %d", iflags);
-    switch (iflags) {
-    case ETLS_VERIFY_PEER:
-        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_PEER, nullptr);
-        break;
-    case ETLS_VERIFY_FAIL_IF_NO_PEER_CERT:
-        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
-        break;
-    case ETLS_VERIFY_CLIENT_ONCE:
-        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_CLIENT_ONCE, nullptr);
-        break;
-    case ETLS_VERIFY_POST_HANDSHAKE:
-        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_POST_HANDSHAKE, nullptr);
-        break;
-    case ETLS_VERIFY_NONE:
-    default:
-        SSL_CTX_set_verify((SSL_CTX*)mTlsContext, SSL_VERIFY_NONE, nullptr);
-        break;
-    };
+    DLOG(ELL_INFO, "TLS VerifyFlags = 0X%x", iflags);
+    s32 val = SSL_VERIFY_NONE;
+    if (ETLS_VERIFY_PEER & iflags) {
+        val |= SSL_VERIFY_PEER;
+    }
+    if (ETLS_VERIFY_FAIL_IF_NO_PEER_CERT & iflags) {
+        val |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    }
+    if (ETLS_VERIFY_CLIENT_ONCE & iflags) {
+        val |= SSL_VERIFY_CLIENT_ONCE;
+    }
+    if (ETLS_VERIFY_POST_HANDSHAKE & iflags) {
+        val |= SSL_VERIFY_POST_HANDSHAKE;
+    }
+    SSL_CTX_set_verify((SSL_CTX*)mTlsContext, val, nullptr);
     return EE_OK;
 }
 

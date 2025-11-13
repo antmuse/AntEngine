@@ -42,7 +42,6 @@
             }
         }
     ],
-
     "Proxy": [
         {
             "Type": 0, //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]

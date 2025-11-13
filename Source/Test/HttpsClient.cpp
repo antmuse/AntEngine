@@ -36,14 +36,14 @@ s32 HttpsClient::onTimeout(HandleTime& it) {
 
 void HttpsClient::onClose(Handle* it) {
     DASSERT(&mTCP == it && "HttpsClient::onClose what handle?");
-    //delete this;
+    // delete this;
     mFile.close();
 }
 
 
 void HttpsClient::onWrite(RequestFD* it) {
     if (0 == it->mError) {
-        //printf("HttpsClient::onWrite>>success = %u\n", it->mUsed);
+        // printf("HttpsClient::onWrite>>success = %u\n", it->mUsed);
     } else {
         Logger::log(ELL_ERROR, "HttpsClient::onWrite>>size=%u, ecode=%d", it->mUsed, it->mError);
     }
@@ -62,7 +62,7 @@ void HttpsClient::onRead(RequestFD* it) {
         }
     }
 
-    //stop read
+    // stop read
     Logger::log(ELL_INFO, "HttpsClient::onRead>>read 0, ecode=%d", it->mError);
     RequestFD::delRequest(it);
 }
@@ -70,10 +70,6 @@ void HttpsClient::onRead(RequestFD* it) {
 
 void HttpsClient::onConnect(RequestFD* it) {
     if (0 == it->mError) {
-        s32 ret = mTCP.verify(net::ETLS_VERIFY_NONE);
-        if (EE_OK != ret) {
-            Logger::log(ELL_ERROR, "HttpsClient::onConnect>>verify fail, ecode=%d", ret);
-        }
         String fnm = "Log/";
         fnm += mTCP.getRemote().getStr();
         s64 len = fnm.findFirst(':');
@@ -83,8 +79,8 @@ void HttpsClient::onConnect(RequestFD* it) {
         it->mCall = HttpsClient::funcOnRead;
         if (0 == mTCP.read(it)) {
             RequestFD* get = RequestFD::newRequest(1 * 1024);
-            get->mUsed = snprintf(get->mData, get->mAllocated,
-                "GET / HTTP/1.1\r\nAccept:*/*\r\nConnection:close\r\n\r\n");
+            get->mUsed
+                = snprintf(get->mData, get->mAllocated, "GET / HTTP/1.1\r\nAccept:*/*\r\nConnection:close\r\n\r\n");
             get->mUser = this;
             get->mCall = HttpsClient::funcOnWrite;
             if (0 != mTCP.write(get)) {
@@ -99,4 +95,4 @@ void HttpsClient::onConnect(RequestFD* it) {
 }
 
 
-} //namespace app
+} // namespace app
