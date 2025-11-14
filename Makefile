@@ -4,7 +4,7 @@
 
 #DEBUG ?= true
 ifeq (${DEBUG},)
-export DEBUG = true
+export DEBUG = false
 endif
 
 export BUILD_DIR := $(shell pwd)
@@ -21,12 +21,12 @@ export COLOR_CLEAR = "\033[0m"
 
 
 MK_DIRS := $(BUILD_DIR)/Source \
-		   $(BUILD_DIR)/Source/Test \
-		   $(BUILD_DIR)/Source/HttpClient \
+		   $(BUILD_DIR)/Source/Server \
 		   $(BUILD_DIR)/Source/EchoServer \
 		   $(BUILD_DIR)/Source/EchoClient \
 		   $(BUILD_DIR)/Source/ServiceNAT \
-		   $(BUILD_DIR)/Source/Server
+		   $(BUILD_DIR)/Source/HttpClient \
+		   $(BUILD_DIR)/Source/Test
 
 
 

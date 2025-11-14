@@ -129,82 +129,80 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     if (tmp != cfg.data()) {
         delete[] tmp;
     }
-    if (ret) {
-        if (val.empty()) {
-            return true;
-        }
-        mDaemon = val["Daemon"].asBool();
-        mPrint = val["Print"].asInt();
-        mLogPath = val["LogPath"].asCString();
-        mLogPath.replace('\\', '/');
-        if ('/' != mLogPath.lastChar()) {
-            mLogPath += '/';
-        }
-        mPidFile = val["PidFile"].asCString();
-        mMemName = val["ShareMem"].asCString();
-        mMemSize = 1024 * 1024 * AppClamp<s64>(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
-        mMaxPostAccept = AppClamp<u8>(val["AcceptPost"].asInt(), 1, 255);
-        mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
-        mMaxProcess = AppClamp<s16>(val["Process"].asInt(), -1024, 1024);
+    if (!ret) { // parse fail
+        return false;
+    }
+    if (val.empty()) { // empty cfg
+        return true;
+    }
+
+    // func for TlsConfig load
+    auto func_loadtls = [](const Json::Value& val, EngineConfig::TlsConfig& out) -> bool {
         if (val.isMember("TLS")) {
-            Json::Value& tls = val["TLS"];
-            mEngTlsConfig.mTlsPathCA = tls["CA"].asCString();
-            mEngTlsConfig.mTlsPathCert = tls["Cert"].asCString();
-            mEngTlsConfig.mTlsPathKey = tls["Key"].asCString();
-            mEngTlsConfig.mTlsVerify = tls["Verify"].asInt();
-            mEngTlsConfig.mTlsVersionOff = tls["VersionOff"].asCString();
-            mEngTlsConfig.mTlsCiphers = tls["Ciphers"].asCString();
-            mEngTlsConfig.mTlsCiphersuites = tls["Ciphersuites"].asCString();
+            const Json::Value& tls = val["TLS"];
+            out.mTlsPathCA = tls["CA"].asCString();
+            out.mTlsPathCert = tls["Cert"].asCString();
+            out.mTlsPathKey = tls["Key"].asCString();
+            out.mTlsVerify = tls["Verify"].asInt();
+            out.mTlsVerifyDepth = tls["VerifyDepth"].asInt();
+            out.mTlsVersionOff = tls["VersionOff"].asCString();
+            out.mTlsCiphers = tls["Ciphers"].asCString();
+            out.mTlsCiphersuites = tls["Ciphersuites"].asCString();
             if (tls.isMember("KeyPassword")) {
-                mEngTlsConfig.mTlsPassword = tls["KeyPassword"].asCString();
+                out.mTlsPassword = tls["KeyPassword"].asCString();
+                return true;
             }
         }
-        if (val.isMember("Proxy")) {
-            ProxyCfg nd;
-            u32 mx = val["Proxy"].size();
-            for (u32 i = 0; i < mx; ++i) {
-                nd.mType = (u8)val["Proxy"][i]["Type"].asInt();
-                nd.mSpeed = (u32)val["Proxy"][i]["MaxSpeed"].asInt();
-                nd.mTimeout = 1000 * AppClamp<u32>(val["Proxy"][i]["Timeout"].asInt(), 0, 3600);
-                nd.mLocal.setIPort(val["Proxy"][i]["Lisen"].asCString());
-                nd.mRemote.setIPort(val["Proxy"][i]["Backend"].asCString());
-                mProxy.pushBack(nd);
-            }
+        return false;
+    };
+    // TODO: try-catch below?
+    mDaemon = val["Daemon"].asBool();
+    mPrint = val["Print"].asInt();
+    mLogPath = val["LogPath"].asCString();
+    mLogPath.replace('\\', '/');
+    if ('/' != mLogPath.lastChar()) {
+        mLogPath += '/';
+    }
+    mPidFile = val["PidFile"].asCString();
+    mMemName = val["ShareMem"].asCString();
+    mMemSize = 1024 * 1024 * AppClamp<s64>(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
+    mMaxPostAccept = AppClamp<u8>(val["AcceptPost"].asInt(), 1, 255);
+    mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
+    mMaxProcess = AppClamp<s16>(val["Process"].asInt(), -1024, 1024);
+    func_loadtls(val, mEngTlsConfig);
+    if (val.isMember("Proxy")) {
+        ProxyCfg nd;
+        u32 mx = val["Proxy"].size();
+        for (u32 i = 0; i < mx; ++i) {
+            nd.mType = (u8)val["Proxy"][i]["Type"].asInt();
+            nd.mSpeed = (u32)val["Proxy"][i]["MaxSpeed"].asInt();
+            nd.mTimeout = 1000 * AppClamp<u32>(val["Proxy"][i]["Timeout"].asInt(), 0, 3600);
+            nd.mLocal.setIPort(val["Proxy"][i]["Lisen"].asCString());
+            nd.mRemote.setIPort(val["Proxy"][i]["Backend"].asCString());
+            mProxy.pushBack(nd);
         }
-        if (val.isMember("Website")) {
-            WebsiteCfg nd;
-            u32 mx = val["Website"].size();
-            for (u32 i = 0; i < mx; ++i) {
-                nd.mType = (u8)val["Website"][i]["Type"].asInt();
-                nd.mTimeout = 1000 * AppClamp<u32>(val["Website"][i]["Timeout"].asInt(), 0, 3600);
-                nd.mLocal.setIPort(val["Website"][i]["Lisen"].asCString());
-                nd.mRootPath = val["Website"][i]["Path"].asCString();
-                nd.mRootPath.replace('\\', '/');
-                nd.mHost = val["Website"][i]["Host"].asCString();
-                if ('/' == nd.mRootPath.lastChar()) {
-                    nd.mRootPath.resize(nd.mRootPath.size() - 1);
-                }
-                if (1 == nd.mType) {
-                    if (!val["Website"][i].isMember("TLS")) {
-                        nd.mTLS = mEngTlsConfig;
-                        DLOG(ELL_INFO, "EngineConfig::load, website[%u][%s] TLS use default", i, nd.mLocal.getStr());
-                        continue;
-                    }
-                    Json::Value& tls = val["Website"][i]["TLS"];
-                    nd.mTLS.mTlsPathCA = tls["CA"].asCString();
-                    nd.mTLS.mTlsPathCert = tls["Cert"].asCString();
-                    nd.mTLS.mTlsPathKey = tls["Key"].asCString();
-                    nd.mTLS.mTlsVerify = tls["Verify"].asInt();
-                    nd.mTLS.mTlsVersionOff = tls["VersionOff"].asCString();
-                    nd.mTLS.mTlsCiphers = tls["Ciphers"].asCString();
-                    nd.mTLS.mTlsCiphersuites = tls["Ciphersuites"].asCString();
-                    if (tls.isMember("KeyPassword")) {
-                        nd.mTLS.mTlsPassword = tls["KeyPassword"].asCString();
-                    }
-                }
-                mWebsite.pushBack(nd);
-                mWebsite.getLast().mDict = new HashDict(gDictCalls, nullptr);
+    }
+    if (val.isMember("Website")) {
+        WebsiteCfg nd;
+        u32 mx = val["Website"].size();
+        for (u32 i = 0; i < mx; ++i) {
+            nd.mType = (u8)val["Website"][i]["Type"].asInt();
+            nd.mTimeout = 1000 * AppClamp<u32>(val["Website"][i]["Timeout"].asInt(), 0, 3600);
+            nd.mLocal.setIPort(val["Website"][i]["Lisen"].asCString());
+            nd.mRootPath = val["Website"][i]["Path"].asCString();
+            nd.mRootPath.replace('\\', '/');
+            nd.mHost = val["Website"][i]["Host"].asCString();
+            if ('/' == nd.mRootPath.lastChar()) {
+                nd.mRootPath.resize(nd.mRootPath.size() - 1);
             }
+            if (1 == nd.mType) {
+                if (!func_loadtls(val["Website"][i], nd.mTLS)) {
+                    nd.mTLS = mEngTlsConfig;
+                    DLOG(ELL_INFO, "EngineConfig::load, website[%u][%s] TLS use default", i, nd.mLocal.getStr());
+                }
+            }
+            mWebsite.pushBack(nd);
+            mWebsite.getLast().mDict = new HashDict(gDictCalls, nullptr);
         }
     }
     return ret;

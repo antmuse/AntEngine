@@ -55,7 +55,7 @@ public:
 
     void uninit();
 
-    s32 setVerifyFlags(s32 iVerifyFlags);
+    s32 setVerifyFlags(s32 iVerifyFlags, s32 depth = 4);
 
     /**
      * @brief suggest use TLS "v1.2, v1.3" for safe.

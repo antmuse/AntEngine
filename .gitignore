@@ -2,9 +2,8 @@
 Build/ipch/
 Build/.vs/
 Lib/
-Bin/Temp/
-Bin/Log/
-Bin/GMAP/
+Bin/
+Depend/
 CMakeFiles
 
 

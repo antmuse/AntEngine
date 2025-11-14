@@ -178,7 +178,7 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
         SSL_CTX_set_info_callback(ssl_ctx, AppFunTlsDebug);
     }
     SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
-    setVerifyFlags(cfg.mTlsVerify);
+    setVerifyFlags(cfg.mTlsVerify, cfg.mTlsVerifyDepth);
     if (EE_OK != setVersion(cfg.mTlsVersionOff)) {
         DLOG(ELL_ERROR, "set version off err = %s", cfg.mTlsVersionOff.data());
     }
@@ -283,13 +283,13 @@ s32 TlsContext::setVersion(const String& it) {
 }
 
 
-s32 TlsContext::setVerifyFlags(s32 iflags) {
+s32 TlsContext::setVerifyFlags(s32 iflags, s32 depth) {
     if (!mTlsContext) {
         DLOG(ELL_ERROR, "invalid TLS Context");
         return EE_ERROR;
     }
     mVerifyFlags = iflags;
-    DLOG(ELL_INFO, "TLS VerifyFlags = 0X%x", iflags);
+    DLOG(ELL_INFO, "TLS VerifyFlags = 0X%x,  depth = %d", iflags, depth);
     s32 val = SSL_VERIFY_NONE;
     if (ETLS_VERIFY_PEER & iflags) {
         val |= SSL_VERIFY_PEER;
@@ -303,6 +303,7 @@ s32 TlsContext::setVerifyFlags(s32 iflags) {
     if (ETLS_VERIFY_POST_HANDSHAKE & iflags) {
         val |= SSL_VERIFY_POST_HANDSHAKE;
     }
+    SSL_CTX_set_verify_depth((SSL_CTX*)mTlsContext, depth);
     SSL_CTX_set_verify((SSL_CTX*)mTlsContext, val, nullptr);
     return EE_OK;
 }

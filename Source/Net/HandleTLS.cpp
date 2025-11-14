@@ -79,9 +79,10 @@ s32 HandleTLS::handshake() {
     s32 rc = session->handshake();
     if (rc <= 0) {
         s32 err = session->getError(rc);
-        if (err != SSL_ERROR_WANT_READ && err != SSL_ERROR_NONE) {
+        if (SSL_ERROR_WANT_READ != err && SSL_ERROR_WANT_WRITE != err && SSL_ERROR_NONE != err) {
             TlsSession::showError();
             mLoop->closeHandle(&mTCP);
+            mFlag = mTCP.getFlag();
             return EE_ERROR;
         }
     }
@@ -160,12 +161,14 @@ void HandleTLS::doRead() {
                     AppPushRingQueueHead_1(mFlyReads, it);
                 } else if (SSL_ERROR_ZERO_RETURN == error) {
                     // read 0
-                    close();
+                    mLoop->closeHandle(&mTCP);
+                    mFlag = mTCP.getFlag();
                     it->mUsed = 0;
                     AppPushRingQueueTail_1(mLandReads, it);
                     // it->mCall(it);
                 } else {
-                    close();
+                    mLoop->closeHandle(&mTCP);
+                    mFlag = mTCP.getFlag();
                     it->mError = error;
                     it->mUsed = 0;
                     AppPushRingQueueTail_1(mLandReads, it);
@@ -352,8 +355,8 @@ void HandleTLS::onClose(Handle* it) {
 
 void HandleTLS::onWriteHello(RequestFD* it) {
     DASSERT(it == &mWrite);
-    mWrite.mUser = nullptr;
-    if (0 == it->mError) {
+    if (EE_OK == it->mError) {
+        mWrite.mUser = nullptr;
         mOutBuffers.commitHeadPos(mCommitPos);
         handshake();
         return;
@@ -366,10 +369,10 @@ void HandleTLS::onWriteHello(RequestFD* it) {
 
 void HandleTLS::onWrite(RequestFD* it) {
     DASSERT(it == &mWrite);
-    mWrite.mUser = nullptr;
-    landWrites();
-    if (0 == it->mError) {
+    if (EE_OK == it->mError) {
+        mWrite.mUser = nullptr;
         mOutBuffers.commitHeadPos(mCommitPos);
+        landWrites();
         postWrite();
         return;
     }
@@ -380,8 +383,8 @@ void HandleTLS::onWrite(RequestFD* it) {
 
 void HandleTLS::onRead(RequestFD* it) {
     DASSERT(it == &mRead);
-    mRead.mUser = nullptr;
     if (it->mUsed > 0) {
+        mRead.mUser = nullptr;
         mInBuffers.commitTailPos((s32)it->mUsed);
         doRead();
         postRead();
@@ -396,11 +399,11 @@ void HandleTLS::onRead(RequestFD* it) {
 
 void HandleTLS::onReadHello(RequestFD* it) {
     DASSERT(it == &mRead);
-    mRead.mUser = nullptr;
     if (it->mUsed > 0) {
+        mRead.mUser = nullptr;
         mInBuffers.commitTailPos((s32)it->mUsed);
         s32 ret = handshake();
-        if (0 == ret) {
+        if (EE_OK == ret) {
             TlsSession* session = (TlsSession*)mTlsSession;
             if (session->isInitFinished()) {
                 it->mCall = HandleTLS::funcOnRead;
@@ -420,6 +423,7 @@ void HandleTLS::onReadHello(RequestFD* it) {
             }
         } else {
             mLoop->closeHandle(&mTCP);
+            mFlag = mTCP.getFlag();
         }
 
         if (EE_OK == postRead()) {

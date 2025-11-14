@@ -42,6 +42,7 @@ public:
     struct TlsConfig {
         bool mDebug = false;
         s32 mTlsVerify = 0;                   // tls verify
+        s32 mTlsVerifyDepth = 5;              // tls verify certs depth
         String mTlsPathCA;                    // tls ca.crt
         String mTlsPathCert;                  // tls server.crt
         String mTlsPathKey;                   // tls server.key
