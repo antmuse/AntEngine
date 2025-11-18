@@ -351,15 +351,18 @@ void Loop::stop() {
     }
     mStop = 1;
     Logger::flush();
-
+    s32 cnt = 0;
     const Node2* head = &mHandleActive;
     Node2* next = mHandleActive.mNext;
     for (Node2* curr = next; head != curr; curr = next) {
         next = next->mNext;
         closeHandle((Handle*)curr);
+        ++cnt;
     }
-    mCMD.mSock.close();
+    closeHandle(&mCMD); // mCMD.mSock.close();
     mSendCMD.close();
+    ++cnt;
+    DLOG(ELL_ERROR, "Loop::stop>> closed handles = %d", cnt);
 }
 
 

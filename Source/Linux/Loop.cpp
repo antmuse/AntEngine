@@ -420,6 +420,7 @@ void Loop::updateClosed() {
     Node2 list;
     mHandleClose.splitAndJoin(list);
 
+    EngineStats& estat = Engine::getInstance().getEngineStats();
     Handle* curr;
     while (&list != list.mNext) {
         curr = (Handle*)list.mNext;
@@ -428,6 +429,8 @@ void Loop::updateClosed() {
         if (curr->mCallClose) {
             curr->mCallClose(curr);
         }
+        --estat.mTotalHandles;
+        ++estat.mClosedHandles;
         drop();
     }
 }
@@ -519,14 +522,18 @@ void Loop::stop() {
     mStop = 1;
     Logger::flush();
 
+    s32 cnt = 0;
     const Node2* head = &mHandleActive;
     Node2* next = mHandleActive.mNext;
     for (Node2* curr = next; head != curr; curr = next) {
         next = next->mNext;
         closeHandle((Handle*)curr);
+        ++cnt;
     }
-    mCMD.mSock.close();
+    closeHandle(&mCMD); // mCMD.mSock.close();
     mSendCMD.close();
+    ++cnt;
+    DLOG(ELL_ERROR, "Loop::stop>> closed handles = %d", cnt);
 }
 
 
@@ -579,7 +586,6 @@ u32 Loop::updateTimeHub() {
 
 
 void Loop::addClose(Handle* it) {
-    --Engine::getInstance().getEngineStats().mTotalHandles;
     it->delink();
     mHandleClose.pushFront(*it);
 }

@@ -383,7 +383,8 @@ void HttpLayer::onRead(RequestFD* it) {
 
 
 void HttpLayer::postClose() {
-    mHTTPS ? mTCP.launchClose() : mTCP.getHandleTCP().launchClose();
+    DLOG(ELL_INFO, "HttpLayer::postClose remote = %s", mTCP.getHandleTCP().getRemote().getStr());
+    mTCP.getHandleTCP().launchClose();
 }
 
 
@@ -581,6 +582,7 @@ enum EHttpHeaderState {
 
     EH_CONNECTION,
     EH_CONTENT_TYPE, // Content-Type
+    EH_CONTENT_TYPE_BOUNDARY,
     EH_CONTENT_DISP, // content-disposition
     EH_CONTENT_LEN,
     EH_CONTENT_LEN_NUM,
@@ -1156,6 +1158,8 @@ GT_REPARSE: // recheck current byte
         case PS_RESP_LINE_END:
             STRICT_CHECK(ch != LF);
             tmpstate = PS_HEAD_FIELD_PRE;
+            mState = tmpstate;
+            pe = pp + 1; // steped
             break;
 
         case PS_REQ_START:
@@ -1755,14 +1759,13 @@ GT_REPARSE: // recheck current byte
                     pp = parseValue(pp, end, vals, vcnt, vflags);
                     if ((vflags & EHV_DONE) && (vflags & EHV_CONTENT_TYPE_MULTI)) {
                         if (4 == vcnt && 8 == vals[2].mLen) {
-                            if ((mFlags & F_BOUNDARY) || vals[3].mLen > sizeof(mBoundary)) {
-                                mHttpError = (HPE_UNKNOWN);
+                            if (vals[3].mLen > sizeof(mBoundary)) {
+                                mHttpError = HPE_UNKNOWN;
                                 goto GT_ERROR;
                             }
-                            mFlags |= F_BOUNDARY;
                             memcpy(mBoundary, vals[3].mData, vals[3].mLen);
                             mBoundaryLen = (u8)vals[3].mLen;
-                            mHeaderState = EH_NORMAL;
+                            mHeaderState = EH_CONTENT_TYPE_BOUNDARY;
                         }
                     }
                 } else {
@@ -1775,13 +1778,6 @@ GT_REPARSE: // recheck current byte
                     mHttpError = HPE_INVALID_CONTENT_LENGTH;
                     goto GT_ERROR;
                 }
-
-                if (mFlags & F_CONTENTLENGTH) {
-                    mHttpError = HPE_UNEXPECTED_CONTENT_LENGTH;
-                    goto GT_ERROR;
-                }
-
-                mFlags |= F_CONTENTLENGTH;
                 mContentLen = ch - '0';
                 mHeaderState = EH_CONTENT_LEN_NUM;
                 break;
@@ -2073,6 +2069,24 @@ GT_REPARSE: // recheck current byte
 
             /* finished the header */
             switch (mHeaderState) {
+            case EH_CONTENT_LEN_NUM:
+            {
+                if (mFlags & F_CONTENTLENGTH) {
+                    mHttpError = HPE_UNEXPECTED_CONTENT_LENGTH;
+                    goto GT_ERROR;
+                }
+                mFlags |= F_CONTENTLENGTH;
+                break;
+            }
+            case EH_CONTENT_TYPE_BOUNDARY:
+            {
+                if (mFlags & F_BOUNDARY) {
+                    mHttpError = HPE_UNKNOWN;
+                    goto GT_ERROR;
+                }
+                mFlags |= F_BOUNDARY;
+                break;
+            }
             case EH_CONNECTION_KEEP_ALIVE:
                 mFlags |= F_CONNECTION_KEEP_ALIVE;
                 break;
@@ -2090,6 +2104,8 @@ GT_REPARSE: // recheck current byte
             }
 
             tmpstate = PS_HEAD_FIELD_PRE;
+            mState = tmpstate;
+            pe = pp; // steped
             goto GT_REPARSE;
         }
 
@@ -2129,12 +2145,14 @@ GT_REPARSE: // recheck current byte
                 }
 
                 tmpval.set(pp, 0); // empty header value
-                tmpstate = PS_HEAD_FIELD_PRE;
+                
                 DASSERT(mHttpError == HPE_OK);
                 if (tmpkey.mLen) {
-                    mState = tmpstate;
                     mMsg->mHeadIn.add(tmpkey, tmpval);
                 }
+                tmpstate = PS_HEAD_FIELD_PRE;
+                mState = tmpstate;
+                pe = pp; // steped
                 goto GT_REPARSE;
             }
         }
@@ -2500,28 +2518,8 @@ GT_REPARSE: // recheck current byte
         } // switch
     }     // for
 
-
-    /*{
-        // 清除不能重入的状态
-        // 判断是不是body中的header
-        if (0 == (mFlags & F_HEAD_DONE)) {
-            switch (mHeaderState) {
-            case EH_CONTENT_LEN:
-            case EH_CONTENT_LEN_NUM:
-                mFlags &= (~(u32)(F_CONTENTLENGTH));
-                break;
-            case EH_CONTENT_TYPE:
-                mFlags &= (~(u32)(F_BOUNDARY));
-                break;
-            default:
-                break;
-            }
-        }
-        mHeaderState = EH_NORMAL;
-    }*/
-
+    // mState = tmpstate;  don't step here
     mReadSize = nread;
-    // mState = tmpstate;
     return pe - data;
 
 

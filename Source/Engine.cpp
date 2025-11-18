@@ -90,6 +90,8 @@ void Engine::postCommand(s32 val) {
     }
     if (ECT_EXIT == val) {
         mProcStatus = EPS_EXITING;
+        EngineStats& estat = Engine::getInstance().getEngineStats();
+        DLOG(ELL_INFO, "Engine::postCommand>> handles count = %lld", estat.mTotalHandles.load());
         if (!mMain || (mMain && 0 == mConfig.mMaxProcess)) {
             Logger::log(ELL_INFO, "Engine::postCommand>> %s process exit...", mMain ? "main" : "child");
             mLoop.postTask(cmd);
