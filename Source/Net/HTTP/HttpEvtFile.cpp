@@ -7,8 +7,8 @@ namespace app {
 
 static const s32 G_BLOCK_HEAD_SIZE = 6;
 
-HttpEvtFile::HttpEvtFile() :
-    mOffset(0), mReadOnly(true), mReqBodyFinish(true), mMsg(nullptr), mNoBackend(false), mLayerClosed(false),
+HttpEvtFile::HttpEvtFile(bool readonly) :
+    mOffset(0), mReadOnly(readonly), mReqBodyFinish(true), mMsg(nullptr), mNoBackend(false), mLayerClosed(false),
     mBody(nullptr) {
     mFile.setClose(EHT_FILE, HttpEvtFile::funcOnClose, this);
 }
@@ -137,13 +137,11 @@ s32 HttpEvtFile::onReqHeadDone(net::HttpMsg* msg) {
             return ret;
         }
         mReqs.mCall = HttpEvtFile::funcOnRead;
-        mReadOnly = true;
         break;
     }
     case net::HTTP_PUT:
     case net::HTTP_POST:
     {
-        mReadOnly = false;
         System::createPath(msg->getRealPath());
         if (AppIsPathDelimiter(msg->getRealPath().lastChar())) {
             // just create a path don't req on HandleFile

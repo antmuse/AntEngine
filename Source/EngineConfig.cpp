@@ -150,8 +150,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
             out.mTlsCiphersuites = tls["Ciphersuites"].asCString();
             if (tls.isMember("KeyPassword")) {
                 out.mTlsPassword = tls["KeyPassword"].asCString();
-                return true;
             }
+            return true;
         }
         return false;
     };

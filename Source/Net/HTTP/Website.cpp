@@ -44,18 +44,18 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
 
     net::HttpEventer* evt = nullptr;
     net::EHttpMethod cmd = msg->getMethod();
+    const s32 checkDisk = System::isExist(real);
 
     if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
         evt = new HttpEvtLua(requrl);
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
-        s32 ck = System::isExist(real);
-        if (1 == ck) {
+        if (1 == checkDisk) {
             if (net::HTTP_GET == cmd) {
-                evt = new HttpEvtFile();
+                evt = new HttpEvtFile(true);
             } else {
                 evt = new HttpEvtError(401);
             }
-        } else if (2 == ck) {
+        } else if (2 == checkDisk) {
             if (net::HTTP_GET == cmd) {
                 evt = new HttpEvtPath();
             } else {
@@ -63,17 +63,17 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
             }
         } else {
             if (net::HTTP_POST == cmd || net::HTTP_PUT == cmd) {
-                evt = new HttpEvtFile(); // upload
+                evt = new HttpEvtFile(false); // upload
             } else {
-                evt = new HttpEvtError(404);
+                evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
             }
         }
     } else { // readonly
-        if (1 == System::isExist(real)) {
+        if (net::HTTP_GET == cmd && 1 == checkDisk) {
             msg->getHeadOut().add("Cache-Control", "public, max-age=6000");
-            evt = new HttpEvtFile();
+            evt = new HttpEvtFile(true);
         } else {
-            evt = new HttpEvtError(404);
+            evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
         }
     }
 

@@ -55,8 +55,7 @@ text-align: center;
 </head><body>
 <h1>ERROR )";
     ebody += mErr;
-    ebody += R"(</h1><hr><br><p>Not supported currently, pls wait for more.</p><br><hr>
-           </body></html>)";
+    ebody += R"(</h1><hr><br><p>file or not supported, pls wait for more.</p><br><hr></body></html>)";
     s8 tmp[128];
     msg->setStatus(mErr);
     msg->writeStatus(msg->getStatus(), "ERR");

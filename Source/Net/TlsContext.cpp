@@ -187,7 +187,7 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     ret = addTrustedCerts(G_CA_ROOT_CERT, strlen(G_CA_ROOT_CERT));
     Packet buf(1024);
     FileRWriter keyfile;
-    if (!cfg.mTlsPassword.empty()) { // TODO make safe pass loader
+    if (!cfg.mTlsPassword.empty()) {
         SSL_CTX_set_default_passwd_cb((SSL_CTX*)mTlsContext, AppTlsPasswordCallback);
         SSL_CTX_set_default_passwd_cb_userdata((SSL_CTX*)mTlsContext, (void*)(&cfg.mTlsPassword));
     }

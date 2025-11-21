@@ -7,7 +7,7 @@ namespace app {
 
 class HttpEvtFile : public net::HttpEventer {
 public:
-    HttpEvtFile();
+    HttpEvtFile(bool readonly);
     virtual ~HttpEvtFile();
 
     virtual s32 onLayerClose(net::HttpMsg* msg) override;
