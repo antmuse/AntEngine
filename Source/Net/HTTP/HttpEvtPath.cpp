@@ -76,10 +76,8 @@ s32 HttpEvtPath::onReqBodyDone(net::HttpMsg* msg) {
 
     hed.setChunked();
 
-    msg->writeStatus(200);
-    msg->dumpHeadOut();
-    msg->writeOutBody("\r\n", 2);
-    // msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", esz));
+    msg->setStatus(200);
+    msg->buildResp();
     writeStr(msg, "<htm><head><title>simple path resp</title></head><body>Path List:<br><hr><br><ol>");
     return msg->getHttpLayer()->sendResp(msg);
 }

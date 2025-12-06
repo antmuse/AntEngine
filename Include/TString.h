@@ -401,6 +401,7 @@ public:
             resize(length);
             memcpy(data(), it.mData, length * sizeof(T));
         }
+        return *this;
     }
 
     template <class B>
@@ -900,7 +901,7 @@ public:
      * @param begin Start of substring.
      * @param length Length of substring.
      * @return a substring */
-    TString<T> subString(usz begin, usz length) const {
+    TString<T> subString(usz begin, usz length = GMAX_USIZE) const {
         usz len = size();
         if (0 == length || begin >= len) {
             return TString<T>();
@@ -911,7 +912,7 @@ public:
         }
         TString<T> ret(length);
         T* dest = ret.data();
-        const T* src = c_str() + begin;
+        const T* src = data() + begin;
         memcpy(dest, src, length * sizeof(T));
         ret.cutLen(length);
         return std::move(ret);

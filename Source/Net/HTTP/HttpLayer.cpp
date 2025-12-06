@@ -1149,7 +1149,7 @@ GT_REPARSE: // recheck current byte
                 DASSERT(mHttpError == HPE_OK);
                 if (LIKELY(mMsg)) {
                     tmpval.mLen = pp - tmpval.mData;
-                    mMsg->setBrief(tmpval.mData, tmpval.mLen);
+                    mMsg->setBrief(tmpval);
                 }
                 break;
             }

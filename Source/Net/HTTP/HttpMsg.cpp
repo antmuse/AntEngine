@@ -27,10 +27,9 @@ HttpMsg::~HttpMsg() {
 }
 
 
-void HttpMsg::writeStatus(s32 val, const s8* str) {
+void HttpMsg::writeLine() {
     s8 tmp[64]; // len=17="HTTP/1.1 200 OK\r\n"
-    mStatusCode = val;
-    usz tsz = snprintf(tmp, sizeof(tmp), "HTTP/1.1 %d %s\r\n", val, str);
+    usz tsz = snprintf(tmp, sizeof(tmp), "HTTP/1.1 %d %s\r\n", mStatusCode, mBrief.data());
     if (tsz >= sizeof(tmp)) {
         tsz = sizeof(tmp);
         tmp[tsz - 2] = '\r';
@@ -39,6 +38,10 @@ void HttpMsg::writeStatus(s32 val, const s8* str) {
     mCacheOut.write(tmp, static_cast<s32>(tsz));
 }
 
+void HttpMsg::writeOutChunkLen(usz bsz) {
+    s8 chunked[24]; // 24 bytes enough
+    mCacheOut.write(chunked, snprintf(chunked, sizeof(chunked), "%llx\r\n", bsz));
+}
 
 void HttpMsg::writeOutBody(const void* buf, usz bsz) {
     mCacheOut.write(buf, bsz);
@@ -205,6 +208,14 @@ s32 HttpMsg::buildReq() {
     mCacheOut.write("\r\n", sizeof("\r\n") - 1);
     dumpHead(mHeadOut, mCacheOut);
     mCacheOut.write("\r\n", sizeof("\r\n") - 1);
+    return EE_OK;
+}
+
+s32 HttpMsg::buildResp() {
+    mCacheOut.reset();
+    writeLine();
+    dumpHeadOut();
+    mCacheOut.write("\r\n", sizeof("\r\n") - 1); // header finish
     return EE_OK;
 }
 

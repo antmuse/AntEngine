@@ -335,6 +335,9 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtShow.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Script\LuaHttpEvent.cpp">
+      <Filter>Source\Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">

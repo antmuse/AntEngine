@@ -245,8 +245,8 @@ public:
     virtual ~HttpEventer() {
     }
     virtual s32 onLayerClose(HttpMsg* msg) = 0;
- 
-    //req parse err
+
+    // req parse err
     virtual s32 onReadError(HttpMsg* msg) = 0;
 
     virtual s32 onRespWrite(HttpMsg* msg) = 0;
@@ -264,7 +264,6 @@ public:
     virtual s32 onReqChunkBodyDone(HttpMsg* msg) {
         return 0;
     }
-
 };
 
 
@@ -298,10 +297,6 @@ public:
         return mEvent;
     }
 
-    void writeOutHead(const s8* name, const s8* value);
-
-    void writeOutBody(const void* buf, usz bsz);
-
     RingBuffer& getCacheIn() {
         return mCacheIn;
     }
@@ -332,29 +327,29 @@ public:
         mURL.clear();
     }
 
-    /*
-     @return 0=success, 1=skip body, 2=upgrade, else error
-    */
-    // s32 onHeadFinish(s32 flag, ssz bodySize);
+    EHttpParserType getType() const {
+        return mType;
+    }
 
+    // for req
     bool isKeepAlive() const {
         return (F_CONNECTION_KEEP_ALIVE & mFlags) > 0;
     }
 
-    // test page: http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx
-    // http://www.xingkong.com/
+    /**
+     *  test page: http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx
+     *             http://www.xingkong.com/
+     */
     bool isChunked() const {
         return (F_CHUNKED & mFlags) > 0;
     }
 
+    // for req
     void clearInBody() {
         mCacheIn.reset();
     }
 
-    void clearOutBody() {
-        mCacheOut.reset();
-    }
-
+    // for req
     usz getInBodySize() const {
         return mCacheIn.getSize();
     }
@@ -363,60 +358,85 @@ public:
         return mCacheOut.getSize();
     }
 
-    /**request func*/
-    s32 buildReq();
+    // for req
+    const String& getRealPath() const {
+        return mRealPath;
+    }
 
-    /**request func*/
+    // for req
+    void setRealPath(const String& it) {
+        mRealPath = it;
+    }
+
+    // for req
     void setURL(const HttpURL& it) {
         mURL = it;
     }
+
     s32 setURL(const String& req);
 
-    /**request func*/
+    // for req
     HttpURL& getURL() {
         return mURL;
     }
 
-    /**request func*/
+    // for req
     void setMethod(EHttpMethod it) {
         mMethod = it;
     }
 
-    /**request func*/
+    // for req
     EHttpMethod getMethod() const {
         return mMethod;
     }
 
-    /**resp func*/
-    void setStatus(u16 it) {
+    // for req
+    s32 buildReq();
+
+    // for resp
+    s32 buildResp();
+
+    // for resp
+    void writeOutHead(const s8* name, const s8* value);
+
+    // for resp
+    void writeOutChunkLen(usz bsz);
+
+    // for resp
+    void writeOutBody(const void* buf, usz bsz);
+
+    // for resp
+    void setStatus(u16 it, const s8* str = "OK") {
+        setBrief(str);
         mStatusCode = it;
     }
+
+    // for resp
     u16 getStatus() const {
         return mStatusCode;
     }
 
-    /**
-     * resp func
-     * @param val range[0-999]
-     */
-    void writeStatus(s32 val, const s8* str = "OK");
-
-    /**resp func*/
+    // for resp
     const String& getBrief() const {
         return mBrief;
     }
 
-    /**resp func*/
-    void setBrief(const s8* buf, usz len) {
-        mBrief.resize(0);
-        mBrief.append(buf, len);
+    // for resp
+    void setBrief(const s8* buf) {
+        mBrief = buf ? buf : "OK";
     }
 
-    EHttpParserType getType() const {
-        return mType;
+    // for resp
+    void setBrief(const StringView& buf) {
+        mBrief = buf;
     }
 
+    // for resp
+    void clearOutBody() {
+        mCacheOut.reset();
+    }
 
+protected:
     void dumpHeadIn() {
         dumpHead(mHeadIn, mCacheIn);
     }
@@ -424,17 +444,8 @@ public:
     void dumpHeadOut() {
         dumpHead(mHeadOut, mCacheOut);
     }
-
-    const String& getRealPath() const {
-        return mRealPath;
-    }
-
-    void setRealPath(const String& it) {
-        mRealPath = it;
-    }
-
-protected:
     void dumpHead(const HttpHead& hds, RingBuffer& out);
+    void writeLine();
 
     u8 getRespStatus() const {
         return mRespStatus;

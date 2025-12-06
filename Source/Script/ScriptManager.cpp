@@ -114,9 +114,10 @@ void ScriptManager::initialize() {
     s32 cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
 
-    LuaRegRequest(mRootVM);
-    LuaRegFile(mRootVM);
     LuaRegColor(mRootVM);
+    LuaRegFile(mRootVM);
+    LuaRegRequest(mRootVM);
+    LuaRegHttpEvent(mRootVM);
 
     cnt = lua_gettop(mRootVM);
     DASSERT(0 == cnt);
@@ -268,7 +269,7 @@ void ScriptManager::setENV(lua_State* vm, bool popCTX, const s8* ctx_name) {
     lua_setfield(vm, -2, ctx_name); // set ctx_name = ctx
 
     // stack: func/ctx_table/env
-    const char* err = lua_setupvalue(vm, -3, 1); // pop1: env
+    const s8* err = lua_setupvalue(vm, -3, 1); // pop1: env
     printf("setENV: up value name = %s\n", err);
 
     if (popCTX) {

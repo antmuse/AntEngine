@@ -56,11 +56,9 @@ text-align: center;
 <h1>ERROR )";
     ebody += mErr;
     ebody += R"(</h1><hr><br><p>file or not supported, pls wait for more.</p><br><hr></body></html>)";
-    s8 tmp[128];
-    msg->setStatus(mErr);
-    msg->writeStatus(msg->getStatus(), "ERR");
-    msg->dumpHeadOut();
-    msg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", ebody.size()));
+    msg->setStatus(mErr, "ERR");
+    msg->getHeadOut().setLength(ebody.size());
+    msg->buildResp();
     msg->writeOutBody(ebody.data(), ebody.size());
     return msg->getHttpLayer()->sendResp(msg);
 }

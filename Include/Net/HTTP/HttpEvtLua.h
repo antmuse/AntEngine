@@ -9,7 +9,16 @@ namespace app {
 
 class HttpEvtLua : public net::HttpEventer {
 public:
-    HttpEvtLua(const StringView& file);
+    enum ERespStep {
+        RSTEP_INIT = 0,
+        RSTEP_MASK = 0x7,
+
+        RSTEP_HEAD_END = 1,
+        RSTEP_BODY_PART = 2,
+        RSTEP_BODY_END = 4,
+        RSTEP_STEP_CHUNK = 8,
+    };
+    HttpEvtLua();
     virtual ~HttpEvtLua();
 
     virtual s32 onLayerClose(net::HttpMsg* msg) override;
@@ -27,16 +36,28 @@ public:
     virtual s32 onReqChunkHeadDone(net::HttpMsg* msg) override;
     virtual s32 onReqChunkBodyDone(net::HttpMsg* msg) override;
 
-    //virtual s32 onBackSent(RequestFD* it);
-    //virtual s32 onBackFinish(RequestFD* it);
-    //virtual s32 onBackBodyPart(RequestFD* it);
-    //virtual s32 onBackOpen(RequestFD* it);
-    //virtual s32 onBackClose();
+    // virtual s32 onBackSent(RequestFD* it);
+    // virtual s32 onBackFinish(RequestFD* it);
+    // virtual s32 onBackBodyPart(RequestFD* it);
+    // virtual s32 onBackOpen(RequestFD* it);
+    // virtual s32 onBackClose();
+    /**
+     * @param bodyLen:  chunk if <0, else set length in head.
+     */
+    s32 writeRespLine(s32 num, const s8* brief, s64 bodyLen = -1);
+    s32 writeRespHeader(const s8* name, const s8* val);
+    s32 writeRespBody(const s8* buf, usz len);
+    /**
+     * @param step: resp step, @see ERespStep
+     */
+    s32 sendResp(u32 step);
+
 
 private:
     // lua
     script::LuaThread mLuaThread;
     script::Script mScript;
+    s32 mRespStep = 0;
 
     String mFileName;
     SRingBufPos mChunkPos;
@@ -46,6 +67,7 @@ private:
     usz mReaded;
     u16 mEvtFlags;
 
+    /** @brief set context for coroutine */
     void creatCurrContext();
     void onRead(RequestFD* it);
     void onClose(Handle* it);

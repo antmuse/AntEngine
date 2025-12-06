@@ -90,6 +90,7 @@
     <ClCompile Include="..\..\Source\Script\LuaColor.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFileHandle.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFunc.cpp" />
+    <ClCompile Include="..\..\Source\Script\LuaHttpEvent.cpp" />
     <ClCompile Include="..\..\Source\Script\Script.cpp" />
     <ClCompile Include="..\..\Source\Script\ScriptManager.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaRequestFD.cpp" />

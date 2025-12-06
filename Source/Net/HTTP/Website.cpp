@@ -47,7 +47,11 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
     const s32 checkDisk = System::isExist(real);
 
     if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
-        evt = new HttpEvtLua(requrl);
+        if (1 == checkDisk) {
+            evt = new HttpEvtLua();
+        } else {
+            evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
+        }
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
         if (1 == checkDisk) {
             if (net::HTTP_GET == cmd) {

@@ -14,11 +14,9 @@ local function showTable(name, tab)
 end
 
 
-local function main(yieldcnt)
-    showTable("ENV", _ENV)
+local function test(yieldcnt)
+    Eng.showInfo()
     showTable("G", _G)
-    --showTable("core", core)      --namespace: core
-    showTable("VContext", VContext)
     Log("VGlobalVal="..VGlobalVal)
     Log("vLocalVal="..vLocalVal)
     Log("ENV.VGlobalVal=".._ENV.VGlobalVal)
@@ -27,7 +25,6 @@ local function main(yieldcnt)
         Log("yield, idx = "..i)
         coroutine.yield()
     end
-    Eng.showInfo()
     local col = Color(11,22,33,44)
     local col2 = Color()
     --col = core.Color(11,22,33,44)  --with namespace
@@ -40,5 +37,30 @@ local function main(yieldcnt)
     Log("Test finish, yield cnt = "..yieldcnt)
 end
 
---yield count = 3
-main(0)
+
+
+local function main()
+    -- showTable("ENV", _ENV)
+    -- showTable("VContext", VContext)
+    local body  = "<htm><head><title>debug.lua</title></head><body style=\"font-size: 24px;\">This is a test file for lua debug</body></html>";
+    local bodylen = string.len(body)  -- utf8.len(body)
+    Log("debug.lua> body len = "..bodylen..", type(bodylen) = "..type(bodylen))
+    --bodylen = -1  -- use chunk mode
+    VContext.mCTX:writeLine(200, "OK", bodylen)
+    -- VContext.mCTX:writeHead("Content-Length", tostring(bodylen))
+    VContext.mCTX:writeHead("Set-Cookie", "loc=debug.lua")
+    VContext.mCTX:writeHead("Connection", "close")
+    VContext.mCTX:writeHead("Content-Type", "text/html; charset=utf-8")
+    local ret = VContext.mCTX:sendResp(1)
+    if(ret ~= nil and 0 ~= ret) then
+        Log("debug.lua> head sendResp fail = "..ret)
+        return;
+    end
+    VContext.mCTX:writeBody(body)
+    ret = VContext.mCTX:sendResp(7)
+    if(ret ~= nil and 0 ~= ret) then
+        Log("debug.lua> body sendResp fail = "..ret)
+    end
+end
+
+main()

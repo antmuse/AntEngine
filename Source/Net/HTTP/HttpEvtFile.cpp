@@ -78,18 +78,16 @@ void HttpEvtFile::onFileClose(Handle* it) {
 
             const s8* resp = R"({"ecode":0,"emsg":"success"})";
             if (mMsg->getCacheIn().getSize() == 0) {
-                mMsg->writeStatus(200);
+                mMsg->setStatus(200);
                 DLOG(ELL_INFO, "onFileWrite>>success up, file=%s", mFile.getFileName().data());
             } else {
-                mMsg->writeStatus(400);
+                mMsg->setStatus(400, "ERR");
                 resp = R"({"ecode":400,"emsg":"fail"})";
             }
             // hed.writeChunked();
             usz rlen = strlen(resp);
             hed.setLength(rlen);
-            mMsg->dumpHeadOut();
-            // mMsg->writeOutBody(tmp, snprintf(tmp, sizeof(tmp), "Content-Length:%llu\r\n\r\n", strlen(resp)));
-            mMsg->writeOutBody("\r\n", 2);
+            mMsg->buildResp();
             mMsg->writeOutBody(resp, rlen);
             mMsg->getHttpLayer()->sendResp(mMsg);
             DLOG(ELL_INFO, "onFileClose: save success, file= %s", mFile.getFileName().data());
@@ -219,9 +217,8 @@ s32 HttpEvtFile::sendRespHead(net::HttpMsg* msg) {
     // val.set(DSTRV("text/html;charset=utf-8"));
     // hed.add(key, val);
 
-    msg->writeStatus(200);
-    msg->dumpHeadOut();
-    msg->writeOutBody("\r\n", 2);
+    msg->setStatus(200);
+    msg->buildResp();
 
     if (mFile.getFileSize() > 0) {
         s32 ret = launchRead();
