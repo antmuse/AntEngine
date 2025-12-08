@@ -4,6 +4,7 @@
 #include "Net/HTTP/HttpEvtFile.h"
 #include "Net/HTTP/HttpEvtError.h"
 #include "Net/HTTP/HttpEvtLua.h"
+#include "Script/ScriptManager.h"
 
 
 
@@ -105,10 +106,17 @@ void Website::clear() {
 }
 
 void Website::init() {
-    if (1 != mConfig.mType) { // not TLS
+    if (1 == mConfig.mType) { // TLS
+        mTlsContext.init(mConfig.mTLS);
+    }
+    script::ScriptManager& mng = script::ScriptManager::getInstance();
+    script::Script nd;
+    if (!nd.load(mng.getRootVM(), mConfig.mRootPath, "/lua/InitWebsite.lua", true, true)) {
         return;
     }
-    mTlsContext.init(mConfig.mTLS);
+    bool ret = nd.exec(mng.getRootVM());
+    nd.unload(mng.getRootVM());
+    DLOG(ELL_INFO, "/lua/InitWebsite.lua init = %d", ret);
 }
 
 

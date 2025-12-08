@@ -3,6 +3,7 @@
 #include "Engine.h"
 #include "Script/ScriptManager.h"
 #include "Script/Script.h"
+#include "System.h"
 
 namespace app {
 namespace script {
@@ -62,7 +63,7 @@ s32 LuaErrorFunc(lua_State* vm) {
 
 s32 LuaDumpStack(lua_State* vm) {
     s32 top = lua_gettop(vm);
-    Logger::logCritical("VM = %p, cnt = %d, DumpStack:", vm, top);
+    Logger::logCritical("DumpStack:  VM = %p, cnt = %d", vm, top);
     for (s32 i = 1; i <= top; i++) {
         switch (lua_type(vm, i)) {
         case LUA_TNUMBER:
@@ -80,7 +81,7 @@ s32 LuaDumpStack(lua_State* vm) {
         case LUA_TUSERDATA:
         {
             luaL_getmetafield(vm, i, "__name");
-            const char* name = lua_tostring(vm, -1);
+            const s8* name = lua_tostring(vm, -1);
             Logger::logCritical("\t%d\t%s\t%s", i, luaL_typename(vm, i), name);
             lua_pop(vm, 1);
             break;
@@ -107,14 +108,61 @@ s32 LuaEngInfo(lua_State* vm) {
     return 0;
 }
 
+s32 LuaEngGetPathNodes(lua_State* vm) {
+    s32 cnt = lua_gettop(vm);
+    if ((1 != cnt && 2 != cnt) || !lua_isstring(vm, 1) || (2 == cnt && !lua_isinteger(vm, 2))) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    StringView vpath;
+    vpath.mData = (s8*)lua_tolstring(vm, 1, (size_t*)(&vpath.mLen));
+    usz skiplen = 2 == cnt ? lua_tointeger(vm, 2) : 0;
+    String fpath(vpath);
+    s32 ret = System::isExist(fpath);
+    if (2 != ret) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    lua_newtable(vm);
+    TVector<FileInfo> nds;
+    System::getPathNodes(fpath, skiplen, nds);
+    usz cntPath = 0;
+    for (usz i = 0; i < nds.size(); ++i) {
+        if (1 == nds[i].mFlag) { // dir
+            ++cntPath;
+            Script::pushTable(vm, cntPath, nds[i].mFileName, strlen(nds[i].mFileName));
+        }
+    }
+    usz cntFile = nds.size() - cntPath;
+    Script::pushTable(vm, "mPaths", sizeof("mPaths") - 1, cntPath);
+    // Script::pushTable(vm, "mFiles", sizeof("mFiles") - 1, cntFile);
+    Script::pushTable(vm, "mNodes", sizeof("mNodes") - 1, nds.size());
+    for (usz i = 0; i < nds.size(); ++i) {
+        if (0 == nds[i].mFlag) { // file
+            ++cntPath;
+            Script::pushTable(vm, cntPath, nds[i].mFileName, strlen(nds[i].mFileName));
+        }
+    }
+    return 1;
+}
 
-luaL_Reg LuaEngLib[] = {
-    {"dumpStack", LuaDumpStack}, {"getRandom", LuaRandom}, {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
+
+
+luaL_Reg LuaLibEng[] = {
+    {"dumpStack", LuaDumpStack}, {"getRandom", LuaRandom}, {"getPathNodes", LuaEngGetPathNodes},
+    {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
+};
+luaL_Reg LuaLibWeb[] = {
+    {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
 };
 
+s32 LuaOpenLibEng(lua_State* vm) {
+    luaL_newlib(vm, LuaLibEng);
+    return 1;
+}
 
-s32 LuaOpenEngLib(lua_State* vm) {
-    luaL_newlib(vm, LuaEngLib);
+s32 LuaOpenLibWeb(lua_State* vm) {
+    luaL_newlib(vm, LuaLibWeb);
     return 1;
 }
 

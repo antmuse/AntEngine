@@ -53,7 +53,8 @@ extern s32 LuaEngInfo(lua_State* iState);
 
 extern s32 LuaInclude(lua_State* iState);
 
-extern s32 LuaOpenEngLib(lua_State* iState);
+extern s32 LuaOpenLibEng(lua_State* iState);
+extern s32 LuaOpenLibWeb(lua_State* iState);
 
 extern s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
     const s8* className, const s8* namespac = nullptr);

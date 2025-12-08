@@ -401,6 +401,9 @@ public:
 
     // for resp
     void writeOutChunkLen(usz bsz);
+    void writeOutLastChunk() {
+        writeOutBody("0\r\n\r\n", 5);
+    }
 
     // for resp
     void writeOutBody(const void* buf, usz bsz);

@@ -100,7 +100,7 @@ public:
     bool loadFirstScript();
 
     usz getMemory();
-    s32 makeGC();
+    s32 makeGC(bool fullgc = false);
 
     lua_State* createThread();
     void deleteThread(lua_State*& vm);

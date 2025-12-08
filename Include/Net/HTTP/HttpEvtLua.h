@@ -42,7 +42,7 @@ public:
     // virtual s32 onBackOpen(RequestFD* it);
     // virtual s32 onBackClose();
     /**
-     * @param bodyLen:  chunk if <0, else set length in head.
+     * @param bodyLen:  use chunk mode if <0, else set "Content-Length" in head.
      */
     s32 writeRespLine(s32 num, const s8* brief, s64 bodyLen = -1);
     s32 writeRespHeader(const s8* name, const s8* val);

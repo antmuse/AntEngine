@@ -1,16 +1,11 @@
 -- This file called once when Engine init.
-require "Eng"
-local MyMod = require("Public/MyModule")
 
-local function showInfo(val)
-    Eng.showInfo()
-    Log("init.lua, param= "..val);
-    Log("init.lua, GLibPath = "..GPath);
-    MyMod.show()
-end
+-- require "Eng"           --loaded by default
+require "Public/ShowInfo"  --local ShowInfo = require("Public/ShowInfo")
 
 function main()
-    showInfo("show")
+    Log(">>>>>>>>>>>>>>>>>>>>>> init script manager start")
+    Eng.showInfo()
+    ShowInfo.showENV()
+    Log("<<<<<<<<<<<<<<<<<<<<<< init script manager finish")
 end
-
-Log("init.lua, you can call this main() after exec this script")

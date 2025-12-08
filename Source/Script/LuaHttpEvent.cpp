@@ -90,9 +90,10 @@ s32 LuaHttpEventWriteBody(lua_State* vm) {
 
 
 
-// s32 FuncYieldBack(lua_State* vm, s32 status, lua_KContext ctx){
-//     return 0;
-// }
+static s32 FuncYieldBack(lua_State* vm, s32 status, lua_KContext ctx) {
+    DASSERT(status == LUA_YIELD);
+    return static_cast<s32>(ctx); // ctx is the count of return values.
+}
 s32 LuaHttpEventSendPart(lua_State* vm) {
     s32 cnt = lua_gettop(vm);
     if (2 != cnt || !lua_isuserdata(vm, 1) || !lua_isinteger(vm, 2)) {
@@ -110,12 +111,12 @@ s32 LuaHttpEventSendPart(lua_State* vm) {
         (*nd)->drop();
         (*nd) = nullptr;
     }
+    lua_pushinteger(vm, ret); // return 1 val to lua
     if (EE_OK == ret) {
-        lua_yieldk(vm, 0, (lua_KContext)(*nd), nullptr); // return here on success
+        lua_yieldk(vm, 0, (lua_KContext)(1), FuncYieldBack); // return here on success
     }
     // not yield on error
     DLOG(ELL_ERROR, "LuaHttpEventSendPart, ecode = %d", ret);
-    lua_pushinteger(vm, ret);
     return 1;
 }
 
@@ -131,6 +132,9 @@ luaL_Reg LuaLibHttpEvent[] = {{"new", LuaHttpEventNewDummy}, {"del", LuaHttpEven
 
 
 s32 LuaRegHttpEvent(lua_State* vm) {
+    Script::setGlobalVal(vm, "HTTP_HEAD_END", (s64)HttpEvtLua::RSTEP_HEAD_END);
+    Script::setGlobalVal(vm, "HTTP_BODY_PART", (s64)HttpEvtLua::RSTEP_BODY_PART);
+    Script::setGlobalVal(vm, "HTTP_BODY_END", (s64)HttpEvtLua::RSTEP_BODY_END);
     return LuaRegistClass(vm, LuaLibHttpEvent, DSIZEOF(LuaLibHttpEvent), G_LUA_CLASSNAME, nullptr);
 }
 

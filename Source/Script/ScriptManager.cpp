@@ -84,10 +84,10 @@ void ScriptManager::initialize() {
     tmp += "?.lua";
     lua_getglobal(mRootVM, "package");
     lua_pushstring(mRootVM, "path");
-    lua_pushstring(mRootVM, tmp.c_str());
+    lua_pushstring(mRootVM, tmp.data());
     lua_settable(mRootVM, -3); // pop 2
     lua_pushstring(mRootVM, "cpath");
-    lua_pushstring(mRootVM, tmp.c_str());
+    lua_pushstring(mRootVM, tmp.data());
     lua_settable(mRootVM, -3); // pop 2
     lua_pop(mRootVM, 1);       // pop package
 
@@ -96,19 +96,17 @@ void ScriptManager::initialize() {
     lua_register(mRootVM, "Include", LuaInclude);
 
     // global val
-    lua_pushinteger(mRootVM, 1000ULL);
-    lua_setglobal(mRootVM, "GVersion"); // set and pop 1
-    lua_pushstring(mRootVM, "1.0.0.0");
-    lua_setglobal(mRootVM, "GVerName");
-    lua_pushstring(mRootVM, getScriptPath().c_str());
-    lua_setglobal(mRootVM, "GPath");
-    for (s32 i = ELL_DEBUG; i < ELL_COUNT; ++i) {
-        lua_pushinteger(mRootVM, i);
-        lua_setglobal(mRootVM, AppLogLevelNames[i]);
+    Script::setGlobalVal(mRootVM, "GVersion", 1000LL);
+    Script::setGlobalVal(mRootVM, "GVerName", "1.0.0.0");
+    Script::setGlobalVal(mRootVM, "GPath", getScriptPath().data(), getScriptPath().size());
+    for (s64 i = ELL_DEBUG; i < ELL_COUNT; ++i) {
+        Script::setGlobalVal(mRootVM, AppLogLevelNames[i], i);
     }
 
-    // lib Eng
-    luaL_requiref(mRootVM, "Eng", LuaOpenEngLib, 1); // 1=global
+    // libs
+    luaL_requiref(mRootVM, "Eng", LuaOpenLibEng, 1); // 1=global
+    lua_pop(mRootVM, 1);                             // pop lib
+    luaL_requiref(mRootVM, "Web", LuaOpenLibWeb, 1); // 1=global
     lua_pop(mRootVM, 1);                             // pop lib
 
     s32 cnt = lua_gettop(mRootVM);
@@ -137,8 +135,8 @@ usz ScriptManager::getMemory() {
     return lua_gc(mRootVM, LUA_GCCOUNT, 0) * 1024ULL;
 }
 
-s32 ScriptManager::makeGC() {
-    return lua_gc(mRootVM, LUA_GCCOLLECT);
+s32 ScriptManager::makeGC(bool fullgc) {
+    return lua_gc(mRootVM, fullgc ? LUA_GCCOLLECT : LUA_GCSTEP);
 }
 
 bool ScriptManager::loadFirstScript() {
@@ -194,10 +192,10 @@ Script* ScriptManager::createScript(const String& keyname) {
     Script* ret = new Script();
     bool success = ret->load(mRootVM, getScriptPath(), keyname, true);
     if (!success) {
-        Logger::logError("ScriptManager::createScript,fail load script= %s", keyname.c_str());
+        Logger::logError("ScriptManager::createScript,fail load script= %s", keyname.data());
         return nullptr;
     }
-    Logger::logInfo("ScriptManager::createScript,load script= %s", keyname.c_str());
+    Logger::logInfo("ScriptManager::createScript,load script= %s", keyname.data());
     return ret;
 }
 
@@ -330,8 +328,8 @@ void ScriptManager::deleteThread(lua_State*& vm) {
 
     // lua_close(vm);  //don't close
     // root VM not close, just gc collect object
-    cnt = makeGC();
-    printf("deleteThread: GC=%d\n", cnt);
+    cnt = makeGC(false);
+    printf("deleteThread: GC = %d\n", cnt);
 }
 
 void ScriptManager::getThread(lua_State* vm) {

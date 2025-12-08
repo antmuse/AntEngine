@@ -219,6 +219,9 @@ s32 HttpEvtLua::writeRespBody(const s8* buf, usz len) {
         mMsg->writeOutChunkLen(len);
     }
     mMsg->writeOutBody(buf, len);
+    if (RSTEP_STEP_CHUNK & mRespStep) {
+        mMsg->writeOutBody("\r\n", 2);
+    }
     return EE_OK;
 }
 
@@ -230,9 +233,11 @@ s32 HttpEvtLua::sendResp(u32 step) {
         mRespStep |= step;
         mMsg->buildResp();
     }
-    s32 ret = mMsg->getHttpLayer()->sendResp(mMsg);
-    DLOG(ELL_INFO, "sendResp: step= %d, post send = %d", step, ret);
-    return ret;
+    if ((RSTEP_BODY_END & step) && (RSTEP_STEP_CHUNK & mRespStep)) {
+        mMsg->writeOutLastChunk();
+    }
+    // DLOG(ELL_INFO, "sendResp: step= %d, post send = %d", step, ret);
+    return mMsg->getHttpLayer()->sendResp(mMsg);
 }
 
 
