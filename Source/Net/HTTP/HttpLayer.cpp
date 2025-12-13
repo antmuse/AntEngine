@@ -1339,8 +1339,8 @@ GT_REPARSE: // recheck current byte
                 break;
             case CR:
             case LF:
-                mVersionMajor = 0;
-                mVersionMinor = 9;
+                mVersionMajor = 1;
+                mVersionMinor = 0;
                 tmpstate = (ch == CR ? PS_REQ_LINE_END : PS_HEAD_FIELD_PRE);
                 tmpval.mLen = 1; // tmpval.mLen>0表示需要回调
                 break;

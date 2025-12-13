@@ -62,7 +62,7 @@ extern s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
 
 
 void AppPath2Table(lua_State* vm, const String& path, usz offset);
-
+void AppTableDisableModif(lua_State* vm, s32 idx);
 
 }//namespace script
 }//namespace app

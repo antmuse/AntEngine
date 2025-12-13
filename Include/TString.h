@@ -647,6 +647,30 @@ public:
         cutLen(val);
     }
 
+    template <class B>
+    TString<T, TAlloc>& assign(const B* const it) {
+        const B* tmp = it;
+        while (*tmp++) {
+        }
+        return assign(it, tmp - it - 1);
+    }
+
+    template <class B>
+    TString<T, TAlloc>& assign(const B* const it, usz len) {
+        if (inCurrentMem(it)) { // it from myself
+            usz slen = capacity();
+            T* buf = data();
+            slen -= it - buf;
+            len = AppMin(len, slen);
+            memmove(buf, it, len * sizeof(T));
+            cutLen(len);
+            return *this;
+        }
+        resize(len);
+        copyBufType(it, len, data());
+        return *this;
+    }
+
     /**
      * @brief Appends a String to this String
      * @param other: Char String to append.
@@ -657,7 +681,7 @@ public:
             return *this;
         }
         if (GMAX_USIZE == len) {
-            const T* p = other;
+            const B* p = other;
             while (*p++) {
             }
             len = (usz)(p - other) - 1;

@@ -156,16 +156,12 @@ s32 HttpEvtLua::launchRead() {
 void HttpEvtLua::creatCurrContext() {
     script::ScriptManager::setENV(mLuaThread.mSubVM, false); // @note don't pop context_table
 
-    // lua_pushlightuserdata(mLuaThread.mSubVM, mLuaThread.mSubVM);
-    // lua_setfield(mLuaThread.mSubVM, -2, "mVM");
-    // lua_pushstring(mLuaThread.mSubVM, "This is the ctx table");
-    // lua_setfield(mLuaThread.mSubVM, -2, "mBrief");
-    // script::Script::pushTable(mLuaThread.mSubVM, "mCTXID", this);
-
     script::LuaHttpEventNew(mLuaThread.mSubVM, this);
     lua_setfield(mLuaThread.mSubVM, -2, "mCTX");
 
     script::Script::pushTable(mLuaThread.mSubVM, "mWebPath", getWebRootPath().data());
+
+    script::AppTableDisableModif(mLuaThread.mSubVM, -1);
 
     lua_pop(mLuaThread.mSubVM, 1); // @note pop context_table here
     // script::LuaDumpStack(mLuaThread.mSubVM);

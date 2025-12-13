@@ -284,8 +284,7 @@ bool HttpURL::decode(const s8* uri, usz len) {
     if (!uri) {
         return false;
     }
-    mData.resize(0);
-    mData.append(uri, len);
+    mData.assign(uri, len);
     mData.resize(decodeURL((s8*)mData.c_str(), mData.size()));
     return parser();
 }

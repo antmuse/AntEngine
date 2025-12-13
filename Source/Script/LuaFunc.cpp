@@ -238,5 +238,40 @@ s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz, const 
     return EE_OK;
 }
 
+
+
+
+
+
+static s32 Disable_newindex(lua_State* vm) {
+    s32 cnt = lua_gettop(vm);
+    if (3 != cnt || !lua_istable(vm, 1)) { // kv可以是任意类型
+        DLOG(ELL_ERROR, "table modify disabled: %d", cnt);
+        return 0;
+    }
+    const s8* p2 = lua_isstring(vm, 2) ? lua_tostring(vm, 2) : "";
+    const s8* p3 = lua_isstring(vm, 3) ? lua_tostring(vm, 3) : "";
+    DLOG(ELL_ERROR, "table modify disabled: %s = %s", p2 ? p2 : "", p3 ? p3 : "");
+    return 0;
+}
+
+void AppTableDisableModif(lua_State* vm, s32 idx) {
+    if (!lua_istable(vm, idx)) {
+        return;
+    }
+    idx = lua_absindex(vm, idx);
+    // luaL_checktype(vm, idx, LUA_TTABLE);
+    if (!lua_getmetatable(vm, idx)) {
+        lua_createtable(vm, 0, 1); // 数组部分0，哈希部分1
+        lua_setmetatable(vm, idx); // 绑定到目标表
+        lua_getmetatable(vm, idx); // 再次获取元表到栈顶
+    }
+    lua_pushcfunction(vm, Disable_newindex);
+    lua_setfield(vm, -2, "__newindex");
+    lua_pop(vm, 1);
+}
+
+
+
 } // namespace script
 } // namespace app
