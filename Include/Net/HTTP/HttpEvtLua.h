@@ -52,6 +52,9 @@ public:
      */
     s32 sendResp(u32 step);
 
+    const String& getWebRootPath() const {
+        return mWebRootPath;
+    }
 
 private:
     // lua
@@ -59,7 +62,7 @@ private:
     script::Script mScript;
     s32 mRespStep = 0;
 
-    String mFileName;
+    String mWebRootPath;
     SRingBufPos mChunkPos;
     RingBuffer* mBody;
     RequestFD mReqs;

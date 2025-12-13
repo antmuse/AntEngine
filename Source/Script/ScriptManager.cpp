@@ -250,21 +250,19 @@ void ScriptManager::setENV(lua_State* vm, bool popCTX, const s8* ctx_name) {
     /* create a new env
      * env = {}
      * env["_G"] = env
-     * env.metatable = new table {__index = _G}
+     * env.metatable = new table {__index = globaltable}
      */
     lua_createtable(vm, 0, 2); // 2. env
     lua_pushvalue(vm, -1);
     lua_setfield(vm, -2, "_G");
 
-    lua_createtable(vm, 0, 1); // 3. new table for the new env
-    // lua_pushnil(vm);
-    lua_pushglobaltable(vm);
+    lua_createtable(vm, 0, 1); // 3. new metatable for env
+    lua_pushglobaltable(vm);    // globaltable
     lua_setfield(vm, -2, "__index");
+    lua_setmetatable(vm, -2); // env.metatable = new table, pop1: new metatable
 
-    lua_setmetatable(vm, -2); // env.metatable = new table, pop1: new table
-
-    lua_pushvalue(vm, cnt);         // repush ctx table
-    lua_setfield(vm, -2, ctx_name); // set ctx_name = ctx
+    lua_pushvalue(vm, cnt);         // repush ctx_table
+    lua_setfield(vm, -2, ctx_name); // set ctx_name = ctx_table
 
     // stack: func/ctx_table/env
     const s8* err = lua_setupvalue(vm, -3, 1); // pop1: env

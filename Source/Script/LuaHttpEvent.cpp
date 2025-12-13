@@ -2,7 +2,7 @@
 #include "Loop.h"
 #include "Net/HTTP/HttpEvtLua.h"
 #include "Script/LuaFunc.h"
-#include "Script/LuaFunc.h"
+
 
 namespace app {
 namespace script {
@@ -89,6 +89,36 @@ s32 LuaHttpEventWriteBody(lua_State* vm) {
 }
 
 
+s32 LuaHttpEventListPath(lua_State* vm) {
+    s32 cnt = lua_gettop(vm);
+    if ((2 != cnt && 3 != cnt) || !lua_isuserdata(vm, 1) || !lua_isstring(vm, 2)
+        || (3 == cnt && !lua_isinteger(vm, 3))) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    HttpEvtLua** nd = reinterpret_cast<HttpEvtLua**>(lua_touserdata(vm, 1));
+    if (!nd || !(*nd)) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    StringView vpath;
+    vpath.mData = (s8*)lua_tolstring(vm, 2, (size_t*)(&vpath.mLen));
+    String fpath((*nd)->getWebRootPath());
+    usz len = fpath.size();
+    fpath += vpath;
+    vpath.set(fpath.data() + len, fpath.size() - len);
+    vpath.simplifyPath();
+    fpath.resize(vpath.mLen + len);
+    usz skiplen = len + (3 == cnt ? lua_tointeger(vm, 3) : 0);
+    if (skiplen > fpath.size()) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    AppPath2Table(vm, fpath, skiplen);
+    return 1;
+}
+
+
 
 static s32 FuncYieldBack(lua_State* vm, s32 status, lua_KContext ctx) {
     DASSERT(status == LUA_YIELD);
@@ -127,8 +157,9 @@ s32 LuaHttpEventSendPart(lua_State* vm) {
  * just make a matetable for G_LUA_CLASSNAME.
  */
 luaL_Reg LuaLibHttpEvent[] = {{"new", LuaHttpEventNewDummy}, {"del", LuaHttpEventDel}, {"__gc", LuaHttpEventDel},
-    {"writeLine", LuaHttpEventWriteLine}, {"writeHead", LuaHttpEventWriteHeader}, {"writeBody", LuaHttpEventWriteBody},
-    {"sendResp", LuaHttpEventSendPart}, {NULL, NULL}};
+    {"getPathNodes", LuaHttpEventListPath}, {"writeLine", LuaHttpEventWriteLine},
+    {"writeHead", LuaHttpEventWriteHeader}, {"writeBody", LuaHttpEventWriteBody}, {"sendResp", LuaHttpEventSendPart},
+    {NULL, NULL}};
 
 
 s32 LuaRegHttpEvent(lua_State* vm) {

@@ -45,6 +45,7 @@ s32 HttpEvtLua::onReqHeadDone(net::HttpMsg* msg) {
     script::ScriptManager& eng = script::ScriptManager::getInstance();
     mBody = &msg->getCacheOut();
     mLuaThread.mSubVM = eng.createThread();
+    mWebRootPath = site->getConfig().mRootPath;
     String fname = msg->getRealPath().subString(site->getConfig().mRootPath.size());
     // TODO: don't reload script file
     if (!mLuaThread.mSubVM || !mScript.load(mLuaThread.mSubVM, site->getConfig().mRootPath, fname, true, false)) {
@@ -164,7 +165,7 @@ void HttpEvtLua::creatCurrContext() {
     script::LuaHttpEventNew(mLuaThread.mSubVM, this);
     lua_setfield(mLuaThread.mSubVM, -2, "mCTX");
 
-    script::Script::pushTable(mLuaThread.mSubVM, "mName", "HttpEvtLua");
+    script::Script::pushTable(mLuaThread.mSubVM, "mWebPath", getWebRootPath().data());
 
     lua_pop(mLuaThread.mSubVM, 1); // @note pop context_table here
     // script::LuaDumpStack(mLuaThread.mSubVM);

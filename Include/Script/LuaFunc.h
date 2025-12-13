@@ -26,7 +26,7 @@
 #ifndef APP_SCRIPTFUNC_H
 #define	APP_SCRIPTFUNC_H
 
-#include "Config.h"
+#include "TString.h"
 #include "Script/HLua.h"
 
 namespace app {
@@ -58,6 +58,11 @@ extern s32 LuaOpenLibWeb(lua_State* iState);
 
 extern s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz,
     const s8* className, const s8* namespac = nullptr);
+
+
+
+void AppPath2Table(lua_State* vm, const String& path, usz offset);
+
 
 }//namespace script
 }//namespace app

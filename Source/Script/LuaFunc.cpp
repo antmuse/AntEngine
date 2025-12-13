@@ -108,24 +108,15 @@ s32 LuaEngInfo(lua_State* vm) {
     return 0;
 }
 
-s32 LuaEngGetPathNodes(lua_State* vm) {
-    s32 cnt = lua_gettop(vm);
-    if ((1 != cnt && 2 != cnt) || !lua_isstring(vm, 1) || (2 == cnt && !lua_isinteger(vm, 2))) {
+
+void AppPath2Table(lua_State* vm, const String& fpath, usz offset) {
+    if (2 != System::isExist(fpath)) {
         lua_pushnil(vm);
-        return 1;
-    }
-    StringView vpath;
-    vpath.mData = (s8*)lua_tolstring(vm, 1, (size_t*)(&vpath.mLen));
-    usz skiplen = 2 == cnt ? lua_tointeger(vm, 2) : 0;
-    String fpath(vpath);
-    s32 ret = System::isExist(fpath);
-    if (2 != ret) {
-        lua_pushnil(vm);
-        return 1;
+        return;
     }
     lua_newtable(vm);
     TVector<FileInfo> nds;
-    System::getPathNodes(fpath, skiplen, nds);
+    System::getPathNodes(fpath, offset, nds);
     usz cntPath = 0;
     for (usz i = 0; i < nds.size(); ++i) {
         if (1 == nds[i].mFlag) { // dir
@@ -143,14 +134,11 @@ s32 LuaEngGetPathNodes(lua_State* vm) {
             Script::pushTable(vm, cntPath, nds[i].mFileName, strlen(nds[i].mFileName));
         }
     }
-    return 1;
 }
 
 
-
 luaL_Reg LuaLibEng[] = {
-    {"dumpStack", LuaDumpStack}, {"getRandom", LuaRandom}, {"getPathNodes", LuaEngGetPathNodes},
-    {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
+    {"dumpStack", LuaDumpStack}, {"getRandom", LuaRandom}, {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
 };
 luaL_Reg LuaLibWeb[] = {
     {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
