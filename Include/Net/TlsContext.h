@@ -36,6 +36,8 @@ void AppInitTlsLib();
 // call once
 void AppUninitTlsLib();
 
+bool AppSetTlsUserData(void* ssl, void* user);
+void* AppGetTlsUserData(const void* ssl);
 
 enum ETLSVerifyFlag {
     ETLS_VERIFY_NONE = 0x00,
@@ -59,7 +61,7 @@ public:
 
     /**
      * @brief suggest use TLS "v1.2, v1.3" for safe.
-     *  @param it eg: "v1.0, v1.1, v1.2, v1.3"
+     * @param it eg: "v1.0, v1.1, v1.2, v1.3"
      */
     s32 setVersion(const String& it);
 

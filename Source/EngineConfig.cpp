@@ -151,6 +151,9 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
             if (tls.isMember("KeyPassword")) {
                 out.mTlsPassword = tls["KeyPassword"].asCString();
             }
+            if (tls.isMember("HttpALPN")) {
+                out.mHttpALPN = AppClamp(tls["HttpALPN"].asInt(), 1, 3);
+            }
             return true;
         }
         return false;

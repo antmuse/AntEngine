@@ -52,7 +52,7 @@ public:
      * @param inBuffers, must not be nullptr
      * @param outBuffers, must not be nullptr
      */
-    TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers);
+    TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers, void* user = nullptr);
 
     ~TlsSession();
 
@@ -73,6 +73,10 @@ public:
     bool isInitFinished();
 
     s32 verify(s32 verify_flags, const s8* hostname);
+
+    SSL* getSSL() const {
+        return mSSL;
+    }
 
 private:
     SSL* mSSL;

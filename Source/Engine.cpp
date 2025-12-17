@@ -34,11 +34,7 @@
 
 namespace app {
 
-#if defined(DOS_WINDOWS)
-const s8* G_CFGFILE = "Config/config_win.json";
-#else
 const s8* G_CFGFILE = "Config/config.json";
-#endif
 u32 MsgHeader::gSharedSN = 0;
 
 Engine::Engine() : mPPID(0), mPID(0), mChild(32), mProcStatus(EPS_INIT), mProcResponCount(0), mMain(true) {

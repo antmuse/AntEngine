@@ -41,15 +41,16 @@ public:
      */
     struct TlsConfig {
         bool mDebug = false;
-        s32 mTlsVerify = 0;                   // tls verify
-        s32 mTlsVerifyDepth = 5;              // tls verify certs depth
-        String mTlsPathCA;                    // tls ca.crt
-        String mTlsPathCert;                  // tls server.crt
-        String mTlsPathKey;                   // tls server.key
-        String mTlsVersionOff = "v1.0, v1.1"; // tls disable version:  v1.0, v1.1, v1.2, v1.3
-        String mTlsCiphers;                   // for TLSv1.2 and below
-        String mTlsCiphersuites;              // for TLSv1.3
-        String mTlsPassword;                  // password for key
+        u8 mHttpALPN = 1;                             // 1: http1, 2: http2, 3: http1 or http2
+        s32 mTlsVerify = 0;                           // tls verify
+        s32 mTlsVerifyDepth = 5;                      // tls verify certs depth
+        String mTlsPathCA;                            // tls ca.crt
+        String mTlsPathCert;                          // tls server.crt
+        String mTlsPathKey;                           // tls server.key
+        String mTlsVersionOff = "v1.0, v1.1";         // tls disable version:  v1.0, v1.1, v1.2, v1.3
+        String mTlsCiphers = "HIGH:!aNULL:!MD5";      // for TLSv1.2 and below
+        String mTlsCiphersuites = "HIGH:!aNULL:!MD5"; // for TLSv1.3
+        String mTlsPassword;                          // password for key
     };
     struct WebsiteCfg {
         u8 mType;     // 0=http, 1=https

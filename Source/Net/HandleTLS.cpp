@@ -62,7 +62,7 @@ void HandleTLS::init(const TlsContext& tlsCTX) {
         mOutBuffers.init();
         SSL_CTX* ssl_ctx = reinterpret_cast<SSL_CTX*>(tlsCTX.getTlsContext());
         DASSERT(ssl_ctx);
-        mTlsSession = new TlsSession(ssl_ctx, &mInBuffers, &mOutBuffers);
+        mTlsSession = new TlsSession(ssl_ctx, &mInBuffers, &mOutBuffers, this);
     }
     mRead.mUser = nullptr;  // lanuch a read action if nullptr, else can't
     mWrite.mUser = nullptr; // lanuch a write action if nullptr, else can't

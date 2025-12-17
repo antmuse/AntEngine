@@ -257,10 +257,11 @@ static EHostMatch AppMatchHost(X509* peer_cert, const s8* mHostName) {
 
 
 
-TlsSession::TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers) {
+TlsSession::TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers, void* user) {
     DASSERT(ssl_ctx);
     SSL_CTX_up_ref(ssl_ctx);
     mSSL = SSL_new(ssl_ctx);
+    AppSetTlsUserData(mSSL, user);
     mInBIO = AppCreateBIO(inBuffers);
     mOutBIO = AppCreateBIO(outBuffers);
     SSL_set_bio(mSSL, mInBIO, mOutBIO);
