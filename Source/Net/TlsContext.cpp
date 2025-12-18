@@ -118,7 +118,7 @@ void* AppGetTlsUserData(const void* ssl) {
 
 
 static s32 FuncSelectALPN(SSL* ssl, const u8** out, u8* outlen, const u8* in, u32 inlen, void* arg) {
-    net::HandleTLS* conn = reinterpret_cast<net::HandleTLS*>(AppGetTlsUserData(ssl)); // TODO
+    net::HandleTLS* conn = reinterpret_cast<net::HandleTLS*>(AppGetTlsUserData(ssl));
     const usz cfg = reinterpret_cast<usz>(arg);
 #ifdef DDEBUG
     for (u32 i = 0; i < inlen; i += in[i] + 1) {
@@ -149,7 +149,7 @@ static s32 FuncSelectALPN(SSL* ssl, const u8** out, u8* outlen, const u8* in, u3
         DLOG(ELL_ERROR, "fail SSL ALPN selected: %.*s, conn=%p", static_cast<s32>(*outlen), *out, arg, conn);
         return SSL_TLSEXT_ERR_ALERT_FATAL;
     }
-    // conn->setALPN()
+    conn->setALPN(2 == *outlen ? 2 : 1);
     DLOG(ELL_INFO, "success SSL ALPN selected: %.*s, conn=%p", static_cast<s32>(*outlen), *out, conn);
     return SSL_TLSEXT_ERR_OK;
 }
@@ -212,13 +212,26 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     if (cfg.mDebug) {
         SSL_CTX_set_info_callback(ssl_ctx, AppFunTlsDebug);
     }
-    SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
     setVerifyFlags(cfg.mTlsVerify, cfg.mTlsVerifyDepth);
     SSL_CTX_set_mode(ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
-
+#ifdef SSL_OP_NO_COMPRESSION
+    SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_COMPRESSION);
+#endif
+#ifdef SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS
+    SSL_CTX_set_options(ssl_ctx, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+#endif
+    SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_RENEGOTIATION);
+    SSL_CTX_set_options(ssl_ctx, SSL_OP_SINGLE_DH_USE);
+#if ((OPENSSL_VERSION_NUMBER < 0x30000000L) && defined(SSL_CTX_set_ecdh_auto))
+    SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
+#endif
+    if (cfg.mPreferServerCiphers) {
+        SSL_CTX_set_options(ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
+    }
     if (EE_OK != setVersion(cfg.mTlsVersionOff)) {
         DLOG(ELL_ERROR, "set version off err = %s", cfg.mTlsVersionOff.data());
     }
+
     s32 ret = addTrustedCerts(G_CA_CERT, strlen(G_CA_CERT));
     ret = addTrustedCerts(G_CA_CERT1, strlen(G_CA_CERT1));
     ret = addTrustedCerts(G_CA_ROOT_CERT, strlen(G_CA_ROOT_CERT));
@@ -298,26 +311,28 @@ s32 TlsContext::setVersion(const String& it) {
         return EE_ERROR;
     }
     String logs("disable TLS Version:");
+    u64 flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
     if (it.find("v1.0") >= 0) {
         logs += " v1.0";
-        SSL_CTX_set_options(static_cast<SSL_CTX*>(mTlsContext), SSL_OP_NO_TLSv1);
+        flags |= SSL_OP_NO_TLSv1;
     }
     if (it.find("v1.1") >= 0) {
         logs += " v1.1";
-        SSL_CTX_set_options(static_cast<SSL_CTX*>(mTlsContext), SSL_OP_NO_TLSv1_1);
+        flags |= SSL_OP_NO_TLSv1_1;
     }
     if (it.find("v1.2") >= 0) {
         logs += " v1.2";
-        SSL_CTX_set_options(static_cast<SSL_CTX*>(mTlsContext), SSL_OP_NO_TLSv1_2);
+        flags |= SSL_OP_NO_TLSv1_2;
     }
     if (it.find("v1.3") >= 0) {
 #ifdef SSL_OP_NO_TLSv1_3
         logs += " v1.3";
-        SSL_CTX_set_options(static_cast<SSL_CTX*>(mTlsContext), SSL_OP_NO_TLSv1_3);
+        flags |= SSL_OP_NO_TLSv1_3;
 #else
         DLOG(ELL_WARN, "TLS v1.3 is not support, on version set");
 #endif
     }
+    SSL_CTX_set_options(static_cast<SSL_CTX*>(mTlsContext), flags);
     DLOG(ELL_INFO, "%s", logs.data());
     return EE_OK;
 }

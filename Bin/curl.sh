@@ -34,6 +34,7 @@ main(){
             echo "get: index.html"
             echo "put: local.txt remote.txt"
             echo "post: local.txt remote.txt"
+            echo "curl -k -X GET --http2 https://192.168.1.5:8443/index.html"
             ;;
         *)
             ;;

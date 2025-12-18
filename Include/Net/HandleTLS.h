@@ -82,6 +82,12 @@ public:
         return mTCP;
     }
 
+    void setALPN(u8 it) {
+        mALPN = it;
+    }
+    u8 getALPN() const {
+        return mALPN;
+    }
 
 protected:
     s32 handshake();
@@ -166,6 +172,7 @@ protected:
     RequestFD* mLandWrites;
     RequestFD* mLandReads;
     void* mTlsSession;
+    u8 mALPN = 1; // 1: http1, 2: http2
     s8 mHostName[256];
     RingBuffer mInBuffers;
     RingBuffer mOutBuffers;

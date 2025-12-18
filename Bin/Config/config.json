@@ -17,6 +17,8 @@
         "VersionOff": "v1.0, v1.1",
         "VerifyDepth": 5,
         "HttpALPN": 1,
+        "PreferServerCiphers": true,
+        "Debug": false,
         "Verify": 0
     },
     "Website": [
@@ -42,6 +44,8 @@
                 "VersionOff": "v1.0, v1.1",
                 "VerifyDepth": 5,
                 "HttpALPN": 1,
+                "PreferServerCiphers": true,
+                "Debug": false,
                 "Verify": 0
             }
         }

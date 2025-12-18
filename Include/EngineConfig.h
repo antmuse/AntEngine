@@ -41,6 +41,7 @@ public:
      */
     struct TlsConfig {
         bool mDebug = false;
+        bool mPreferServerCiphers = false;
         u8 mHttpALPN = 1;                             // 1: http1, 2: http2, 3: http1 or http2
         s32 mTlsVerify = 0;                           // tls verify
         s32 mTlsVerifyDepth = 5;                      // tls verify certs depth

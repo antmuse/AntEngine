@@ -154,6 +154,12 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
             if (tls.isMember("HttpALPN")) {
                 out.mHttpALPN = AppClamp(tls["HttpALPN"].asInt(), 1, 3);
             }
+            if (tls.isMember("PreferServerCiphers")) {
+                out.mPreferServerCiphers = tls["PreferServerCiphers"].asBool();
+            }
+            if (tls.isMember("Debug")) {
+                out.mDebug = tls["Debug"].asBool();
+            }
             return true;
         }
         return false;
