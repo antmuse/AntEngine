@@ -1,17 +1,17 @@
 #include "Net/HTTP/HttpMsg.h"
 #include "Logger.h"
 #include "Net/HTTP/HttpLayer.h"
+#if defined(DOS_WINDOWS)
+#include "Windows/Request.h"
+#else
+#include "Linux/Request.h"
+#endif
 
 namespace app {
 namespace net {
-static const s32 G_MAX_BODY = 1024 * 1024 * 10;
 
-HttpMsg::HttpMsg(HttpLayer* it) :
-    mRespStatus(0), mLayer(it), mEvent(nullptr), mFlags(0), mMethod(HTTP_GET), mType(EHTTP_BOTH),
-    mStatusCode(HTTP_STATUS_OK) {
+HttpMsg::HttpMsg(HttpLayer* it) : mLayer(it) {
     // mBrief.setLen(0);
-    mCacheIn.init();
-    mCacheOut.init();
     if (it) {
         it->grab();
     }
@@ -27,38 +27,10 @@ HttpMsg::~HttpMsg() {
 }
 
 
-void HttpMsg::writeLine() {
-    s8 tmp[64]; // len=17="HTTP/1.1 200 OK\r\n"
-    usz tsz = snprintf(tmp, sizeof(tmp), "HTTP/1.1 %d %s\r\n", mStatusCode, mBrief.data());
-    if (tsz >= sizeof(tmp)) {
-        tsz = sizeof(tmp);
-        tmp[tsz - 2] = '\r';
-        tmp[tsz - 1] = '\n';
-    }
-    mCacheOut.write(tmp, static_cast<s32>(tsz));
-}
-
-void HttpMsg::writeOutChunkLen(usz bsz) {
-    s8 chunked[24]; // 24 bytes enough
-    mCacheOut.write(chunked, snprintf(chunked, sizeof(chunked), "%llx\r\n", bsz));
-}
-
-void HttpMsg::writeOutBody(const void* buf, usz bsz) {
-    mCacheOut.write(buf, bsz);
-}
-
-
-void HttpMsg::writeOutHead(const s8* name, const s8* value) {
-    if (name && value) {
-        usz klen = strlen(name);
-        usz vlen = strlen(value);
-        if (klen > 0) {
-            mCacheOut.write(name, klen);
-            mCacheOut.write(":", 1);
-            mCacheOut.write(value, vlen);
-            mCacheOut.write("\r\n", 2);
-        }
-    }
+void HttpMsg::writeChunkLen(usz len) {
+    mBody.reallocate(mBody.size() + 24 + len); // 17 is enough for len
+    s32 add = snprintf(mBody.data() + mBody.size(), mBody.capacity() - mBody.size(), "%llx\r\n", len);
+    mBody.resize(mBody.size() + add);
 }
 
 
@@ -194,43 +166,110 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
 }
 
 
-s32 HttpMsg::buildReq() {
-    mCacheOut.reset();
-    StringView buf = getMethodStr(mMethod);
-    mCacheOut.write(buf.mData, buf.mLen);
-    mCacheOut.write(" ", 1);
-    buf = mURL.getPath();
-    mCacheOut.write(buf.mData, mURL.data().size() - (buf.mData - mURL.data().c_str()));
-    mCacheOut.write(" HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);
-    buf = mURL.getHost();
-    mCacheOut.write("Host:", sizeof("Host:") - 1);
-    mCacheOut.write(buf.mData, buf.mLen);
-    mCacheOut.write("\r\n", sizeof("\r\n") - 1);
-    dumpHead(mHeadOut, mCacheOut);
-    mCacheOut.write("\r\n", sizeof("\r\n") - 1);
-    return EE_OK;
-}
-
-s32 HttpMsg::buildResp() {
-    mCacheOut.reset();
-    writeLine();
-    dumpHeadOut();
-    mCacheOut.write("\r\n", sizeof("\r\n") - 1); // header finish
-    return EE_OK;
-}
-
-
-
-void HttpMsg::dumpHead(const HttpHead& hds, RingBuffer& out) {
-    usz mx = hds.size();
-    for (usz i = 0; i < mx; ++i) {
-        const HeadLine& line = hds[i];
-        out.write(line.mKey.c_str(), line.mKey.size());
-        out.write(":", 1);
-        out.write(line.mVal.c_str(), line.mVal.size());
-        out.write("\r\n", sizeof("\r\n") - 1);
+RequestFD* HttpMsg::buildReq() {
+    if (!mLayer) {
+        return nullptr;
     }
+    usz olen = sumCacheSize();
+    RequestFD* it = mLayer->createMem(olen);
+
+    s8* dst = it->mData;
+    StringView buf = getMethodStr(mMethod);
+    memcpy(dst, buf.mData, buf.mLen);
+    dst += buf.mLen;
+    *dst++ = ' ';
+
+    buf = mURL.getPath();
+    if (buf.mLen > 0) {
+        memcpy(dst, buf.mData, buf.mLen);
+        dst += buf.mLen;
+    } else {
+        *dst++ = '/';
+    }
+    buf.set(" HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);
+    memcpy(dst, buf.mData, buf.mLen);
+    dst += buf.mLen;
+
+    buf.set("Host:", sizeof("Host:") - 1);
+    memcpy(dst, buf.mData, buf.mLen);
+    dst += buf.mLen;
+    buf = mURL.getHost();
+    memcpy(dst, buf.mData, buf.mLen);
+    dst += buf.mLen;
+    *dst++ = '\r';
+    *dst++ = '\n';
+
+
+    it->mUsed = dst - it->mData;
+    dumpHead(it);
+    return it;
 }
+
+
+usz HttpMsg::dumpBody(RequestFD* it) {
+    if (RSTEP_BODY_END & mWriteStep) {
+        return 0;
+    }
+    if (mHead.isChunked()) {
+        // writeOutChunkLen(it, mBody.size());  TODO
+        mWriteStep |= RSTEP_BODY_PART;
+    } else {
+        mWriteStep |= RSTEP_BODY_END;
+    }
+    usz len = it->mAllocated - it->mUsed;
+    if (len > mBody.size()) {
+        len = mBody.size();
+    }
+    // TODO?
+    memcpy(it->mData + it->mUsed, mBody.data(), len);
+    it->mUsed += (u32)len;
+    mBody.clear(len);
+    return len;
+}
+
+void HttpMsg::dumpHead(RequestFD* it) {
+    if (RSTEP_HEAD_END & mWriteStep) {
+        return;
+    }
+    mWriteStep |= RSTEP_HEAD_END;
+    if (mHead.isChunked()) {
+        mWriteStep |= RSTEP_STEP_CHUNK;
+    }
+
+    usz mx = mHead.size();
+    for (usz i = 0; i < mx; ++i) {
+        const HeadLine& line = mHead[i];
+        memcpy(it->mData + it->mUsed, line.mKey.data(), line.mKey.size());
+        it->mUsed += (u32)line.mKey.size();
+        it->mData[it->mUsed++] = ':';
+        it->mData[it->mUsed++] = ' ';
+        memcpy(it->mData + it->mUsed, line.mVal.data(), line.mVal.size());
+        it->mUsed += (u32)line.mVal.size();
+        it->mData[it->mUsed++] = '\r';
+        it->mData[it->mUsed++] = '\n';
+    }
+
+    // header finish
+    it->mData[it->mUsed++] = '\r';
+    it->mData[it->mUsed++] = '\n';
+}
+
+
+s32 HttpMsg::dumpLine(RequestFD* it) {
+    if (RSTEP_HEAD_LINE & mWriteStep) {
+        return EE_OK;
+    }
+    mWriteStep |= RSTEP_HEAD_LINE;
+    StringView buf = it->getWriteBuf();
+    // len=17="HTTP/1.1 200 OK\r\n"
+    if (buf.mLen < 16 + mBrief.size()) {
+        return EE_ERROR;
+    }
+    s32 add = snprintf(buf.mData, buf.mLen, "HTTP/1.1 %d %s\r\n", mStatusCode, mBrief.data());
+    it->mUsed += add;
+    return EE_OK;
+}
+
 
 s32 HttpMsg::setURL(const String& req) {
     mURL.append(req.c_str(), req.size());

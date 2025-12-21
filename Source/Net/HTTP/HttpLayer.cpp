@@ -21,10 +21,29 @@ HttpLayer::~HttpLayer() {
         mWebSite->drop();
         mWebSite = nullptr;
     }
+    if (mPool) {
+        MemPool::releaseMemPool(mPool);
+        mPool = nullptr;
+    }
 }
 
+RequestFD* HttpLayer::createMem(usz len) {
+    RequestFD* it = reinterpret_cast<RequestFD*>(mPool->allocate(sizeof(RequestFD) + len));
+    new ((void*)it) RequestFD();
+    it->mAllocated = len;
+    it->mData = (s8*)(it + 1);
+    // it->mUsed = 0;
+    return it;
+}
+
+void HttpLayer::deleteMem(RequestFD* it) {
+    mPool->release(it);
+}
 
 s32 HttpLayer::launch(HttpMsg* msg) {
+    if (!mPool) {
+        mPool = MemPool::createMemPool(16 * 1024);
+    }
     if (mMsg) {
         return EE_ERROR;
     }
@@ -42,12 +61,12 @@ s32 HttpLayer::launch(HttpMsg* msg) {
     snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
     addr.setDomain(shost);
 
-    RequestFD* nd = RequestFD::newRequest(4 * 1024);
+    RequestFD* nd = createMem(4 * 1024);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnConnect;
     s32 ret = mHTTPS ? mTCP.open(addr, nd) : mTCP.getHandleTCP().open(addr, nd);
     if (EE_OK != ret) {
-        RequestFD::delRequest(nd);
+        deleteMem(nd);
         return ret;
     }
     mMsg = msg;
@@ -61,8 +80,8 @@ void HttpLayer::msgBegin() {
     if (mWebSite) {
         if (mMsg) {
             mHttpError = HPE_CB_MsgBegin;
+            DLOG(ELL_ERROR, "HttpLayer::msgBegin>> fail pre_msg check, %s", getErrStr());
             postClose();
-            DLOG(ELL_ERROR, "HttpLayer::msgBegin>> fail pre_msg check");
             return; // error
         }
         mMsg = new HttpMsg(this);
@@ -72,7 +91,10 @@ void HttpLayer::msgBegin() {
 void HttpLayer::msgEnd() {
     DASSERT(mMsg);
     if (mMsg) {
-        mMsg->getEvent()->onReqBodyDone(mMsg);
+        if (mMsg->getEvent()) {
+            mMsg->getEvent()->onReqBodyDone(mMsg);
+            mMsg->setEvent(nullptr);
+        }
         mMsg->drop();
         mMsg = nullptr;
     }
@@ -95,6 +117,7 @@ s32 HttpLayer::headDone() {
             mWebSite->createMsgEvent(mMsg);
         }
         if (EE_OK != mMsg->getEvent()->onReqHeadDone(mMsg)) {
+            DLOG(ELL_ERROR, "HttpLayer::headDone>> fail onReqHeadDone");
             postClose();
         }
     }
@@ -120,9 +143,10 @@ void HttpLayer::msgError() {
     if (mMsg) {
         if (mMsg->getEvent()) {
             mMsg->getEvent()->onReadError(mMsg);
+            // mMsg->setEvent(nullptr);
         }
-        mMsg->drop();
-        mMsg = nullptr;
+        // mMsg->drop();
+        // mMsg = nullptr;
     }
 }
 
@@ -139,51 +163,41 @@ void HttpLayer::chunkDone() {
 }
 
 
-bool HttpLayer::sendReq() {
-    RingBuffer& bufs = mMsg->getCacheOut();
-    if (bufs.getSize() > 0) {
-        RequestFD* nd = RequestFD::newRequest(0);
-        nd->mUser = mMsg;
-        nd->mCall = HttpLayer::funcOnWrite;
-        StringView msg = bufs.peekHead();
-        nd->mData = msg.mData;
-        nd->mAllocated = (u32)msg.mLen;
-        nd->mUsed = (u32)msg.mLen;
-        s32 ret = writeIF(nd);
-        if (0 != ret) {
-            RequestFD::delRequest(nd);
-            return false;
-        }
-        mMsg->grab();
+bool HttpLayer::sendReq(RequestFD* nd) {
+    nd->mUser = mMsg;
+    nd->mCall = HttpLayer::funcOnWrite;
+    s32 ret = writeIF(nd);
+    if (EE_OK != ret) {
+        deleteMem(nd);
+        return false;
     }
+    mMsg->grab();
     return true;
 }
 
-s32 HttpLayer::sendResp(HttpMsg* msg) {
-    DASSERT(msg);
 
-    if (msg->getRespStatus() > 0) {
-        return EE_OK;
-    }
+s32 HttpLayer::sendOut(HttpMsg* msg) {
+    bool chk = msg->getHead().isChunked();
+    RequestFD* it = createMem(msg->sumCacheSize());
+    msg->dumpLine(it);
+    msg->dumpHead(it);
+    msg->dumpBody(it);
 
-    RingBuffer& bufs = msg->getCacheOut();
-    RequestFD* nd = RequestFD::newRequest(0);
-    nd->mUser = msg;
-    nd->mCall = HttpLayer::funcOnWrite;
-    StringView pack = bufs.peekHead();
-    nd->mData = pack.mData;
-    nd->mAllocated = (u32)pack.mLen;
-    nd->mUsed = (u32)pack.mLen;
-    s32 ret = writeIF(nd);
+    // it->mUser = this;
+    it->mUser = msg;
+    it->mCall = HttpLayer::funcOnWrite;
+    // Packet& pack = msg->getBody();
+    // it->mAllocated = pack.capacity();
+    // it->mData = pack.data();
+    // it->mUsed = pack.size();
+    s32 ret = writeIF(it);
     if (EE_OK != ret) {
-        RequestFD::delRequest(nd);
+        deleteMem(it);
         return ret;
     }
     msg->grab();
-    msg->setRespStatus(1);
     return EE_OK;
 }
-
 
 
 #ifdef DDEBUG
@@ -262,6 +276,7 @@ void HttpLayer::onClose(Handle* it) {
     if (mMsg) {
         if (mMsg->getEvent()) {
             mMsg->getEvent()->onLayerClose(mMsg);
+            mMsg->setEvent(nullptr);
         }
         cnt = mMsg->drop();
         mMsg = nullptr;
@@ -279,6 +294,9 @@ bool HttpLayer::onLink(RequestFD* it) {
         DLOG(ELL_ERROR, "HttpLayer::onLink>> invalid website");
         return false;
     }
+    if (!mPool) {
+        mPool = MemPool::createMemPool(16 * 1024);
+    }
     if (mHTTPS) {
         mTCP.setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
@@ -286,7 +304,7 @@ bool HttpLayer::onLink(RequestFD* it) {
         mTCP.getHandleTCP().setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.getHandleTCP().setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
     }
-    RequestFD* nd = RequestFD::newRequest(4 * 1024);
+    RequestFD* nd = createMem(4 * 1024);
     nd->mUser = this;
     nd->mCall = HttpLayer::funcOnRead;
     s32 ret = mHTTPS ? mTCP.open(req, nd, mTlsContext) : mTCP.getHandleTCP().open(req, nd);
@@ -296,7 +314,7 @@ bool HttpLayer::onLink(RequestFD* it) {
         Logger::log(ELL_INFO, "HttpLayer::onLink>> [%s->%s]", mTCP.getRemote().getStr(), mTCP.getLocal().getStr());
     } else {
         mWebSite = nullptr;
-        RequestFD::delRequest(nd);
+        deleteMem(nd);
         Logger::log(ELL_ERROR, "HttpLayer::onLink>> [%s->%s], ecode=%d", mTCP.getRemote().getStr(),
             mTCP.getLocal().getStr(), ret);
     }
@@ -305,29 +323,27 @@ bool HttpLayer::onLink(RequestFD* it) {
 
 void HttpLayer::onConnect(RequestFD* it) {
     if (EE_OK == it->mError) {
-        mMsg->buildReq();
-        if (sendReq()) {
+        RequestFD* nd = mMsg->buildReq();
+        if (sendReq(nd)) {
             it->mCall = HttpLayer::funcOnRead;
             if (EE_OK == readIF(it)) {
                 return;
             }
         }
     }
-    DLOG(ELL_ERROR, "HttpLayer::onConnect>> [url=%d] [ip=%s], ecode=%d", mMsg->getURL().data().data(),
+    DLOG(ELL_ERROR, "HttpLayer::onConnect>> [url=%s] [ip=%s], ecode=%d", mMsg->getURL().data().data(),
         mTCP.getRemote().getStr(), it->mError);
-    RequestFD::delRequest(it);
+    deleteMem(it);
 }
 
 void HttpLayer::onWrite(RequestFD* it, HttpMsg* msg) {
     if (EE_OK != it->mError) {
         DLOG(ELL_ERROR, "onWrite>>size=%u, ecode=%d, msg=%s", it->mUsed, it->mError, msg->getRealPath().data());
-        msg->getEvent()->onRespWriteError(msg);
+        if (msg->getEvent()) {
+            msg->getEvent()->onRespWriteError(msg);
+        }
     } else {
-        msg->setRespStatus(0);
-        msg->getCacheOut().commitHead(static_cast<s32>(it->mUsed));
-        if (msg->getCacheOut().getSize() > 0) {
-            sendResp(msg);
-        } else {
+        if (msg->getEvent()) {
             if (EE_OK != msg->getEvent()->onRespWrite(msg)) {
                 if (!msg->isKeepAlive()) {
                     // mTCP.setTimeout(10000);  TODO
@@ -336,20 +352,18 @@ void HttpLayer::onWrite(RequestFD* it, HttpMsg* msg) {
             }
         }
     }
-    RequestFD::delRequest(it);
+    deleteMem(it);
     msg->drop();
 }
 
 
 void HttpLayer::onRead(RequestFD* it) {
     const s8* dat = it->getBuf();
-    ssz datsz = it->mUsed;
-    if (0 == datsz) {
-        parseBuf(dat, 0); // make the http-msg-finish callback
-    } else {
+    if (it->mUsed > 0 && EE_OK == it->mError) {
+        ssz datsz = it->mUsed;
         ssz parsed = 0;
         ssz stepsz;
-        while (datsz > 0 && 0 == mHttpError) {
+        while (datsz > 0 && HPE_OK == mHttpError) {
             stepsz = parseBuf(dat + parsed, datsz);
             parsed += stepsz;
             if (stepsz < datsz) {
@@ -358,32 +372,24 @@ void HttpLayer::onRead(RequestFD* it) {
             datsz -= stepsz;
         }
         it->clearData((u32)parsed);
-
-        if (0 == it->getWriteSize()) {
-            // 可能受到超长header攻击或其它错误
-            Logger::logError("HttpLayer::onRead>>remote=%s, msg overflow", mTCP.getRemote().getStr());
-            postClose();
-        } else {
-            if (0 == mHttpError && EE_OK == readIF(it)) {
-                return;
-            }
-            postClose();
-            Logger::logError(
-                "HttpLayer::onRead>>remote=%s, parser err=%d=%s", mTCP.getRemote().getStr(), mHttpError, getErrStr());
+        if (HPE_OK == mHttpError && it->getWriteSize() > 0 && EE_OK == readIF(it)) {
+            return; // step success, go on...
         }
+        // 如果getWriteSize=0, 则可能受到超长header攻击
+        DLOG(ELL_ERROR, "HttpLayer::onRead>> remote= %s, cache size=%u, parser err= %d = %s, ecode = %d",
+            mTCP.getRemote().getStr(), it->getWriteSize(), mHttpError, getErrStr(), it->mError);
+    } else {
+        parseBuf(dat, 0); // make the http-msg-finish callback
     }
 
-    // del req
-#if defined(DDEBUG)
-    printf("HttpLayer::onRead>>del req, read=%lld, ecode=%d, parser err=%d=%s\n", datsz, it->mError, mHttpError,
-        getErrStr());
-#endif
-    RequestFD::delRequest(it);
+    DLOG(ELL_ERROR, "HttpLayer::onRead>> remote= %s, read= %u, ecode= %d, parser stat= %d = %s",
+        mTCP.getRemote().getStr(), it->mUsed, it->mError, mState, getErrStr());
+    deleteMem(it);
+    postClose();
 }
 
 
 void HttpLayer::postClose() {
-    DLOG(ELL_INFO, "HttpLayer::postClose remote = %s", mTCP.getHandleTCP().getRemote().getStr());
     mTCP.getHandleTCP().launchClose();
 }
 
@@ -873,7 +879,7 @@ const s8* HttpLayer::parseValue(const s8* curr, const s8* end, StringView* out, 
         default:
             break;
         } // switch
-    }     // for
+    } // for
 
 
 GT_RET:
@@ -1825,7 +1831,7 @@ GT_REPARSE: // recheck current byte
                     mHeaderState = h_state;
                     DASSERT(mHttpError == HPE_OK);
                     tmpval.mLen = pp - tmpval.mData;
-                    mMsg->mHeadIn.add(tmpkey, tmpval);
+                    mMsg->getHead().add(tmpkey, tmpval);
                     break;
                 }
 
@@ -1837,7 +1843,7 @@ GT_REPARSE: // recheck current byte
                     mHeaderState = h_state;
                     DASSERT(mHttpError == HPE_OK);
                     tmpval.mLen = pp - tmpval.mData;
-                    mMsg->mHeadIn.add(tmpkey, tmpval);
+                    mMsg->getHead().add(tmpkey, tmpval);
                     goto GT_REPARSE;
                 }
 
@@ -2036,7 +2042,7 @@ GT_REPARSE: // recheck current byte
                     h_state = EH_NORMAL;
                     break;
                 } // switch(h_state)
-            }     // for in val
+            } // for in val
             mHeaderState = h_state;
 
             if (pp == end) {
@@ -2145,10 +2151,10 @@ GT_REPARSE: // recheck current byte
                 }
 
                 tmpval.set(pp, 0); // empty header value
-                
+
                 DASSERT(mHttpError == HPE_OK);
                 if (tmpkey.mLen) {
-                    mMsg->mHeadIn.add(tmpkey, tmpval);
+                    mMsg->getHead().add(tmpkey, tmpval);
                 }
                 tmpstate = PS_HEAD_FIELD_PRE;
                 mState = tmpstate;
@@ -2349,7 +2355,7 @@ GT_REPARSE: // recheck current byte
              * byte again for our message complete callback.
              */
             tbody.set(pp, to_read);
-            mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
+            mMsg->getBody().write(tbody.mData, tbody.mLen);
             mContentLen -= to_read;
             pe = pp + to_read; // steped
             pp = pe - 1;
@@ -2374,7 +2380,7 @@ GT_REPARSE: // recheck current byte
         // read until EOF
         case PS_BODY_EOF:
             tbody.set(pp, end - pp);
-            mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
+            mMsg->getBody().write(tbody.mData, tbody.mLen);
             pp = end - 1;
             pe = end; // steped
             break;
@@ -2479,7 +2485,7 @@ GT_REPARSE: // recheck current byte
             u64 to_read = end - pp;
             to_read = AppMin(mContentLen, to_read);
             tbody.set(pp, to_read);
-            mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
+            mMsg->getBody().write(tbody.mData, tbody.mLen);
             mContentLen -= to_read;
             pp += to_read - 1;
             if (mContentLen == 0) {
@@ -2516,7 +2522,7 @@ GT_REPARSE: // recheck current byte
             mHttpError = (HPE_INVALID_INTERNAL_STATE);
             goto GT_ERROR;
         } // switch
-    }     // for
+    } // for
 
     // mState = tmpstate;  don't step here
     mReadSize = nread;
@@ -2633,7 +2639,7 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
                 DASSERT(mHttpError == HPE_OK);
                 if (tbody.mData) {
                     tbody.mLen = curr - tbody.mData - cmpbyte;
-                    mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
+                    mMsg->getBody().write(tbody.mData, tbody.mLen);
                     tbody.set(nullptr, 0);
                 }
                 end = --curr;
@@ -2650,7 +2656,7 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
                 DASSERT(mHttpError == HPE_OK);
                 if (tbody.mData) {
                     tbody.mLen = curr - tbody.mData - cmpbyte;
-                    mMsg->mCacheIn.write(tbody.mData, tbody.mLen);
+                    mMsg->getBody().write(tbody.mData, tbody.mLen);
                     tbody.set(nullptr, 0);
                 }
                 mState = PS_MSG_DONE;
@@ -2672,7 +2678,7 @@ const s8* HttpLayer::parseBoundBody(const s8* curr, const s8* end, StringView& t
             end = --curr;
             break;
         } // switch
-    }     // for
+    } // for
 
     mValueState = vstat;
     return curr;

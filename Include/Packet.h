@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_PACKET_H
@@ -32,17 +32,17 @@ namespace app {
 
 class Packet {
 public:
-    Packet();
+    Packet() noexcept;
 
-    Packet(usz iSize);
+    Packet(usz iSize) noexcept;
 
     ~Packet();
 
-    Packet(const Packet& other) {
+    Packet(const Packet& other) noexcept : mUsed(0), mAllocated(0), mData(nullptr) {
         *this = other;
     }
 
-    Packet(Packet&& it)noexcept :mUsed(it.mUsed), mAllocated(it.mAllocated), mData(it.mData) {
+    Packet(Packet&& it) noexcept : mUsed(it.mUsed), mAllocated(it.mAllocated), mData(it.mData) {
         it.mData = nullptr;
         it.mAllocated = 0;
         it.mUsed = 0;
@@ -50,12 +50,12 @@ public:
 
     Packet& operator=(const Packet& other);
 
-    Packet& operator=(Packet&& it)noexcept {
+    Packet& operator=(Packet&& it) noexcept {
         swap(it);
         return *this;
     }
 
-    void swap(Packet& it)noexcept {
+    void swap(Packet& it) noexcept {
         s8* dat = mData;
         usz used = mUsed;
         usz allc = mAllocated;
@@ -80,9 +80,9 @@ public:
     }
 
     /**
-    *@brief 收缩容量使其不超过maximum.
-    *@param maximum The max cache size.
-    */
+     *@brief 收缩容量使其不超过maximum.
+     *@param maximum The max cache size.
+     */
     void shrink(usz maximum);
 
     void resize(usz size);
@@ -96,7 +96,7 @@ public:
     }
 
 
-    DFINLINE s8* getWritePointer()const {
+    DFINLINE s8* getWritePointer() const {
         return mData + mUsed;
     }
 
@@ -109,11 +109,16 @@ public:
     }
 
 
-    DFINLINE s8* getPointer()const {
+    DFINLINE s8* getPointer() const {
+        return mData;
+    }
+
+    DFINLINE s8* data() const {
         return mData;
     }
 
 
+    usz write(const s8* iData);
     usz write(const void* iData, usz iSize);
 
     usz writeU8(u8 ch);
@@ -123,10 +128,10 @@ public:
     usz writeU32(u32 ch);
 
     /**
-    *@brief 从头部清理指定字节数.剩余字节数前移
-    *@param iSize 删除字节数.
-    *@return 剩余字节数.
-    */
+     *@brief 从头部清理指定字节数.剩余字节数前移
+     *@param iSize 删除字节数.
+     *@return 剩余字节数.
+     */
     usz clear(usz iSize = (-1));
 
 protected:
@@ -135,6 +140,6 @@ protected:
     s8* mData;
 };
 
-}// end namespace
+} // namespace app
 
-#endif //APP_PACKET_H
+#endif // APP_PACKET_H

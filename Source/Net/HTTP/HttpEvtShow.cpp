@@ -18,7 +18,7 @@ s32 HttpEvtShow::onRespWrite(net::HttpMsg* msg) {
 s32 HttpEvtShow::onReqHeadDone(net::HttpMsg* msg) {
     DASSERT(msg);
     printf("-----------------head-----------------\n");
-    net::HttpHead& hed = msg->getHeadIn();
+    net::HttpHead& hed = msg->getHead();
     for (usz i = 0; i < hed.size(); ++i) {
         printf("%s : %s\n", hed[i].mKey.data(), hed[i].mVal.data());
     }
@@ -53,12 +53,9 @@ s32 HttpEvtShow::onReqChunkBodyDone(net::HttpMsg* msg) {
 s32 HttpEvtShow::onReqBodyDone(net::HttpMsg* msg) {
     DASSERT(msg);
     printf("-----------------body-----------------\n");
-    RingBuffer& body = msg->getCacheIn();
-    while (body.getSize() > 0) {
-        const StringView nd = body.peekHead();
-        printf("%.*s", static_cast<s32>(nd.mLen), nd.mData);
-        body.commitHead(static_cast<u32>(nd.mLen));
-    }
+    Packet& body = msg->getBody();
+    printf("%.*s", static_cast<s32>(body.size()), body.data());
+    body.clear();
     printf("-----------------body-end-------------\n");
     return EE_OK;
 }

@@ -39,7 +39,6 @@ s32 HttpEvtError::onReqBody(net::HttpMsg* msg) {
 
 
 s32 HttpEvtError::onReqBodyDone(net::HttpMsg* msg) {
-    msg->getCacheOut().reset();
     String ebody = R"(<html>
 <head><title>ERROR</title>
 <style>
@@ -56,11 +55,14 @@ text-align: center;
 <h1>ERROR )";
     ebody += mErr;
     ebody += R"(</h1><hr><br><p>file or not supported, pls wait for more.</p><br><hr></body></html>)";
-    msg->setStatus(mErr, "ERR");
-    msg->getHeadOut().setLength(ebody.size());
-    msg->buildResp();
-    msg->writeOutBody(ebody.data(), ebody.size());
-    return msg->getHttpLayer()->sendResp(msg);
+    net::HttpMsg* resp = new net::HttpMsg(msg->getHttpLayer());
+    resp->setStatus(mErr, "ERR");
+    resp->getHead().setLength(ebody.size());
+    resp->getHead().setDefaultContentType();
+    resp->getBody().write(ebody.data(), ebody.size());
+    s32 ret = msg->getHttpLayer()->sendOut(resp);
+    resp->drop();
+    return ret;
 }
 
 

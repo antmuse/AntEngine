@@ -399,7 +399,10 @@ bool Engine::createProcess(usz idx) {
         return true;
     }
 
-GT_PROC_FAIL:
+
+#if defined(DOS_LINUX)
+    GT_PROC_FAIL:
+#endif
     Logger::log(ELL_ERROR, "Engine::createProcess>> fail to create Process[%u] fail", idx);
     nd.mID = 0;
     nd.mHandle = nullptr;

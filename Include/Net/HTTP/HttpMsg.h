@@ -27,11 +27,15 @@
 #define APP_HTTPMSG_H
 
 #include "RefCount.h"
-#include "RingBuffer.h"
+#include "Packet.h"
 #include "Net/HTTP/HttpURL.h"
 #include "Net/HTTP/HttpHead.h"
 
+
+
 namespace app {
+class RequestFD;
+
 namespace net {
 
 /* Status Codes */
@@ -269,6 +273,17 @@ public:
 
 class HttpMsg : public RefCount {
 public:
+    enum ERespStep {
+        RSTEP_INIT = 0,
+        RSTEP_MASK = 0x7,
+
+        RSTEP_HEAD_LINE = 1,
+        RSTEP_HEAD_END = 2,
+        RSTEP_BODY_PART = 4,
+        RSTEP_BODY_END = 8,
+        RSTEP_STEP_CHUNK = 16,
+    };
+
     HttpMsg(HttpLayer* it);
 
     virtual ~HttpMsg();
@@ -297,38 +312,32 @@ public:
         return mEvent;
     }
 
-    RingBuffer& getCacheIn() {
-        return mCacheIn;
+    Packet& getBody() {
+        return mBody;
     }
 
-    RingBuffer& getCacheOut() {
-        return mCacheOut;
+    HttpHead& getHead() {
+        return mHead;
     }
 
-    HttpHead& getHeadIn() {
-        return mHeadIn;
-    }
-
-    HttpHead& getHeadOut() {
-        return mHeadOut;
-    }
-
-    HttpLayer* getHttpLayer() {
+    HttpLayer* getHttpLayer() const {
         return mLayer;
     }
 
     void clear() {
         mFlags = 0;
         mStatusCode = 0;
-        mHeadIn.clear();
-        mHeadOut.clear();
-        mCacheIn.reset();
-        mCacheOut.reset();
+        mHead.clear();
+        mBody.clear();
         mURL.clear();
     }
 
     EHttpParserType getType() const {
         return mType;
+    }
+
+    void setType(bool req) {
+        mType = req ? EHTTP_REQUEST : EHTTP_RESPONSE;
     }
 
     // for req
@@ -345,17 +354,13 @@ public:
     }
 
     // for req
-    void clearInBody() {
-        mCacheIn.reset();
+    void clearBody() {
+        mBody.clear();
     }
 
     // for req
-    usz getInBodySize() const {
-        return mCacheIn.getSize();
-    }
-
-    usz getOutBodySize() const {
-        return mCacheOut.getSize();
+    usz getBodySize() const {
+        return mBody.size();
     }
 
     // for req
@@ -391,22 +396,8 @@ public:
     }
 
     // for req
-    s32 buildReq();
+    RequestFD* buildReq();
 
-    // for resp
-    s32 buildResp();
-
-    // for resp
-    void writeOutHead(const s8* name, const s8* value);
-
-    // for resp
-    void writeOutChunkLen(usz bsz);
-    void writeOutLastChunk() {
-        writeOutBody("0\r\n\r\n", 5);
-    }
-
-    // for resp
-    void writeOutBody(const void* buf, usz bsz);
 
     // for resp
     void setStatus(u16 it, const s8* str = "OK") {
@@ -434,48 +425,60 @@ public:
         mBrief = buf;
     }
 
-    // for resp
-    void clearOutBody() {
-        mCacheOut.reset();
+
+    void writeBody(const void* buf, usz len) {
+        mBody.write(buf, len);
     }
+
+    void writeChunk(const s8* buf) {
+        DASSERT(buf);
+        writeChunk(buf, strlen(buf));
+    }
+
+    void writeChunk(const void* buf, usz len) {
+        writeChunkLen(len);
+        mBody.write(buf, len);
+        mBody.write("\r\n", 2);
+    }
+
+    void writeChunkLen(usz len);
+
+    void writeLastChunk() {
+        mBody.write("0\r\n\r\n", 5);
+    }
+
+    usz sumCacheSize() const {
+        // 2  = strlen("\r\n")  , head tail
+        // 2  = blanks for url   , req only
+        // 17 = strlen("HTTP/1.1 200 OK\r\n")
+        return mHead.getDataLen() + sizeof(": \r\n") * mHead.size() + 2 + 2 + 17 + mBrief.size() + mBody.size()
+               + mURL.data().size() + (mHead.isChunked() ? sizeof("12345678\r\n") : 0);
+    }
+
 
 protected:
-    void dumpHeadIn() {
-        dumpHead(mHeadIn, mCacheIn);
-    }
-
-    void dumpHeadOut() {
-        dumpHead(mHeadOut, mCacheOut);
-    }
-    void dumpHead(const HttpHead& hds, RingBuffer& out);
-    void writeLine();
-
-    u8 getRespStatus() const {
-        return mRespStatus;
-    }
-    void setRespStatus(u8 it) {
-        mRespStatus = it;
-    }
+    void dumpHead(RequestFD* it);
+    s32 dumpLine(RequestFD* it);
+    usz dumpBody(RequestFD* it);
 
     friend class HttpLayer;
-    u8 mRespStatus; // for HttpLayer
-    u16 mStatusCode;
-    u16 mFlags;
-    EHttpParserType mType;
-    EHttpMethod mMethod;
 
-    HttpHead mHeadIn;
-    RingBuffer mCacheIn;
+    u16 mStatusCode = HTTP_STATUS_OK;
+    u16 mFlags = 0;
+    u16 mWriteStep = RSTEP_INIT;
+    EHttpParserType mType = EHTTP_BOTH;
+    EHttpMethod mMethod = HTTP_GET;
 
-    HttpHead mHeadOut;
-    RingBuffer mCacheOut;
+    HttpHead mHead;
+    Packet mBody;
 
     HttpURL mURL;     // request only
     String mRealPath; // request only
     String mBrief;    // response only
 
-    HttpLayer* mLayer;
-    HttpEventer* mEvent;
+    HttpMsg* mResp = nullptr;
+    HttpLayer* mLayer = nullptr;
+    HttpEventer* mEvent = nullptr;
 };
 
 

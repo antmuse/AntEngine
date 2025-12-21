@@ -111,6 +111,7 @@ public:
         StringView key("Transfer-Encoding", sizeof("Transfer-Encoding") - 1);
         StringView val("chunked", sizeof("chunked") - 1);
         add(key, val);
+        mChunked = true;
     }
 
     // Transfer-Encoding : chunked
@@ -131,6 +132,12 @@ public:
         return mData;
     }
 
+    /** @return bytes of all headlines. */
+    usz getDataLen() const {
+        // return mData.size() * sizeof(" \r\n\r\n") + mDataLen;
+        return mDataLen;
+    }
+
     HeadLine& operator[](const usz idx) {
         DASSERT(idx < mData.size());
         return mData[idx];
@@ -141,12 +148,16 @@ public:
         return mData[idx];
     }
 
+    /** @return count of headlines. */
     usz size() const {
         return mData.size();
     }
 
+
 private:
     TVector<HeadLine> mData;
+    usz mDataLen = 0;
+    bool mChunked = false;
 };
 
 } // namespace net

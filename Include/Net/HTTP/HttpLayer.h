@@ -30,6 +30,7 @@
 #include "EngineConfig.h"
 #include "Loop.h"
 #include "System.h"
+#include "MemoryPool.h"
 #include "Net/HandleTLS.h"
 #include "Net/HTTP/HttpMsg.h"
 #include "Net/TlsContext.h"
@@ -66,8 +67,9 @@ public:
 
     bool onLink(RequestFD* it);
 
-    bool sendReq();
-    s32 sendResp(HttpMsg* msg);
+
+    bool sendReq(RequestFD* nd);
+    s32 sendOut(HttpMsg* msg);
 
     /* Executes the parser. Returns number of parsed bytes. Sets
      * `parser->EHttpError` on error. */
@@ -82,6 +84,10 @@ public:
     const s8* getErrStr() const {
         return getErrStr(mHttpError);
     }
+
+    RequestFD* createMem(usz len);
+
+    void deleteMem(RequestFD* it);
 
 private:
     s32 onTimeout(HandleTime& it);
@@ -139,9 +145,11 @@ private:
     Website* mWebSite;
     HandleTLS mTCP;
     HttpMsg* mMsg;
+    MemPool* mPool = nullptr;
 
     // parser
 private:
+
     // Checks if this is the final chunk of the body
     bool isBodyFinal() const;
 

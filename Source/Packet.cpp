@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Packet.h"
@@ -30,18 +30,13 @@
 namespace app {
 
 
-Packet::Packet() :
-    mUsed(0),
-    mAllocated(1024) {
-    mData = (s8*)malloc(mAllocated);
+Packet::Packet() noexcept : mUsed(0), mAllocated(0), mData(nullptr) {
 }
 
 
-Packet::Packet(usz iSize) :
-    mUsed(0),
-    mAllocated(iSize) {
-    if (mAllocated > 0 && mAllocated < 8) {
-        mAllocated = 8;
+Packet::Packet(usz iSize) noexcept : mUsed(0), mAllocated(iSize) {
+    if (mAllocated > 0 && mAllocated < 16) {
+        mAllocated = 16;
     }
     mData = mAllocated > 0 ? (s8*)malloc(mAllocated) : nullptr;
 }
@@ -60,7 +55,7 @@ Packet::~Packet() {
 void Packet::shrink(usz maximum) {
     if (mAllocated > maximum) {
         ::free(mData);
-        mData = (s8*) ::malloc(maximum);
+        mData = (s8*)::malloc(maximum);
         DASSERT(mData);
         mAllocated = maximum;
     }
@@ -69,13 +64,11 @@ void Packet::shrink(usz maximum) {
 
 
 void Packet::reallocate(usz size) {
-    DASSERT(size <= 1024 * 1024 * 1024);//assume <= 1G
+    DASSERT(size <= 1024 * 1024 * 1024); // assume <= 1G
     if (mAllocated < size) {
-        size += (mAllocated < 512 ?
-            (mAllocated < 8 ? 8 : mAllocated)
-            : mAllocated >> 2);
+        size += (mAllocated < 512 ? (mAllocated < 8 ? 8 : mAllocated) : mAllocated >> 2);
 
-        s8* buffer = (s8*) ::malloc(size);
+        s8* buffer = (s8*)::malloc(size);
         DASSERT(buffer);
 
         if (mUsed > 0) {
@@ -96,7 +89,7 @@ void Packet::resize(usz size) {
 }
 
 
-Packet& Packet::operator= (const Packet& other) {
+Packet& Packet::operator=(const Packet& other) {
     if (this == &other) {
         return *this;
     }
@@ -115,6 +108,11 @@ usz Packet::clear(usz position) {
         mUsed = (0 == position) ? mUsed : 0;
     }
     return mUsed;
+}
+
+
+usz Packet::write(const s8* iData) {
+    return write(iData, strlen(iData));
 }
 
 
@@ -148,4 +146,4 @@ usz Packet::writeU32(u32 ch) {
     return mUsed;
 }
 
-}// end namespace
+} // namespace app

@@ -64,11 +64,11 @@ private:
 
     String mWebRootPath;
     SRingBufPos mChunkPos;
-    RingBuffer* mBody;
     RequestFD mReqs;
-    net::HttpMsg* mMsg;
-    usz mReaded;
-    u16 mEvtFlags;
+    net::HttpMsg* mMsg = nullptr;
+    net::HttpMsg* mMsgResp = nullptr;
+    usz mReaded = 0;
+    u16 mEvtFlags = 0;
 
     /** @brief set context for coroutine */
     void creatCurrContext();

@@ -25,12 +25,11 @@ public:
     virtual s32 onReqBodyDone(net::HttpMsg* msg) override;
 
 private:
-    s32 writeChunk(net::HttpMsg* msg);
-    void writeStr(net::HttpMsg* msg, const s8* it);
-    s32 postResp(net::HttpMsg* msg);
+    s32 postResp();
 
-    net::HttpMsg* mMsg;
-    usz mOffset;
+    net::HttpMsg* mMsg = nullptr;
+    net::HttpMsg* mMsgResp = nullptr;
+    usz mOffset = 0;
     TVector<FileInfo> mList;
 };
 

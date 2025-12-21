@@ -181,7 +181,7 @@ s32 LuaInclude(lua_State* vm) {
 s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz, const s8* className, const s8* namespac) {
     DASSERT(vm && func && funcsz && className);
     if (!vm || !func || 0 == funcsz || !className || 0 == className[0]) {
-        Logger::logCritical("LuaRegistClass: bad params");
+        DLOG(ELL_ERROR, "LuaRegistClass: bad params");
         return EE_INVALID_PARAM;
     }
     bool use_space = (namespac && 0 != namespac[0]);
@@ -191,7 +191,7 @@ s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz, const 
     }
     reg_str += className;
     if (1 != luaL_newmetatable(vm, reg_str.c_str())) {
-        Logger::logCritical("LuaRegistClass: err, class[%s] had been registed", reg_str.c_str());
+        DLOG(ELL_ERROR, "LuaRegistClass: err, class[%s] had been registed", reg_str.c_str());
         return EE_ERROR;
     }
     s32 metatable = lua_gettop(vm);
@@ -213,7 +213,7 @@ s32 LuaRegistClass(lua_State* vm, const luaL_Reg* func, const usz funcsz, const 
             lua_pushcfunction(vm, func[i].func);
             lua_setfield(vm, metatable, func[i].name);
         } else {
-            Logger::logCritical("LuaRegistClass: reg_calss = %s::%s", namespac, className);
+            DLOG(ELL_CRITICAL, "LuaRegistClass = %s::%s", namespac ? namespac : "", className);
             if (use_space) {
                 lua_getglobal(vm, namespac);
                 if (lua_isnil(vm, -1)) { // Create namespace if not exsit

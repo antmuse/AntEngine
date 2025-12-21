@@ -440,9 +440,9 @@ void AppTestVector() {
     printf("mem check, G_BUILD_CNT=%d\n", G_BUILD_CNT);
     for (usz i = 0; i < sizeof(ndd) / sizeof(ndd[0]); ++i) {
         if ((1 & i) == 1) {
-            llst.emplaceFront(ndd[i]);
+            llst.moveFront(std::move(ndd[i]));
         } else {
-            llst.emplaceBack(ndd[i]);
+            llst.moveBack(std::move(ndd[i]));
         }
     }
     printf("mem check, G_BUILD_CNT=%d\n", G_BUILD_CNT);

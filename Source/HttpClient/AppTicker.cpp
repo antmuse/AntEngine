@@ -64,8 +64,8 @@ void AppTicker::http_task(void* dat) {
     net::HttpMsg* msg = new net::HttpMsg(nd);
     msg->setEvent(evt);
     evt->drop();
-    msg->getHeadOut().setKeepAlive(true);
-    msg->getHeadOut().add("Accept", "*/*");
+    msg->getHead().setKeepAlive(true);
+    msg->getHead().add("Accept", "*/*");
     msg->setMethod(net::HTTP_GET);
     msg->setURL(url);
     s32 fly = nd->launch(msg);

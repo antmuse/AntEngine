@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #include "Net/HTTP/HttpHead.h"
@@ -36,18 +36,21 @@ HttpHead::~HttpHead() {
 }
 
 
-bool HttpHead::isChunked()const {
-    StringView nm("Transfer-Encoding", sizeof("Transfer-Encoding") - 1);
-    const StringView& par = get(nm);
-    return 7 == par.mLen && 0 == AppStrNocaseCMP("chunked", par.mData, sizeof("chunked") - 1);
+bool HttpHead::isChunked() const {
+    return mChunked;
+    //StringView nm("Transfer-Encoding", sizeof("Transfer-Encoding") - 1);
+    //const StringView& par = get(nm);
+    //return 7 == par.mLen && 0 == AppStrNocaseCMP("chunked", par.mData, sizeof("chunked") - 1);
 }
 
 void HttpHead::add(const StringView& key, const StringView& val) {
+    mDataLen += key.mLen + val.mLen;
     HeadLine nd = {key, val};
     mData.emplaceBack(nd);
 }
 
 void HttpHead::add(const String& key, const String& val) {
+    mDataLen += key.size() + val.size();
     HeadLine nd = {key, val};
     mData.emplaceBack(nd);
 }
@@ -56,6 +59,7 @@ void HttpHead::remove(const StringView& key, s32 cnt) {
     usz mx = mData.size();
     for (usz i = 0; i < mx; ++i) {
         if (key.mLen == mData[i].mKey.size() && 0 == AppStrNocaseCMP(mData[i].mKey.c_str(), key.mData, key.mLen)) {
+            mDataLen -= key.mLen + mData[i].mVal.size();
             mData[i] = mData[mx - 1];
             mData.resize(mx - 1);
             if (--cnt < 1) {
@@ -66,7 +70,7 @@ void HttpHead::remove(const StringView& key, s32 cnt) {
 }
 
 
-StringView HttpHead::get(const StringView& key, usz pos)const {
+StringView HttpHead::get(const StringView& key, usz pos) const {
     StringView ret;
     size_t mx = mData.size();
     for (; pos < mx; ++pos) {
@@ -79,5 +83,5 @@ StringView HttpHead::get(const StringView& key, usz pos)const {
 }
 
 
-}//namespace net
-}//namespace app {
+} // namespace net
+} // namespace app

@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_MEMORYPOOL_H
@@ -33,14 +33,14 @@
 // D_MEMPOOL_MAX_PAGE must be > 1
 #define D_MEMPOOL_MAX_PAGE 4
 
-//#define D_DISABLE_MEMPOOL
+// #define D_DISABLE_MEMPOOL
 
 namespace app {
 
 /**
-* @brief Very fast memory pool for allocating and deallocating structures that don't have constructors or destructors.
-* Contains a list of pages, each of which has an array of the user structures
-*/
+ * @brief Very fast memory pool for allocating and deallocating structures that don't have constructors or destructors.
+ * Contains a list of pages, each of which has an array of the user structures
+ */
 template <class MemoryBlockType>
 class MemoryPool {
 public:
@@ -89,13 +89,14 @@ public:
 protected:
     s32 blocksPerPage(void) const;
 
-    //void allocateFirst(void);
+    // void allocateFirst(void);
 
     bool initPage(SMemoryPage* page, SMemoryPage* iPrevious);
 
-    // mAvailablePages contains pages which have room to give the user new blocks.  We return these blocks from the head of the list
-    // mUnavailablePages are pages which are totally full, and from which we do not return new blocks.
-    // Pages move from the head of mUnavailablePages to the tail of mAvailablePages, and from the head of mAvailablePages to the tail of mUnavailablePages
+    // mAvailablePages contains pages which have room to give the user new blocks.  We return these blocks from the head
+    // of the list mUnavailablePages are pages which are totally full, and from which we do not return new blocks. Pages
+    // move from the head of mUnavailablePages to the tail of mAvailablePages, and from the head of mAvailablePages to
+    // the tail of mUnavailablePages
     SMemoryPage* mAvailablePages;
     SMemoryPage* mUnavailablePages;
     s32 mAvailablePagesSize;
@@ -104,10 +105,10 @@ protected:
 };
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 MemoryPool<MemoryBlockType>::MemoryPool() {
 #ifndef D_DISABLE_MEMPOOL
-    //allocateFirst();
+    // allocateFirst();
     mAvailablePagesSize = 0;
     mUnavailablePagesSize = 0;
     setPageSize(16 * 1024);
@@ -115,7 +116,7 @@ MemoryPool<MemoryBlockType>::MemoryPool() {
 }
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 MemoryPool<MemoryBlockType>::~MemoryPool() {
 #ifndef D_DISABLE_MEMPOOL
     clear();
@@ -123,30 +124,30 @@ MemoryPool<MemoryBlockType>::~MemoryPool() {
 }
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 void MemoryPool<MemoryBlockType>::setPageSize(s32 size) {
     s32 count = (size + sizeof(SMemoryWithPage) - 1) / sizeof(SMemoryWithPage);
     mMemoryPoolPageSize = count * sizeof(SMemoryWithPage);
 }
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 MemoryBlockType* MemoryPool<MemoryBlockType>::allocate() {
 #ifdef D_DISABLE_MEMPOOL
-    return (MemoryBlockType*) ::malloc(sizeof(MemoryBlockType));
+    return (MemoryBlockType*)::malloc(sizeof(MemoryBlockType));
 #else
 
-    if(mAvailablePagesSize > 0) {
-        SMemoryPage *curPage = mAvailablePages;
-        MemoryBlockType *retVal = (MemoryBlockType*) curPage->mAvailableStack[--(curPage->mAvailableStackSize)];
-        if(curPage->mAvailableStackSize == 0) {
+    if (mAvailablePagesSize > 0) {
+        SMemoryPage* curPage = mAvailablePages;
+        MemoryBlockType* retVal = (MemoryBlockType*)curPage->mAvailableStack[--(curPage->mAvailableStackSize)];
+        if (curPage->mAvailableStackSize == 0) {
             --mAvailablePagesSize;
             mAvailablePages = curPage->mNext;
             DASSERT(mAvailablePagesSize == 0 || mAvailablePages->mAvailableStackSize > 0);
             curPage->mNext->mPrevious = curPage->mPrevious;
             curPage->mPrevious->mNext = curPage->mNext;
 
-            if(mUnavailablePagesSize++ == 0) {
+            if (mUnavailablePagesSize++ == 0) {
                 mUnavailablePages = curPage;
                 curPage->mNext = curPage;
                 curPage->mPrevious = curPage;
@@ -160,36 +161,36 @@ MemoryBlockType* MemoryPool<MemoryBlockType>::allocate() {
 
         DASSERT(mAvailablePagesSize == 0 || mAvailablePages->mAvailableStackSize > 0);
         return retVal;
-    }//if
+    } // if
 
-    mAvailablePages = (SMemoryPage *) ::malloc(sizeof(SMemoryPage));
-    if(mAvailablePages == 0) {
+    mAvailablePages = (SMemoryPage*)::malloc(sizeof(SMemoryPage));
+    if (mAvailablePages == 0) {
         return 0;
     }
     mAvailablePagesSize = 1;
 
-    if(initPage(mAvailablePages, mAvailablePages) == false) {
+    if (initPage(mAvailablePages, mAvailablePages) == false) {
         return 0;
     }
     // If this assert hits, we couldn't allocate even 1 mBlock per page. Increase the page size
     DASSERT(mAvailablePages->mAvailableStackSize > 1);
 
-    return (MemoryBlockType*) mAvailablePages->mAvailableStack[--mAvailablePages->mAvailableStackSize];
+    return (MemoryBlockType*)mAvailablePages->mAvailableStack[--mAvailablePages->mAvailableStackSize];
 #endif
 }
 
 
-template<class MemoryBlockType>
-void MemoryPool<MemoryBlockType>::release(MemoryBlockType *m) {
+template <class MemoryBlockType>
+void MemoryPool<MemoryBlockType>::release(MemoryBlockType* m) {
 #ifdef D_DISABLE_MEMPOOL
     ::free(m);
     return;
 #else
     // Find the page this mBlock is in and return it.
-    SMemoryWithPage *memoryWithPage = (SMemoryWithPage*) m;
-    SMemoryPage *curPage = memoryWithPage->mParentPage;
+    SMemoryWithPage* memoryWithPage = (SMemoryWithPage*)m;
+    SMemoryPage* curPage = memoryWithPage->mParentPage;
 
-    if(curPage->mAvailableStackSize == 0) {
+    if (curPage->mAvailableStackSize == 0) {
         // The page is in the unavailable list so move it to the available list
         curPage->mAvailableStack[curPage->mAvailableStackSize++] = memoryWithPage;
         mUnavailablePagesSize--;
@@ -198,10 +199,10 @@ void MemoryPool<MemoryBlockType>::release(MemoryBlockType *m) {
         curPage->mNext->mPrevious = curPage->mPrevious;
         curPage->mPrevious->mNext = curPage->mNext;
 
-        if(mUnavailablePagesSize > 0 && curPage == mUnavailablePages)
+        if (mUnavailablePagesSize > 0 && curPage == mUnavailablePages)
             mUnavailablePages = mUnavailablePages->mNext;
 
-        if(mAvailablePagesSize++ == 0) {
+        if (mAvailablePagesSize++ == 0) {
             mAvailablePages = curPage;
             curPage->mNext = curPage;
             curPage->mPrevious = curPage;
@@ -214,10 +215,9 @@ void MemoryPool<MemoryBlockType>::release(MemoryBlockType *m) {
     } else {
         curPage->mAvailableStack[curPage->mAvailableStackSize++] = memoryWithPage;
 
-        if(curPage->mAvailableStackSize == blocksPerPage() &&
-            mAvailablePagesSize >= D_MEMPOOL_MAX_PAGE) {
+        if (curPage->mAvailableStackSize == blocksPerPage() && mAvailablePagesSize >= D_MEMPOOL_MAX_PAGE) {
             // After a certain point, just deallocate empty pages rather than keep them around
-            if(curPage == mAvailablePages) {
+            if (curPage == mAvailablePages) {
                 mAvailablePages = curPage->mNext;
                 DASSERT(mAvailablePages->mAvailableStackSize > 0);
             }
@@ -233,45 +233,45 @@ void MemoryPool<MemoryBlockType>::release(MemoryBlockType *m) {
 }
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 void MemoryPool<MemoryBlockType>::clear() {
 #ifdef D_DISABLE_MEMPOOL
     return;
 #else
     SMemoryPage *cur, *freed;
 
-    if(mAvailablePagesSize > 0) {
+    if (mAvailablePagesSize > 0) {
         cur = mAvailablePages;
 #ifdef _MSC_VER
-#pragma warning(disable:4127)   // conditional expression is constant
+#pragma warning(disable : 4127) // conditional expression is constant
 #endif
-        while(true) {
+        while (true) {
             free(cur->mAvailableStack);
             free(cur->mBlock);
             freed = cur;
             cur = cur->mNext;
-            if(cur == mAvailablePages) {
-                free(freed);
-                break;
-            }
-            free(freed);
-        }// while
-    }//if
-
-    if(mUnavailablePagesSize > 0) {
-        cur = mUnavailablePages;
-        while(1) {
-            free(cur->mAvailableStack);
-            free(cur->mBlock);
-            freed = cur;
-            cur = cur->mNext;
-            if(cur == mUnavailablePages) {
+            if (cur == mAvailablePages) {
                 free(freed);
                 break;
             }
             free(freed);
         } // while
-    }//if
+    }     // if
+
+    if (mUnavailablePagesSize > 0) {
+        cur = mUnavailablePages;
+        while (1) {
+            free(cur->mAvailableStack);
+            free(cur->mBlock);
+            freed = cur;
+            cur = cur->mNext;
+            if (cur == mUnavailablePages) {
+                free(freed);
+                break;
+            }
+            free(freed);
+        } // while
+    }     // if
 
     mAvailablePagesSize = 0;
     mUnavailablePagesSize = 0;
@@ -279,29 +279,29 @@ void MemoryPool<MemoryBlockType>::clear() {
 }
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 s32 MemoryPool<MemoryBlockType>::blocksPerPage(void) const {
     return mMemoryPoolPageSize / sizeof(SMemoryWithPage);
 }
 
 
-template<class MemoryBlockType>
+template <class MemoryBlockType>
 bool MemoryPool<MemoryBlockType>::initPage(SMemoryPage* page, SMemoryPage* iPrevious) {
     const s32 bpp = blocksPerPage();
-    page->mBlock = (SMemoryWithPage*) ::malloc(mMemoryPoolPageSize);
+    page->mBlock = (SMemoryWithPage*)::malloc(mMemoryPoolPageSize);
 
-    if(page->mBlock == 0) {
+    if (page->mBlock == 0) {
         return false;
     }
-    page->mAvailableStack = (SMemoryWithPage**) ::malloc(sizeof(SMemoryWithPage*)*bpp);
-    if(page->mAvailableStack == 0) {
+    page->mAvailableStack = (SMemoryWithPage**)::malloc(sizeof(SMemoryWithPage*) * bpp);
+    if (page->mAvailableStack == 0) {
         ::free(page->mBlock);
         return false;
     }
-    SMemoryWithPage *curBlock = page->mBlock;
-    SMemoryWithPage **curStack = page->mAvailableStack;
+    SMemoryWithPage* curBlock = page->mBlock;
+    SMemoryWithPage** curStack = page->mAvailableStack;
     s32 i = 0;
-    while(i < bpp) {
+    while (i < bpp) {
         curBlock->mParentPage = page;
         curStack[i] = curBlock++;
         i++;
@@ -321,9 +321,6 @@ typedef MemoryPool<u8[2048]> CMemoryPool2048;
 typedef MemoryPool<u8[4096]> CMemoryPool4096;
 typedef MemoryPool<u8[8192]> CMemoryPool8192;
 typedef MemoryPool<u8[10240]> CMemoryPool10K;
-
-
-
 
 
 
@@ -365,38 +362,39 @@ private:
     ~MemPool();
 
     enum EMemTag {
-        TAG_FREE = 0,   // free tag, must=0
+        TAG_FREE = 0, // free tag, must=0
         TAG_MEM_POOL,
         TAG_MEM_NEW
     };
 
     struct MemDebug {
-        const s8* mLabel;
-        const s8* mFile;
-        s32 mLine;
-        s32 mAllocSize;
+        const s8* mLabel = nullptr;
+        const s8* mFile = nullptr;
+        s32 mLine = 0;
+        s32 mAllocSize = 0;
     };
 
     struct MemBlock {
-        s32 mSize; // including the header and possibly tiny fragments
-        s16 mTag;  // a tag of 0 is a free block
-        s16 mID;   // should be pool's ID
-        MemBlock* mNext;
-        MemBlock* mPrev;
+        s32 mSize = 0; // including the header and possibly tiny fragments
+        s16 mTag = 0;  // a tag of 0 is a free block
+        s16 mID = 0;   // should be pool's ID
+        MemBlock* mNext = nullptr;
+        MemBlock* mPrev = nullptr;
 #ifdef DDEBUG
         MemDebug mDebugInfo;
 #endif
     };
-    s32 mTotal;            // total bytes malloced, including header
-    s32 mUsed;             // total bytes used
-    s16 mPoolID;           // pool's ID
-    s16 mPad;              // reserve
+    s32 mTotal; // total bytes malloced, including header
+    s32 mUsed;  // total bytes used
+    s32 mCountNew;
+    s16 mPoolID; // pool's ID
+    s16 mPad;    // reserve
     std::mutex mMutex;
-    MemBlock mBlockList;   // start/end cap for linked list
+    MemBlock mBlockList; // start/end cap for linked list
     MemBlock* mRover;
 };
 
-}//namespace app
+} // namespace app
 
 
 #endif // APP_MEMORYPOOL_H

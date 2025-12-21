@@ -10,6 +10,7 @@ AntEngine
 ----
 + 1. openssl-3.5.2, commit_id: 0893a62353583343eb712adef6debdfbe597c227
 + 2. zlib, jsoncpp, mysqlclient
++ 3. lua v5.5.0
 
 ## Development environment
 ----

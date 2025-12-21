@@ -1,5 +1,6 @@
 #pragma once
 
+#include "TList.h"
 #include "HandleFile.h"
 #include "Net/HTTP/HttpLayer.h"
 
@@ -26,25 +27,23 @@ public:
 
 
 private:
-    // RingBuffer mBuf;
-    SRingBufPos mChunkPos;
-    RingBuffer* mBody;
     RequestFD mReqs;
-    HandleFile mFile;
-    net::HttpMsg* mMsg;
-    usz mOffset;
+    TList<Packet> mCache;
+    HandleFile* mFile = nullptr; // backend
+    net::HttpMsg* mMsg = nullptr;
+    net::HttpMsg* mMsgResp = nullptr; // back msg
+    usz mOffset = 0;
     bool mReadOnly;
-    bool mLayerClosed;
-    bool mReqBodyFinish;
-    bool mNoBackend;
-    s32 sendRespHead(net::HttpMsg* msg);
+    bool mReqBodyFinish = true;
 
+    s32 sendRespHead(net::HttpMsg* req, s32 err, const s8* body, bool chunk, bool send);
     void onFileRead(RequestFD* it);
     void onFileWrite(RequestFD* it);
     void onFileClose(Handle* it);
 
     s32 launchRead();
     s32 launchWrite();
+    s32 postResp();
 
     static void funcOnRead(RequestFD* it) {
         HttpEvtFile& nd = *(HttpEvtFile*)it->mUser;

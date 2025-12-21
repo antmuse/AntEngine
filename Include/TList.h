@@ -228,7 +228,7 @@ public:
         mLast = node;
     }
 
-    void emplaceBack(T& element) {
+    void moveBack(T&& element) {
         SKListNode* node = mAllocator.allocate(1);
         mAllocator.construct(node, std::move(element));
 
@@ -260,7 +260,7 @@ public:
         }
     }
 
-    void emplaceFront(T& element) {
+    void moveFront(T&& element) {
         SKListNode* node = mAllocator.allocate(1);
         mAllocator.construct(node, std::move(element));
 
@@ -338,7 +338,7 @@ public:
             mLast = node;
         }
     }
-    void emplaceAfter(const Iterator& it, T& element) {
+    void moveAfter(const Iterator& it, T&& element) {
         SKListNode* node = mAllocator.allocate(1);
         mAllocator.construct(node, std::move(element));
 
@@ -375,7 +375,7 @@ public:
             mFirst = node;
         }
     }
-    void emplaceBefore(const Iterator& it, T& element) {
+    void moveBefore(const Iterator& it, T&& element) {
         SKListNode* node = mAllocator.allocate(1);
         mAllocator.construct(node, std::move(element));
 

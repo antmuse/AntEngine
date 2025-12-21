@@ -47,7 +47,7 @@
     <ClCompile Include="..\..\Depend\lua\src\ltable.c" />
     <ClCompile Include="..\..\Depend\lua\src\ltablib.c" />
     <ClCompile Include="..\..\Depend\lua\src\ltm.c" />
-    <ClCompile Include="..\..\Depend\lua\src\lua.c" />
+    <ClCompile Include="..\..\Depend\lua\src\luac.c" />
     <ClCompile Include="..\..\Depend\lua\src\lundump.c" />
     <ClCompile Include="..\..\Depend\lua\src\lutf8lib.c" />
     <ClCompile Include="..\..\Depend\lua\src\lvm.c" />

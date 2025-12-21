@@ -200,7 +200,7 @@ TlsContext::~TlsContext() {
 
 s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     if (mTlsContext) {
-        return 0;
+        return EE_OK;
     }
     SSL_CTX* ssl_ctx = SSL_CTX_new(TLS_method());
     if (!ssl_ctx) {
@@ -232,10 +232,8 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
         DLOG(ELL_ERROR, "set version off err = %s", cfg.mTlsVersionOff.data());
     }
 
-    s32 ret = addTrustedCerts(G_CA_CERT, strlen(G_CA_CERT));
-    ret = addTrustedCerts(G_CA_CERT1, strlen(G_CA_CERT1));
-    ret = addTrustedCerts(G_CA_ROOT_CERT, strlen(G_CA_ROOT_CERT));
-    Packet buf(1024);
+    s32 ret = EE_OK;
+    Packet buf;
     FileRWriter keyfile;
     if (!cfg.mTlsPassword.empty()) {
         SSL_CTX_set_default_passwd_cb(static_cast<SSL_CTX*>(mTlsContext), AppTlsPasswordCallback);
@@ -244,34 +242,44 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     if (keyfile.openFile(cfg.mTlsPathCA)) {
         buf.resize(keyfile.getFileSize());
         if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            if (EE_OK != addTrustedCerts(buf.getPointer(), buf.size())) {
-                DLOG(ELL_ERROR, "set CA err = %s", cfg.mTlsPathCA.data());
+            ret = addTrustedCerts(buf.getPointer(), buf.size());
+            if (EE_OK == ret) {
+                DLOG(ELL_INFO, "success load CA = %s", cfg.mTlsPathCA.data());
+            } else {
+                DLOG(ELL_ERROR, "fail to load CA = %s", cfg.mTlsPathCA.data());
             }
         }
     } else {
-        DLOG(ELL_ERROR, "fail to open CA file = %s", cfg.mTlsPathCA.data());
+        ret = addTrustedCerts(G_CA_CERT, strlen(G_CA_CERT));
+        DLOG(ELL_ERROR, "fail to open CA file = %s, use static-CA = %d", cfg.mTlsPathCA.data(), ret);
     }
     if (keyfile.openFile(cfg.mTlsPathCert)) {
         buf.resize(keyfile.getFileSize());
         if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            if (EE_OK != setCert(buf.getPointer(), buf.size())) {
-                DLOG(ELL_ERROR, "set cert err = %s", cfg.mTlsPathCert.data());
+            ret = setCert(buf.getPointer(), buf.size());
+            if (EE_OK == ret) {
+                DLOG(ELL_INFO, "success load cert = %s", cfg.mTlsPathCert.data());
+            } else {
+                DLOG(ELL_ERROR, "fail to load cert = %s", cfg.mTlsPathCert.data());
             }
         }
     } else {
         ret = setCert(G_SERVER_CERT, strlen(G_SERVER_CERT));
-        DLOG(ELL_ERROR, "fail to open cert file = %s", cfg.mTlsPathCert.data());
+        DLOG(ELL_ERROR, "fail to open cert file = %s, use static-CERT = %d", cfg.mTlsPathCert.data(), ret);
     }
     if (keyfile.openFile(cfg.mTlsPathKey)) {
         buf.resize(keyfile.getFileSize());
         if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            if (EE_OK != setPrivateKey(buf.getPointer(), buf.size())) {
-                DLOG(ELL_ERROR, "set key err = %s", cfg.mTlsPathKey.data());
+            ret = setPrivateKey(buf.getPointer(), buf.size());
+            if (EE_OK == ret) {
+                DLOG(ELL_INFO, "success load key = %s", cfg.mTlsPathKey.data());
+            } else {
+                DLOG(ELL_ERROR, "fail to load key = %s", cfg.mTlsPathKey.data());
             }
         }
     } else {
         ret = setPrivateKey(G_SERVER_KEY, strlen(G_SERVER_KEY));
-        DLOG(ELL_ERROR, "fail to open key file = %s", cfg.mTlsPathKey.data());
+        DLOG(ELL_ERROR, "fail to load key = %s, use static-KEY = %d", cfg.mTlsPathKey.data(), ret);
     }
     if (!cfg.mTlsCiphers.empty()) {
         if (!SSL_CTX_set_cipher_list(static_cast<SSL_CTX*>(mTlsContext), cfg.mTlsCiphers.data())) {

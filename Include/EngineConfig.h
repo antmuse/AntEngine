@@ -50,7 +50,7 @@ public:
         String mTlsPathKey;                           // tls server.key
         String mTlsVersionOff = "v1.0, v1.1";         // tls disable version:  v1.0, v1.1, v1.2, v1.3
         String mTlsCiphers = "HIGH:!aNULL:!MD5";      // for TLSv1.2 and below
-        String mTlsCiphersuites = "HIGH:!aNULL:!MD5"; // for TLSv1.3
+        String mTlsCiphersuites = "";                 // for TLSv1.3
         String mTlsPassword;                          // password for key
     };
     struct WebsiteCfg {

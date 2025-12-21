@@ -48,10 +48,11 @@ void MemPool::releaseMemPool(MemPool* it) {
     free(it);
 }
 
-MemPool::MemPool() : mTotal(0), mUsed(0), mPoolID(AppGenPoolID()), mRover(nullptr) {
+MemPool::MemPool() : mTotal(0), mUsed(0), mCountNew(0), mPoolID(AppGenPoolID()), mRover(nullptr) {
 }
 
 MemPool::~MemPool() {
+    DASSERT(mUsed == 0 && 0 == mCountNew);
 }
 
 void MemPool::initPool(s32 total) {
@@ -80,26 +81,28 @@ s32 MemPool::getAvailable() {
 
 void MemPool::release(void* ptr) {
     if (!ptr) {
-        Logger::logError("MemPool::release: NULL pointer");
+        DLOG(ELL_ERROR, "MemPool::release: NULL pointer");
+        return;
     }
     std::lock_guard<std::mutex> ak(mMutex);
 
     MemBlock* block = (MemBlock*)((s8*)ptr - sizeof(MemBlock));
     if (block->mID != mPoolID) {
-        Logger::logError("MemPool::release: freed a pointer without mPoolID");
+        DLOG(ELL_ERROR, "MemPool::release: freed a pointer without mPoolID");
     }
     if (block->mTag == TAG_FREE) {
-        Logger::logError("MemPool::release: freed a freed pointer");
+        DLOG(ELL_ERROR, "MemPool::release: freed a freed pointer");
     }
     if (block->mTag == TAG_MEM_NEW) {
         block->mTag = TAG_FREE;
         free(block);
+        --mCountNew;
         return;
     }
 
     // check the memory trash tester
     if (*(s32*)((s8*)block + block->mSize - 4) != mPoolID) {
-        Logger::logError("MemPool::release: memory block wrote past end");
+        DLOG(ELL_ERROR, "MemPool::release: memory block wrote past end");
     }
 
     mUsed -= block->mSize;
@@ -160,8 +163,8 @@ s8* MemPool::allocate(s32 wsize) {
 #endif
 
     // scan through the block list looking for the first free block of sufficient size
-    wsize += sizeof(MemBlock);         // account for size of block header
-    wsize += sizeof(s32);              // space for memory trash tester
+    wsize += sizeof(MemBlock);                  // account for size of block header
+    wsize += sizeof(s32);                       // space for memory trash tester
     wsize = AppAlignSize(wsize, sizeof(void*)); // align to 32/64 bit boundary
 
     std::lock_guard<std::mutex> ak(mMutex);
@@ -173,10 +176,10 @@ s8* MemPool::allocate(s32 wsize) {
         if (tmp_rover == start) {
             // scaned all the way around the list
 #ifdef DDEBUG
-            Logger::logError("MemPool::allocate: failed on allocation of %d bytes from the pool: %s, line: %d (%s)",
+            DLOG(ELL_WARN, "MemPool::allocate: failed on allocation of %d bytes from the pool: %s, line: %d (%s)",
                 wsize, file, line, label);
 #else
-            Logger::logError("MemPool::allocate: failed on allocation of %d bytes from the pool", wsize);
+            DLOG(ELL_WARN, "MemPool::allocate: failed on allocation of %d bytes from the pool", wsize);
 #endif
             MemBlock* ret = (MemBlock*)malloc(wsize);
             ret->mSize = wsize;
@@ -190,6 +193,7 @@ s8* MemPool::allocate(s32 wsize) {
             ret->mDebugInfo.mLine = line;
             ret->mDebugInfo.mAllocSize = allocSize;
 #endif
+            ++mCountNew;
             return ((s8*)ret + sizeof(MemBlock));
         }
         if (tmp_rover->mTag) {
@@ -256,12 +260,12 @@ void MemPool::checkPool() {
             break; // all blocks have been hit
         }
         if ((s8*)block + block->mSize != (s8*)block->mNext)
-            Logger::logError("MemPool::checkPool: block size does not touch the next block");
+            DLOG(ELL_ERROR, "MemPool::checkPool: block size does not touch the next block");
         if (block->mNext->mPrev != block) {
-            Logger::logError("MemPool::checkPool: next block doesn't have proper back link");
+            DLOG(ELL_ERROR, "MemPool::checkPool: next block doesn't have proper back link");
         }
         if (!block->mTag && !block->mNext->mTag) {
-            Logger::logError("MemPool::checkPool: two consecutive free blocks");
+            DLOG(ELL_ERROR, "MemPool::checkPool: two consecutive free blocks");
         }
     }
 }

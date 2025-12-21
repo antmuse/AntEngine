@@ -75,21 +75,10 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
         }
     } else { // readonly
         if (net::HTTP_GET == cmd && 1 == checkDisk) {
-            msg->getHeadOut().add("Cache-Control", "public, max-age=6000");
             evt = new HttpEvtFile(true);
         } else {
             evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
         }
-    }
-
-    const StringView str = HttpMsg::getMimeType(requrl.mData, requrl.mLen);
-    msg->getHeadOut().setContentType(str);
-
-    StringView svv("If-Range", sizeof("If-Range") - 1);
-    svv = msg->getHeadIn().get(svv);
-    if (svv.mLen > 0) {
-        svv.set("Range", sizeof("Range") - 1);
-        // msg->getHeadOut().add()
     }
 
     msg->setEvent(evt);

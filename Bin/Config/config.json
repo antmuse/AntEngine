@@ -10,7 +10,7 @@
     "Process": 0, //进程数
     "TLS": {
         "Ciphers": "HIGH:!aNULL:!MD5", //for TLSv1.2
-        "Ciphersuites": "HIGH:!aNULL:!MD5", //for TLSv1.3
+        "Ciphersuites": "", //for TLSv1.3
         "CA": "Config/eng_ca.crt",
         "Cert": "Config/eng.crt",
         "Key": "Config/eng.key",

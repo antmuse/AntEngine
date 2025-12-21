@@ -98,9 +98,6 @@
     <ClCompile Include="..\..\Depend\lua\src\ltm.c">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Depend\lua\src\lua.c">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Depend\lua\src\lundump.c">
       <Filter>Source</Filter>
     </ClCompile>
@@ -111,6 +108,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Depend\lua\src\lzio.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\lua\src\luac.c">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
