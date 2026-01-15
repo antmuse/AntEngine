@@ -168,6 +168,7 @@ const StringView HttpMsg::getMimeType(const s8* filename, usz iLen) {
 
 RequestFD* HttpMsg::buildReq() {
     if (!mLayer) {
+        DLOG(ELL_ERROR, "buildReq fail: null connection");
         return nullptr;
     }
     usz olen = sumCacheSize();
@@ -202,6 +203,7 @@ RequestFD* HttpMsg::buildReq() {
 
     it->mUsed = dst - it->mData;
     dumpHead(it);
+    dumpBody(it);
     return it;
 }
 

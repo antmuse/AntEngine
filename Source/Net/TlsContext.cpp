@@ -87,11 +87,19 @@ void AppInitTlsLib() {
     if (!G_TLS_LOCK.tryLock()) {
         return;
     }
-    // OPENSSL_no_config();
-    SSL_library_init();
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    OPENSSL_config(nullptr);
     SSL_load_error_strings();
-    OpenSSL_add_all_algorithms();
-    // atexit(AppUninitTlsLib);
+    SSL_library_init();
+#elif OPENSSL_VERSION_NUMBER < 0x10101000L
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, nullptr);
+#else
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG | OPENSSL_INIT_ATFORK, nullptr);
+#endif
+    if (!RAND_poll()) {
+        DLOG(ELL_WARN, "OpenSSL: fail to seed random number generator.");
+    }
+
     AppInitRingBIO();
 
     GUSER_DATA_IDX = SSL_get_ex_new_index(0, NULL, NULL, NULL, NULL);
@@ -155,26 +163,28 @@ static s32 FuncSelectALPN(SSL* ssl, const u8** out, u8* outlen, const u8* in, u3
 }
 
 
-
-static inline void AppTlsLog(const SSL* ssl, s32 w, s32 flag, const s8* msg) {
-    if (w & flag) {
-        Logger::logInfo("AppTlsLog>>[%s]-[%s-%s]", msg, SSL_state_string(ssl), SSL_state_string_long(ssl));
-    }
-}
-
-
 static void AppFunTlsDebug(const SSL* ssl, s32 where, s32 ret) {
-    if (ret == 0) {
-        fprintf(stderr, "info_callback, error occurred.\n");
-        return;
+    const s8* str;
+    s32 ww = where & ~SSL_ST_MASK;
+    if (ww & SSL_ST_CONNECT) {
+        str = "connect";
+    } else if (ww & SSL_ST_ACCEPT) {
+        str = "accept";
+    } else {
+        str = "undefined";
     }
-    AppTlsLog(ssl, where, SSL_CB_LOOP, "LOOP");
-    AppTlsLog(ssl, where, SSL_CB_EXIT, "EXIT");
-    AppTlsLog(ssl, where, SSL_CB_READ, "READ");
-    AppTlsLog(ssl, where, SSL_CB_WRITE, "WRITE");
-    AppTlsLog(ssl, where, SSL_CB_ALERT, "ALERT");
-    AppTlsLog(ssl, where, SSL_CB_HANDSHAKE_START, "HSHAKE-START");
-    AppTlsLog(ssl, where, SSL_CB_HANDSHAKE_DONE, "HSHAKE-DONE");
+    // str = SSL_state_string(ssl);
+    if (where & SSL_CB_ALERT) {
+        DLOG(ELL_WARN, "[ALERT] %s:%s:%s", str, SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+    } else if (where & SSL_CB_LOOP) {
+        DLOG(ELL_INFO, "[LOOP] %s:%s", str, SSL_state_string_long(ssl));
+    } else if (where & SSL_CB_EXIT) {
+        DLOG(ELL_INFO, "[EXIT] %s:%s", str, SSL_state_string_long(ssl));
+    } else if (where & (SSL_CB_HANDSHAKE_START | SSL_CB_HANDSHAKE_DONE)) {
+        DLOG(ELL_INFO, "[HSHAKE] %s:%s", str, SSL_state_string_long(ssl));
+    } else {
+        DLOG(ELL_INFO, "[UNDEF] %s:%s", str, SSL_state_string_long(ssl));
+    }
 }
 
 
@@ -224,6 +234,9 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     SSL_CTX_set_options(ssl_ctx, SSL_OP_SINGLE_DH_USE);
 #if ((OPENSSL_VERSION_NUMBER < 0x30000000L) && defined(SSL_CTX_set_ecdh_auto))
     SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
+#endif
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+    SSL_CTX_set_dh_auto(ssl_ctx, 1);
 #endif
     if (cfg.mPreferServerCiphers) {
         SSL_CTX_set_options(ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
@@ -371,6 +384,7 @@ s32 TlsContext::setVerifyFlags(s32 iflags, s32 depth) {
     return EE_OK;
 }
 
+
 s32 TlsContext::addTrustedCerts(const s8* cert, usz length) {
     X509* x509;
     X509_STORE* trusted_store = SSL_CTX_get_cert_store(static_cast<SSL_CTX*>(mTlsContext));
@@ -396,7 +410,6 @@ s32 TlsContext::addTrustedCerts(const s8* cert, usz length) {
     DLOG(ELL_INFO, "LoadCA count = %d", ncerts);
     return ncerts == 0 ? EE_ERROR : 0;
 }
-
 
 
 s32 TlsContext::setCert(const s8* cert, usz length) {

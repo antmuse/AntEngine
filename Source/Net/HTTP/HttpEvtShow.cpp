@@ -56,7 +56,7 @@ s32 HttpEvtShow::onReqBodyDone(net::HttpMsg* msg) {
     Packet& body = msg->getBody();
     printf("%.*s", static_cast<s32>(body.size()), body.data());
     body.clear();
-    printf("-----------------body-end-------------\n");
+    printf("\n-----------------body-end-------------\n");
     return EE_OK;
 }
 

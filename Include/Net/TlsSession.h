@@ -60,7 +60,7 @@ public:
 
     void setConnectState();
 
-    void setHost(const s8* mHostName);
+    void setHost(const String& it);
 
     s32 write(const void* buf, s32 len);
 

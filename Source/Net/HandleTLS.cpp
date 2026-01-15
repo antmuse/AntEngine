@@ -35,8 +35,6 @@ namespace net {
 HandleTLS::HandleTLS() :
     mTlsSession(nullptr), mFlyWrites(nullptr), mFlyReads(nullptr), mLandWrites(nullptr), mLandReads(nullptr) {
     mLoop = &Engine::getInstance().getLoop();
-    mHostName[0] = 0;
-    mHostName[sizeof(mHostName) - 1] = 0;
 }
 
 
@@ -66,7 +64,6 @@ void HandleTLS::init(const TlsContext& tlsCTX) {
     }
     mRead.mUser = nullptr;  // lanuch a read action if nullptr, else can't
     mWrite.mUser = nullptr; // lanuch a write action if nullptr, else can't
-    mHostName[0] = 0;
     mCommitPos = mOutBuffers.getHead();
 }
 
@@ -181,18 +178,6 @@ void HandleTLS::doRead() {
     } while (gogo && mFlyReads);
 
     DASSERT(nullptr == mLandReads);
-}
-
-
-s32 HandleTLS::setHost(const s8* host, usz length) {
-    if (!host || length >= sizeof(mHostName)) {
-        return EE_ERROR;
-    }
-    memcpy(mHostName, host, length);
-    mHostName[length] = '\0';
-
-    ((TlsSession*)mTlsSession)->setHost(mHostName);
-    return 0;
 }
 
 
@@ -444,8 +429,10 @@ void HandleTLS::onConnect(RequestFD* it) {
     DASSERT(it == &mWrite);
     mWrite.mUser = nullptr;
     mFlag = mTCP.getFlag();
-
     if (EE_OK == it->mError) {
+        if (mHostName.size()) {
+            ((TlsSession*)mTlsSession)->setHost(mHostName);
+        }
         ((TlsSession*)mTlsSession)->setConnectState();
         mWrite.mCall = HandleTLS::funcOnWriteHello;
         mRead.mCall = HandleTLS::funcOnReadHello;

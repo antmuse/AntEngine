@@ -284,8 +284,8 @@ void TlsSession::setConnectState() {
     SSL_set_connect_state(mSSL);
 }
 
-void TlsSession::setHost(const s8* hostName) {
-    SSL_set_tlsext_host_name(mSSL, hostName);
+void TlsSession::setHost(const String& it) {
+    SSL_set_tlsext_host_name(mSSL, it.data());
 }
 
 s32 TlsSession::write(const void* buf, s32 len) {

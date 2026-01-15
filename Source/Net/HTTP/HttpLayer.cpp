@@ -48,6 +48,8 @@ s32 HttpLayer::launch(HttpMsg* msg) {
         return EE_ERROR;
     }
     mHTTPS = msg->getURL().isHttps();
+    StringView host = msg->getURL().getHost();
+    mTCP.setHost(host);
     if (!mHTTPS) {
         mTCP.getHandleTCP().setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.getHandleTCP().setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
@@ -55,11 +57,10 @@ s32 HttpLayer::launch(HttpMsg* msg) {
         mTCP.setClose(EHT_TCP_LINK, HttpLayer::funcOnClose, this);
         mTCP.setTime(HttpLayer::funcOnTime, 20 * 1000, 30 * 1000, -1);
     }
-    StringView host = msg->getURL().getHost();
     NetAddress addr(msg->getURL().getPort());
-    s8 shost[256]; // 255, Maximum host name defined in RFC 1035
-    snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
-    addr.setDomain(shost);
+    // s8 shost[256]; // 255, Maximum host name defined in RFC 1035
+    // snprintf(shost, sizeof(shost), "%.*s", (s32)(host.mLen), host.mData);
+    addr.setDomain(mTCP.getHost().data());
 
     RequestFD* nd = createMem(4 * 1024);
     nd->mUser = this;

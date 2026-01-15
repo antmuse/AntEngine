@@ -24,6 +24,30 @@
 
 
 using namespace app;
+const s8* G_CFG_CONTENT = R"({
+    "Daemon": false,
+    "Print": 1, //0=disable print, 1=main process print, 2=all process print
+    "LogPath": "Log/",
+    "PidFile": "Log/pid.txt",
+    "ShareMem": "GMEM/MainMem.map",
+    "ShareMemSize": 1,
+    "AcceptPost": 10,
+    "ThreadPool": 3,
+    "Process": 0,
+    "TLS": {
+        "Ciphers": "HIGH:!aNULL:!MD5", //for TLSv1.2
+        "Ciphersuites": "", //for TLSv1.3
+        "CA": "Config/eng_ca.crt",
+        "Cert": "Config/eng.crt",
+        "Key": "Config/eng.key",
+        "VersionOff": "v1.0, v1.1",
+        "VerifyDepth": 5,
+        "HttpALPN": 1,
+        "PreferServerCiphers": false,
+        "Debug": true,
+        "Verify": 0
+    }
+})";
 
 int main(int argc, char** argv) {
     const char* url = "https://www.baidu.com";
@@ -32,7 +56,7 @@ int main(int argc, char** argv) {
     }
     printf("main>>argc=%d, url=%s\n", argc, url);
     Engine& eng = Engine::getInstance();
-    if (!eng.init(argv[0], false, "{}")) {
+    if (!eng.init(argv[0], false, G_CFG_CONTENT)) {
         printf("main>> engine init fail\n");
         return 1;
     }

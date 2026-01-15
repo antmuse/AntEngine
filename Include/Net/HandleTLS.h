@@ -68,7 +68,15 @@ public:
         return mTCP.close();
     }
 
-    s32 setHost(const s8* hostName, usz length);
+    const String& getHost() const {
+        return mHostName;
+    }
+    void setHost(const String& it) {
+        mHostName = it;
+    }
+    void setHost(const StringView& it) {
+        mHostName = it;
+    }
 
     const NetAddress& getLocal()const {
         return mTCP.getLocal();
@@ -173,7 +181,7 @@ protected:
     RequestFD* mLandReads;
     void* mTlsSession;
     u8 mALPN = 1; // 1: http1, 2: http2
-    s8 mHostName[256];
+    String mHostName;   // set hostname when connect success
     RingBuffer mInBuffers;
     RingBuffer mOutBuffers;
     SRingBufPos mCommitPos;

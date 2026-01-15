@@ -20,7 +20,7 @@ s32 HttpsClient::open(const String& addr) {
     it->mUser = this;
     it->mCall = HttpsClient::funcOnConnect;
     s32 ret = mTCP.open(addr, it);
-    mTCP.setHost("www.baidu.com", sizeof("www.baidu.com") - 1);
+    mTCP.setHost("www.baidu.com");
     if (EE_OK != ret) {
         RequestFD::delRequest(it);
     }
