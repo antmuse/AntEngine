@@ -24,6 +24,9 @@
 
 
 #include "Net/HandleTLS.h"
+#include <openssl/conf.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #include "Net/Acceptor.h"
 #include "Net/TlsSession.h"
 #include "Engine.h"
@@ -45,8 +48,7 @@ HandleTLS::~HandleTLS() {
 
 void HandleTLS::uninit() {
     if (mTlsSession) {
-        TlsSession* session = (TlsSession*)(mTlsSession);
-        delete session;
+        delete mTlsSession;
         mTlsSession = nullptr;
         mInBuffers.uninit();
         mOutBuffers.uninit();
@@ -58,9 +60,8 @@ void HandleTLS::init(const TlsContext& tlsCTX) {
     if (!mTlsSession) {
         mInBuffers.init();
         mOutBuffers.init();
-        SSL_CTX* ssl_ctx = reinterpret_cast<SSL_CTX*>(tlsCTX.getTlsContext());
-        DASSERT(ssl_ctx);
-        mTlsSession = new TlsSession(ssl_ctx, &mInBuffers, &mOutBuffers, this);
+        DASSERT(tlsCTX.getTlsContext());
+        mTlsSession = new TlsSession(tlsCTX, &mInBuffers, &mOutBuffers, this);
     }
     mRead.mUser = nullptr;  // lanuch a read action if nullptr, else can't
     mWrite.mUser = nullptr; // lanuch a write action if nullptr, else can't
@@ -69,7 +70,7 @@ void HandleTLS::init(const TlsContext& tlsCTX) {
 
 
 s32 HandleTLS::handshake() {
-    TlsSession* session = (TlsSession*)mTlsSession;
+    TlsSession* session = mTlsSession;
 #ifdef DDEBUG
     assert(!session->isInitFinished() && "Handshake shouldn't be finished");
 #endif
@@ -140,7 +141,7 @@ void HandleTLS::landQueue(RequestFD*& que) {
 
 
 void HandleTLS::doRead() {
-    TlsSession* session = (TlsSession*)mTlsSession;
+    TlsSession* session = mTlsSession;
     bool gogo = true;
 
     do {
@@ -229,7 +230,7 @@ s32 HandleTLS::open(const String& addr, RequestFD* oit, const net::TlsContext* t
 
 s32 HandleTLS::open(const RequestAccept& accp, RequestFD* oit, const net::TlsContext* tlsctx) {
     init(tlsctx ? *tlsctx : Engine::getInstance().getTlsContext());
-    ((TlsSession*)mTlsSession)->setAcceptState();
+    mTlsSession->setAcceptState();
 
     mType = EHT_TCP_LINK;
     mTCP.setClose(EHT_TCP_LINK, HandleTLS::funcOnClose, this);
@@ -273,8 +274,7 @@ s32 HandleTLS::write(RequestFD* req) {
         return EE_OK;
     }
 
-    TlsSession* session = (TlsSession*)mTlsSession;
-    s32 wsz = session->write(req->mData, (s32)req->mUsed);
+    s32 wsz = mTlsSession->write(req->mData, (s32)req->mUsed);
     if (wsz > 0) {
         if ((u32)wsz >= req->mUsed) {
             // done
@@ -305,8 +305,7 @@ s32 HandleTLS::read(RequestFD* req) {
         return EE_OK;
     }
     StringView buf = req->getWriteBuf();
-    TlsSession* session = (TlsSession*)mTlsSession;
-    s32 wsz = session->read(buf.mData, (s32)buf.mLen);
+    s32 wsz = mTlsSession->read(buf.mData, (s32)buf.mLen);
     if (wsz > 0) {
         req->mUsed = wsz;
         AppPushRingQueueTail_1(mLandReads, req);
@@ -389,8 +388,7 @@ void HandleTLS::onReadHello(RequestFD* it) {
         mInBuffers.commitTailPos((s32)it->mUsed);
         s32 ret = handshake();
         if (EE_OK == ret) {
-            TlsSession* session = (TlsSession*)mTlsSession;
-            if (session->isInitFinished()) {
+            if (mTlsSession->isInitFinished()) {
                 it->mCall = HandleTLS::funcOnRead;
                 mWrite.mCall = HandleTLS::funcOnWrite;
 
@@ -431,9 +429,9 @@ void HandleTLS::onConnect(RequestFD* it) {
     mFlag = mTCP.getFlag();
     if (EE_OK == it->mError) {
         if (mHostName.size()) {
-            ((TlsSession*)mTlsSession)->setHost(mHostName);
+            mTlsSession->setHost(mHostName);
         }
-        ((TlsSession*)mTlsSession)->setConnectState();
+        mTlsSession->setConnectState();
         mWrite.mCall = HandleTLS::funcOnWriteHello;
         mRead.mCall = HandleTLS::funcOnReadHello;
         if (EE_OK == postRead()) {

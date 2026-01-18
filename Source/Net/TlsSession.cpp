@@ -23,8 +23,11 @@
  ***************************************************************************************************/
 
 
-#include "Engine.h"
 #include "Net/TlsSession.h"
+#include <openssl/conf.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "Engine.h"
 #include "Net/Hostcheck.h"
 #include "Logger.h"
 
@@ -171,174 +174,135 @@ static BIO* AppCreateBIO(RingBuffer* rb) {
 }
 
 
-enum EHostMatch {
-    EHM_MATCH = 0,
-    EHM_NO_MATCH,
-    EHM_BAD_CERT,
-    EHM_NO_SAN_PRESENT
-};
-
-static EHostMatch AppScanHost(X509* peer_cert, const s8* mHostName) {
-    EHostMatch result = EHM_NO_MATCH;
-    STACK_OF(GENERAL_NAME)* names
-        = (STACK_OF(GENERAL_NAME)*)(X509_get_ext_d2i(peer_cert, NID_subject_alt_name, nullptr, nullptr));
-    if (names == nullptr) {
-        return EHM_NO_SAN_PRESENT;
-    }
-
-    for (s32 i = 0; i < sk_GENERAL_NAME_num(names); ++i) {
-        GENERAL_NAME* name = sk_GENERAL_NAME_value(names, i);
-
-        if (name->type == GEN_DNS) {
-            const s8* common_name;
-            ASN1_STRING* str = name->d.dNSName;
-            if (str == nullptr) {
-                result = EHM_BAD_CERT;
-                break;
-            }
-
-            common_name = (const s8*)(ASN1_STRING_get0_data(str));
-            if (strlen(common_name) != (usz)(ASN1_STRING_length(str))) {
-                result = EHM_BAD_CERT;
-                break;
-            }
-
-            if (AppCheckHost(common_name, mHostName) == true) {
-                result = EHM_MATCH;
-                break;
-            }
-        }
-    }
-    sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
-
-    return result;
-}
-
-static EHostMatch AppMatchCommonName(X509* peer_cert, const s8* mHostName) {
-    s32 i = -1;
-    X509_NAME* name = X509_get_subject_name(peer_cert);
-    if (name == nullptr) {
-        return EHM_BAD_CERT;
-    }
-
-    while ((i = X509_NAME_get_index_by_NID(name, NID_commonName, i)) >= 0) {
-        ASN1_STRING* str;
-        const s8* common_name;
-        X509_NAME_ENTRY* name_entry = X509_NAME_get_entry(name, i);
-        if (name_entry == nullptr) {
-            return EHM_BAD_CERT;
-        }
-
-        str = X509_NAME_ENTRY_get_data(name_entry);
-        if (str == nullptr) {
-            return EHM_BAD_CERT;
-        }
-
-        common_name = (const s8*)(ASN1_STRING_get0_data(str));
-        if (strlen(common_name) != (usz)(ASN1_STRING_length(str))) {
-            return EHM_BAD_CERT;
-        }
-
-        if (AppCheckHost(common_name, mHostName) == true) {
-            return EHM_MATCH;
-        }
-    }
-
-    return EHM_NO_MATCH;
-}
-
-static EHostMatch AppMatchHost(X509* peer_cert, const s8* mHostName) {
-    EHostMatch result = AppScanHost(peer_cert, mHostName);
-    if (result == EHM_NO_SAN_PRESENT) {
-        result = AppMatchCommonName(peer_cert, mHostName);
-    }
-    return result;
-}
+s32 TlsSession::kUserDataIndex = -1;
 
 
-
-TlsSession::TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers, void* user) {
-    DASSERT(ssl_ctx);
-    SSL_CTX_up_ref(ssl_ctx);
+TlsSession::TlsSession(const TlsContext& ctx, RingBuffer* inBuffers, RingBuffer* outBuffers, void* user) {
+    SSL_CTX* ssl_ctx = static_cast<SSL_CTX*>(ctx.getTlsContext());
+    SSL_CTX_up_ref(ssl_ctx);  // grab for SSL_new 
     mSSL = SSL_new(ssl_ctx);
-    AppSetTlsUserData(mSSL, user);
-    mInBIO = AppCreateBIO(inBuffers);
-    mOutBIO = AppCreateBIO(outBuffers);
-    SSL_set_bio(mSSL, mInBIO, mOutBIO);
+    setUserData(user);
+    BIO* in = AppCreateBIO(inBuffers);
+    BIO* out = AppCreateBIO(outBuffers);
+    SSL_set_bio(static_cast<SSL*>(mSSL), in, out);
 }
 
 
 TlsSession::~TlsSession() {
-    SSL_CTX_free(SSL_get_SSL_CTX(mSSL));
-    SSL_free(mSSL); // here have freed mOutBIO and mInBIO already.
+    SSL_CTX_free(SSL_get_SSL_CTX(static_cast<SSL*>(mSSL)));
+    SSL_free(static_cast<SSL*>(mSSL)); // here have freed in/out BIOs already.
     // BIO_free(mOutBIO);
     // BIO_free(mInBIO);
 }
 
+bool TlsSession::setUserData(void* user) {
+    DASSERT(static_cast<SSL*>(mSSL));
+    if (SSL_set_ex_data(static_cast<SSL*>(mSSL), TlsSession::kUserDataIndex, user) == 0) {
+        DLOG(ELL_ERROR, "SSL_set_ex_data: fail, user = %p, ssl = %p", user, static_cast<SSL*>(mSSL));
+        return false;
+    }
+    return true;
+}
+
+void* TlsSession::getUserData() {
+    DASSERT(static_cast<SSL*>(mSSL));
+    return SSL_get_ex_data(static_cast<SSL*>(mSSL), TlsSession::kUserDataIndex);
+}
+
 
 void TlsSession::setAcceptState() {
-    SSL_set_accept_state(mSSL);
+    SSL_set_accept_state(static_cast<SSL*>(mSSL));
 }
 
 void TlsSession::setConnectState() {
-    SSL_set_connect_state(mSSL);
+    SSL_set_connect_state(static_cast<SSL*>(mSSL));
 }
 
 void TlsSession::setHost(const String& it) {
-    SSL_set_tlsext_host_name(mSSL, it.data());
+    SSL_set_tlsext_host_name(static_cast<SSL*>(mSSL), it.data());
 }
 
 s32 TlsSession::write(const void* buf, s32 len) {
-    return SSL_write(mSSL, buf, len);
+    return SSL_write(static_cast<SSL*>(mSSL), buf, len);
 }
 
 s32 TlsSession::read(void* buf, s32 len) {
-    return SSL_read(mSSL, buf, len);
+    return SSL_read(static_cast<SSL*>(mSSL), buf, len);
 }
 
 s32 TlsSession::getError(s32 nread) const {
-    return SSL_get_error(mSSL, nread);
+    return SSL_get_error(static_cast<SSL*>(mSSL), nread);
 }
 
 s32 TlsSession::handshake() {
-    return SSL_do_handshake(mSSL);
+    return SSL_do_handshake(static_cast<SSL*>(mSSL));
 }
 
 bool TlsSession::isInitFinished() {
-    return 0 != SSL_is_init_finished(mSSL);
+    return 0 != SSL_is_init_finished(static_cast<SSL*>(mSSL));
 }
 
-s32 TlsSession::verify(s32 verify_flags, const s8* hostname) {
-    if (ETLS_VERIFY_NONE == verify_flags) {
-        return EE_OK;
+
+s32 TlsSession::showPeerCert() {
+    DASSERT(static_cast<SSL*>(mSSL));
+    // SSL_get0_peer_certificate 不增加引用
+    // SSL_get1_peer_certificate 增加引用, 需要X509_free
+    X509* cert = SSL_get_peer_certificate(static_cast<SSL*>(static_cast<SSL*>(mSSL)));
+    if (!cert) {
+        DLOG(ELL_ERROR, "PeerCert: fail to read peer_cert, %p", static_cast<SSL*>(mSSL));
     }
 
-    X509* peer_cert = SSL_get_peer_certificate(mSSL);
-    if (peer_cert == nullptr) {
-        return EE_ERROR;
+    std::string tmpstr;
+    s64 ver = X509_get_version(cert);
+    DLOG(ELL_INFO, "PeerCert: ---Version: %lld", ver);
+    {
+        X509_NAME* nd = X509_get_subject_name(cert);
+        char* subj = nd ? X509_NAME_oneline(nd, nullptr, 0) : nullptr;
+        tmpstr = subj ? subj : "";
+        DLOG(ELL_INFO, "PeerCert: ---Subject: %s", tmpstr.data());
+    }
+    {
+        X509_NAME* nd = X509_get_issuer_name(cert);
+        char* subj = nd ? X509_NAME_oneline(nd, nullptr, 0) : nullptr;
+        tmpstr = subj ? subj : "";
+        DLOG(ELL_INFO, "PeerCert: ---Issuer: %s", tmpstr.data());
+    }
+    {
+        std::string serialNam;
+        ASN1_INTEGER* asniData = X509_get_serialNumber(cert);
+        BIGNUM* bigNum = asniData ? ASN1_INTEGER_to_BN(asniData, nullptr) : nullptr;
+        if (bigNum) {
+            char* hexData = BN_bn2hex(bigNum);
+            if (hexData) {
+                serialNam = std::string(hexData);
+                OPENSSL_free(hexData);
+            }
+            BN_free(bigNum);
+        }
+        DLOG(ELL_INFO, "PeerCert: ---SN: %s", serialNam.data());
     }
 
-    long rc = SSL_get_verify_result(mSSL);
-    if (rc != X509_V_OK) {
-        X509_free(peer_cert);
-        return EE_ERROR;
+    BIO* bio = BIO_new(BIO_s_mem());
+    if (bio == nullptr) {
+        DLOG(ELL_ERROR, "PeerCert: fail to create BIO, %p", static_cast<SSL*>(mSSL));
+        X509_free(cert);
+        return EE_INTR;
     }
-
-    s32 ret = EE_ERROR;
-    switch (AppMatchHost(peer_cert, hostname)) {
-    case EHM_MATCH:
-        ret = EE_OK;
-        break;
-    case EHM_NO_MATCH:
-    case EHM_BAD_CERT:
-    default:
-        break;
+    if (!PEM_write_bio_X509(bio, cert)) {
+        DLOG(ELL_ERROR, "PeerCert: fail to dump x509, %p", static_cast<SSL*>(mSSL));
+        X509_free(cert);
+        BIO_free(bio);
+        return EE_INTR;
     }
+    const s8* bio_ptr;
+    s64 bio_len = BIO_get_mem_data(bio, &bio_ptr);
+    std::string cert_pem(bio_ptr, bio_len);
+    DLOG(ELL_INFO, "PeerCert: %s", cert_pem.data());
 
-    X509_free(peer_cert);
-    return ret;
+    BIO_free(bio);
+    X509_free(cert);
+    return EE_OK;
 }
-
 
 
 void TlsSession::showError() {
@@ -349,12 +313,12 @@ void TlsSession::showError() {
 #if (OPENSSL_VERSION_MAJOR >= 3)
     while ((err = ERR_get_error_all(nullptr, nullptr, nullptr, &data, &flags)) != 0) {
         ERR_error_string_n(err, buf, sizeof(buf));
-        DLOG(ELL_ERROR, "showError: %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
+        DLOG(ELL_ERROR, "OpenSSL: %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
     }
 #else
     while ((err = ERR_get_error_line_data(nullptr, nullptr, &data, &flags)) != 0) {
         ERR_error_string_n(err, buf, sizeof(buf));
-        DLOG(ELL_ERROR, "showError: %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
+        DLOG(ELL_ERROR, "OpenSSL: %s, %s", buf, flags & ERR_TXT_STRING ? data : "-");
     }
 #endif
     ERR_clear_error();

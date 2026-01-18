@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_TLSSESSION_H
@@ -28,33 +28,29 @@
 
 #include "RingBuffer.h"
 #include "Net/TlsContext.h"
-#include <openssl/conf.h>
-#include <openssl/engine.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
-#include <openssl/pkcs12.h>
-#include <openssl/rand.h>
-#include <openssl/ssl.h>
-#include <openssl/bio.h>
-#include <openssl/x509v3.h>
+
 
 namespace app {
 namespace net {
 
 class TlsSession {
 public:
+    static s32 kUserDataIndex;
     static void showError();
 
     TlsSession() = delete;
 
     /**
-     * @param ssl_ctx, must not be nullptr
+     * @param ctx, TLS Context
      * @param inBuffers, must not be nullptr
      * @param outBuffers, must not be nullptr
      */
-    TlsSession(SSL_CTX* ssl_ctx, RingBuffer* inBuffers, RingBuffer* outBuffers, void* user = nullptr);
+    TlsSession(const TlsContext& ctx, RingBuffer* inBuffers, RingBuffer* outBuffers, void* user = nullptr);
 
     ~TlsSession();
+
+    bool setUserData(void* user);
+    void* getUserData();
 
     void setAcceptState();
 
@@ -66,25 +62,23 @@ public:
 
     s32 read(void* buf, s32 len);
 
-    s32 getError(s32 nread)const;
+    s32 getError(s32 nread) const;
 
     s32 handshake();
 
     bool isInitFinished();
 
-    s32 verify(s32 verify_flags, const s8* hostname);
+    s32 showPeerCert();
 
-    SSL* getSSL() const {
+    void* getSSL() const {
         return mSSL;
     }
 
 private:
-    SSL* mSSL;
-    BIO* mInBIO;
-    BIO* mOutBIO;
+    void* mSSL;
 };
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app
 
-#endif //APP_TLSSESSION_H
+#endif // APP_TLSSESSION_H

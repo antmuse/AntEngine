@@ -25,22 +25,21 @@
 
 #include "Net/TlsContext.h"
 #include <cstring>
-#include <openssl/bio.h>
 #include <openssl/conf.h>
-#include <openssl/engine.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
-#include <openssl/pkcs12.h>
-#include <openssl/rand.h>
 #include <openssl/ssl.h>
-#include <openssl/x509v3.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+#include <openssl/pem.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/decoder.h>
+#endif
 
+#include "Net/TlsSession.h"
 #include "Logger.h"
 #include "RingBuffer.h"
 #include "Net/Hostcheck.h"
 #include "Certs.h"
 #include "Spinlock.h"
-#include "Net/TlsSession.h"
 #include "Net/HandleTLS.h"
 #include "FileRWriter.h"
 #include "Packet.h"
@@ -59,10 +58,9 @@ extern void AppInitRingBIO();
 extern void AppUninitRingBIO();
 
 
-static Spinlock G_TLS_LOCK;
-static s32 GUSER_DATA_IDX = -1;
 #define DHTTP2_ALPN_PROTO "\x02h2\x08http/1.1\x08http/1.0"
 #define DHTTP_ALPN_PROTO "\x08http/1.1\x08http/1.0"
+static Spinlock G_TLS_LOCK;
 
 // call once
 void AppUninitTlsLib() {
@@ -70,16 +68,7 @@ void AppUninitTlsLib() {
         return;
     }
     AppUninitRingBIO();
-
-    RAND_cleanup();
-    ENGINE_cleanup();
-    CONF_modules_unload(1);
-    CONF_modules_free();
-    EVP_cleanup();
-    ERR_free_strings();
-    CRYPTO_cleanup_all_ex_data();
-    CRYPTO_set_locking_callback(nullptr);
-    CRYPTO_set_id_callback(nullptr);
+    OPENSSL_cleanup();
 }
 
 // call once
@@ -87,6 +76,7 @@ void AppInitTlsLib() {
     if (!G_TLS_LOCK.tryLock()) {
         return;
     }
+    DLOG(ELL_WARN, "OpenSSL: init start[0x%X], version = %s", OPENSSL_VERSION_NUMBER, OPENSSL_VERSION_TEXT);
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     OPENSSL_config(nullptr);
     SSL_load_error_strings();
@@ -100,33 +90,18 @@ void AppInitTlsLib() {
         DLOG(ELL_WARN, "OpenSSL: fail to seed random number generator.");
     }
 
-    AppInitRingBIO();
-
-    GUSER_DATA_IDX = SSL_get_ex_new_index(0, NULL, NULL, NULL, NULL);
-    if (GUSER_DATA_IDX == -1) {
-        DLOG(ELL_ERROR, "SSL_get_ex_new_index() failed");
+    TlsSession::kUserDataIndex = SSL_get_ex_new_index(0, NULL, NULL, NULL, NULL);
+    if (TlsSession::kUserDataIndex == -1) {
+        DLOG(ELL_ERROR, "OpenSSL: SSL_get_ex_new_index() failed");
     } else {
-        DLOG(ELL_INFO, "SSL_get_ex_new_index = %d", GUSER_DATA_IDX);
+        DLOG(ELL_INFO, "OpenSSL: init success,  user data index = %d", TlsSession::kUserDataIndex);
     }
-}
-
-bool AppSetTlsUserData(void* ssl, void* user) {
-    DASSERT(ssl);
-    if (SSL_set_ex_data(static_cast<SSL*>(ssl), GUSER_DATA_IDX, user) == 0) {
-        DLOG(ELL_ERROR, "SSL_set_ex_data: fail, user = %p, ssl = %p", user, ssl);
-        return false;
-    }
-    return true;
-}
-
-void* AppGetTlsUserData(const void* ssl) {
-    DASSERT(ssl);
-    return SSL_get_ex_data(static_cast<const SSL*>(ssl), GUSER_DATA_IDX);
+    AppInitRingBIO();
 }
 
 
 static s32 FuncSelectALPN(SSL* ssl, const u8** out, u8* outlen, const u8* in, u32 inlen, void* arg) {
-    net::HandleTLS* conn = reinterpret_cast<net::HandleTLS*>(AppGetTlsUserData(ssl));
+    net::HandleTLS* conn = reinterpret_cast<net::HandleTLS*>(SSL_get_ex_data(ssl, TlsSession::kUserDataIndex));
     const usz cfg = reinterpret_cast<usz>(arg);
 #ifdef DDEBUG
     for (u32 i = 0; i < inlen; i += in[i] + 1) {
@@ -167,11 +142,11 @@ static void AppFunTlsDebug(const SSL* ssl, s32 where, s32 ret) {
     const s8* str;
     s32 ww = where & ~SSL_ST_MASK;
     if (ww & SSL_ST_CONNECT) {
-        str = "connect";
+        str = "Connect";
     } else if (ww & SSL_ST_ACCEPT) {
-        str = "accept";
+        str = "Accept";
     } else {
-        str = "undefined";
+        str = "Undef";
     }
     // str = SSL_state_string(ssl);
     if (where & SSL_CB_ALERT) {
@@ -202,55 +177,70 @@ static s32 AppTlsPasswordCallback(s8* buf, s32 size, s32 rwflag, void* user) {
     return (s32)pass->size();
 }
 
-TlsContext::TlsContext() : mTlsContext(nullptr), mVerifyFlags(ETLS_VERIFY_NONE) {
+
+
+TlsContext::TlsContext() : mTlsContext(nullptr) {
 }
 
+
 TlsContext::~TlsContext() {
+    DASSERT(nullptr == mTlsContext);
 }
+
 
 s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     if (mTlsContext) {
+        DLOG(ELL_WARN, "don't re init SSL_CTX");
         return EE_OK;
     }
-    SSL_CTX* ssl_ctx = SSL_CTX_new(TLS_method());
-    if (!ssl_ctx) {
+    SSL_CTX* ctx = SSL_CTX_new(TLS_method());
+    if (!ctx) {
+        DLOG(ELL_ERROR, "fail to create SSL_CTX");
         TlsSession::showError();
         return EE_ERROR;
     }
+    mTlsContext = ctx;
 
-    mTlsContext = ssl_ctx;
-    if (cfg.mDebug) {
-        SSL_CTX_set_info_callback(ssl_ctx, AppFunTlsDebug);
-    }
-    setVerifyFlags(cfg.mTlsVerify, cfg.mTlsVerifyDepth);
-    SSL_CTX_set_mode(ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
-#ifdef SSL_OP_NO_COMPRESSION
-    SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_COMPRESSION);
-#endif
+    // SSL_CTX_set_min_proto_version(ctx, TLS1_1_VERSION);
+    u64 oval = version2Flags(cfg.mTlsVersionOff);
 #ifdef SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS
-    SSL_CTX_set_options(ssl_ctx, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
+    oval |= SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
 #endif
-    SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_RENEGOTIATION);
-    SSL_CTX_set_options(ssl_ctx, SSL_OP_SINGLE_DH_USE);
+#ifdef SSL_OP_NO_COMPRESSION
+    oval |= SSL_OP_NO_COMPRESSION;
+#endif
+    oval |= SSL_OP_NO_RENEGOTIATION;
+    oval |= SSL_OP_SINGLE_DH_USE;
+    if (cfg.mPreferServerCiphers) {
+        oval |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+        DLOG(ELL_INFO, "SSL_CTX Prefer Server Ciphers.");
+    }
+    SSL_CTX_set_options(ctx, oval);
+
+    SSL_CTX_set_mode(ctx, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+
+    setVerifyFlags(cfg.mTlsVerify, cfg.mTlsVerifyDepth);
+
+    if (cfg.mDebug) {
+        SSL_CTX_set_info_callback(ctx, AppFunTlsDebug);
+    }
+
 #if ((OPENSSL_VERSION_NUMBER < 0x30000000L) && defined(SSL_CTX_set_ecdh_auto))
-    SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
+    SSL_CTX_set_ecdh_auto(ctx, 1);
 #endif
 #if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
-    SSL_CTX_set_dh_auto(ssl_ctx, 1);
+    SSL_CTX_set_dh_auto(ctx, 1);
 #endif
-    if (cfg.mPreferServerCiphers) {
-        SSL_CTX_set_options(ssl_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
-    }
-    if (EE_OK != setVersion(cfg.mTlsVersionOff)) {
-        DLOG(ELL_ERROR, "set version off err = %s", cfg.mTlsVersionOff.data());
-    }
+
+    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
+
 
     s32 ret = EE_OK;
     Packet buf;
     FileRWriter keyfile;
     if (!cfg.mTlsPassword.empty()) {
-        SSL_CTX_set_default_passwd_cb(static_cast<SSL_CTX*>(mTlsContext), AppTlsPasswordCallback);
-        SSL_CTX_set_default_passwd_cb_userdata(static_cast<SSL_CTX*>(mTlsContext), (void*)(&cfg.mTlsPassword));
+        SSL_CTX_set_default_passwd_cb(ctx, AppTlsPasswordCallback);
+        SSL_CTX_set_default_passwd_cb_userdata(ctx, (void*)(&cfg.mTlsPassword));
     }
     if (keyfile.openFile(cfg.mTlsPathCA)) {
         buf.resize(keyfile.getFileSize());
@@ -295,7 +285,7 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
         DLOG(ELL_ERROR, "fail to load key = %s, use static-KEY = %d", cfg.mTlsPathKey.data(), ret);
     }
     if (!cfg.mTlsCiphers.empty()) {
-        if (!SSL_CTX_set_cipher_list(static_cast<SSL_CTX*>(mTlsContext), cfg.mTlsCiphers.data())) {
+        if (!SSL_CTX_set_cipher_list(ctx, cfg.mTlsCiphers.data())) {
             DLOG(ELL_ERROR, "fail to set ciphers = %s", cfg.mTlsCiphers.data());
         } else {
             DLOG(ELL_INFO, "set ciphers = %s", cfg.mTlsCiphers.data());
@@ -303,7 +293,7 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
     }
     if (!cfg.mTlsCiphersuites.empty()) {
 #ifdef TLS1_3_VERSION
-        if (!SSL_CTX_set_ciphersuites(static_cast<SSL_CTX*>(mTlsContext), cfg.mTlsCiphersuites.data())) {
+        if (!SSL_CTX_set_ciphersuites(ctx, cfg.mTlsCiphersuites.data())) {
             DLOG(ELL_ERROR, "fail to set ciphersuites = %s", cfg.mTlsCiphersuites.data());
         } else {
             DLOG(ELL_INFO, "set ciphersuites = %s", cfg.mTlsCiphersuites.data());
@@ -313,10 +303,11 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
 #endif
     }
 
-    SSL_CTX_set_alpn_select_cb(static_cast<SSL_CTX*>(mTlsContext), FuncSelectALPN, (void*)(cfg.mHttpALPN));
+    SSL_CTX_set_alpn_select_cb(ctx, FuncSelectALPN, (void*)(cfg.mHttpALPN));
     DLOG(ELL_INFO, "set ALPN %p = %d", mTlsContext, cfg.mHttpALPN);
     return EE_OK;
 }
+
 
 void TlsContext::uninit() {
     if (mTlsContext) {
@@ -326,46 +317,30 @@ void TlsContext::uninit() {
 }
 
 
-s32 TlsContext::setVersion(const String& it) {
-    if (!mTlsContext) {
-        DLOG(ELL_ERROR, "invalid TLS Context");
-        return EE_ERROR;
-    }
-    String logs("disable TLS Version:");
-    u64 flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+u64 TlsContext::version2Flags(const String& it) {
+    u64 ret = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
     if (it.find("v1.0") >= 0) {
-        logs += " v1.0";
-        flags |= SSL_OP_NO_TLSv1;
+        ret |= SSL_OP_NO_TLSv1;
     }
     if (it.find("v1.1") >= 0) {
-        logs += " v1.1";
-        flags |= SSL_OP_NO_TLSv1_1;
+        ret |= SSL_OP_NO_TLSv1_1;
     }
     if (it.find("v1.2") >= 0) {
-        logs += " v1.2";
-        flags |= SSL_OP_NO_TLSv1_2;
+        ret |= SSL_OP_NO_TLSv1_2;
     }
-    if (it.find("v1.3") >= 0) {
 #ifdef SSL_OP_NO_TLSv1_3
-        logs += " v1.3";
-        flags |= SSL_OP_NO_TLSv1_3;
-#else
-        DLOG(ELL_WARN, "TLS v1.3 is not support, on version set");
-#endif
+    if (it.find("v1.3") >= 0) {
+        ret |= SSL_OP_NO_TLSv1_3;
     }
-    SSL_CTX_set_options(static_cast<SSL_CTX*>(mTlsContext), flags);
-    DLOG(ELL_INFO, "%s", logs.data());
-    return EE_OK;
+#else
+    DLOG(ELL_WARN, "TLS v1.3 is not support, on version set");
+#endif
+    DLOG(ELL_INFO, "disable TLS Versions: %s", it.data());
+    return ret;
 }
 
 
-s32 TlsContext::setVerifyFlags(s32 iflags, s32 depth) {
-    if (!mTlsContext) {
-        DLOG(ELL_ERROR, "invalid TLS Context");
-        return EE_ERROR;
-    }
-    mVerifyFlags = iflags;
-    DLOG(ELL_INFO, "TLS VerifyFlags = 0X%x,  depth = %d", iflags, depth);
+s32 TlsContext::verify2Flags(s32 iflags) {
     s32 val = SSL_VERIFY_NONE;
     if (ETLS_VERIFY_PEER & iflags) {
         val |= SSL_VERIFY_PEER;
@@ -379,6 +354,17 @@ s32 TlsContext::setVerifyFlags(s32 iflags, s32 depth) {
     if (ETLS_VERIFY_POST_HANDSHAKE & iflags) {
         val |= SSL_VERIFY_POST_HANDSHAKE;
     }
+    return val;
+}
+
+
+s32 TlsContext::setVerifyFlags(s32 iflags, s32 depth) {
+    if (!mTlsContext) {
+        DLOG(ELL_ERROR, "invalid TLS Context");
+        return EE_ERROR;
+    }
+    s32 val = verify2Flags(iflags);
+    DLOG(ELL_INFO, "TlsContext: ctx= %p, verify = 0x%X ~ 0x%X,  depth = %d", mTlsContext, iflags, val, depth);
     SSL_CTX_set_verify_depth(static_cast<SSL_CTX*>(mTlsContext), depth);
     SSL_CTX_set_verify(static_cast<SSL_CTX*>(mTlsContext), val, nullptr);
     return EE_OK;
@@ -436,7 +422,7 @@ s32 TlsContext::setCert(const s8* cert, usz length) {
         return EE_ERROR;
     }
     X509_free(x509);
-    SSL_CTX_clear_extra_chain_certs(static_cast<SSL_CTX*>(mTlsContext)); // 清空额外证书
+    SSL_CTX_clear_extra_chain_certs(static_cast<SSL_CTX*>(mTlsContext));
     s32 ret = 1;
     while ((x509 = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr)) != nullptr) {
         if (!SSL_CTX_add_extra_chain_cert(static_cast<SSL_CTX*>(mTlsContext), x509)) {

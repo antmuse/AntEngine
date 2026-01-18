@@ -20,7 +20,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #ifndef APP_HANDLETLS_H
@@ -29,7 +29,7 @@
 
 #include "RingBuffer.h"
 #include "Loop.h"
-#include "Net/TlsContext.h"
+#include "Net/TlsSession.h"
 #include "Net/HandleTCP.h"
 
 namespace app {
@@ -41,13 +41,13 @@ public:
 
     ~HandleTLS();
 
-    //connect
+    // connect
     s32 open(const String& addr, RequestFD* it, const TlsContext* tlsctx = nullptr);
 
-    //connect
+    // connect
     s32 open(const NetAddress& addr, RequestFD* it, const TlsContext* tlsctx = nullptr);
 
-    //link
+    // link
     s32 open(const RequestAccept& accp, RequestFD* it, const TlsContext* tlsctx = nullptr);
 
     s32 write(RequestFD* it);
@@ -68,21 +68,25 @@ public:
         return mTCP.close();
     }
 
-    const String& getHost() const {
-        return mHostName;
-    }
+    /**
+     * @brief set remote host before TLS handshake.
+     * @param it The remote host.
+     */
     void setHost(const String& it) {
         mHostName = it;
     }
     void setHost(const StringView& it) {
         mHostName = it;
     }
+    const String& getHost() const {
+        return mHostName;
+    }
 
-    const NetAddress& getLocal()const {
+    const NetAddress& getLocal() const {
         return mTCP.getLocal();
     }
 
-    const NetAddress& getRemote()const {
+    const NetAddress& getRemote() const {
         return mTCP.getRemote();
     }
 
@@ -95,6 +99,10 @@ public:
     }
     u8 getALPN() const {
         return mALPN;
+    }
+
+    TlsSession* getTlsSession() const {
+        return mTlsSession;
     }
 
 protected:
@@ -151,21 +159,21 @@ protected:
 
     void uninit();
 
-    //解密文
+    // 解密文
     void doRead();
 
-    //写密文
+    // 写密文
     s32 postWrite();
 
-    //读密文
+    // 读密文
     s32 postRead();
 
-    //回调读到的明文
+    // 回调读到的明文
     void landReads() {
         landQueue(mLandReads);
     }
 
-    //回调写完的明文
+    // 回调写完的明文
     void landWrites() {
         landQueue(mLandWrites);
     }
@@ -179,17 +187,17 @@ protected:
     RequestFD* mFlyReads;
     RequestFD* mLandWrites;
     RequestFD* mLandReads;
-    void* mTlsSession;
-    u8 mALPN = 1; // 1: http1, 2: http2
-    String mHostName;   // set hostname when connect success
+    TlsSession* mTlsSession;
+    u8 mALPN = 1;     // 1: http1, 2: http2
+    String mHostName; // set hostname when connect success
     RingBuffer mInBuffers;
     RingBuffer mOutBuffers;
     SRingBufPos mCommitPos;
 };
 
 
-}//namespace net
-}//namespace app
+} // namespace net
+} // namespace app
 
 
-#endif //APP_HANDLETLS_H
+#endif // APP_HANDLETLS_H
