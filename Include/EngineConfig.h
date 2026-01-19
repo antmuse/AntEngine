@@ -33,53 +33,56 @@
 
 namespace app {
 
+/**
+ * @see Ciphers config https://wiki.mozilla.org/Security/Server_Side_TLS
+ */
+struct TlsConfig {
+    bool mDebug = false;
+    bool mPreferServerCiphers = false;
+    u8 mHttpALPN = 1;                        // 1: http1, 2: http2, 3: http1 or http2
+    s32 mTlsVerify = 0;                      // tls verify
+    s32 mTlsVerifyDepth = 5;                 // tls verify certs depth
+    String mTlsPathCA;                       // tls ca.crt
+    String mTlsPathCert;                     // tls server.crt
+    String mTlsPathKey;                      // tls server.key
+    String mTlsVersionOff = "v1.0, v1.1";    // tls disable version:  v1.0, v1.1, v1.2, v1.3
+    String mTlsCiphers = "HIGH:!aNULL:!MD5"; // for TLSv1.2 and below
+    String mTlsCiphersuites = "";            // for TLSv1.3
+    String mTlsPassword;                     // password for key
+};
+
+
+struct WebsiteCfg {
+    u8 mType;     // 0=http, 1=https
+    u32 mTimeout; // in milliseconds
+    u32 mSpeed;   // in bytes per seconds
+    String mRootPath;
+    TlsConfig mTLS;
+    String mHost;
+    net::NetAddress mLocal;
+    HashDict* mDict; // cache of site
+    WebsiteCfg() : mType(0), mTimeout(20 * 1000), mSpeed(1024 * 4), mDict(nullptr) {
+    }
+    ~WebsiteCfg() {
+        if (mDict) {
+            delete mDict;
+            mDict = nullptr;
+        }
+    }
+};
+
+
+struct ProxyCfg {
+    u8 mType;     // 0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
+    u32 mTimeout; // in milliseconds
+    u32 mSpeed;   // in bytes per seconds
+    net::NetAddress mLocal;
+    net::NetAddress mRemote;
+};
+
 
 class EngineConfig {
 public:
-    /**
-     * @see Ciphers config https://wiki.mozilla.org/Security/Server_Side_TLS
-     */
-    struct TlsConfig {
-        bool mDebug = false;
-        bool mPreferServerCiphers = false;
-        u8 mHttpALPN = 1;                             // 1: http1, 2: http2, 3: http1 or http2
-        s32 mTlsVerify = 0;                           // tls verify
-        s32 mTlsVerifyDepth = 5;                      // tls verify certs depth
-        String mTlsPathCA;                            // tls ca.crt
-        String mTlsPathCert;                          // tls server.crt
-        String mTlsPathKey;                           // tls server.key
-        String mTlsVersionOff = "v1.0, v1.1";         // tls disable version:  v1.0, v1.1, v1.2, v1.3
-        String mTlsCiphers = "HIGH:!aNULL:!MD5";      // for TLSv1.2 and below
-        String mTlsCiphersuites = "";                 // for TLSv1.3
-        String mTlsPassword;                          // password for key
-    };
-    struct WebsiteCfg {
-        u8 mType;     // 0=http, 1=https
-        u32 mTimeout; // in milliseconds
-        u32 mSpeed;   // in bytes per seconds
-        String mRootPath;
-        TlsConfig mTLS;
-        String mHost;
-        net::NetAddress mLocal;
-        HashDict* mDict; // cache of site
-        WebsiteCfg() : mType(0), mTimeout(20 * 1000), mSpeed(1024 * 4), mDict(nullptr) {
-        }
-        ~WebsiteCfg() {
-            if (mDict) {
-                delete mDict;
-                mDict = nullptr;
-            }
-        }
-    };
-    struct ProxyCfg {
-        u8 mType;     // 0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
-        u32 mTimeout; // in milliseconds
-        u32 mSpeed;   // in bytes per seconds
-        net::NetAddress mLocal;
-        net::NetAddress mRemote;
-    };
-
-
     EngineConfig();
 
     ~EngineConfig();
@@ -98,8 +101,6 @@ public:
     String mPidFile;
     String mMemName;
     TlsConfig mEngTlsConfig; // the default cfg for engine
-    TVector<WebsiteCfg> mWebsite;
-    TVector<ProxyCfg> mProxy;
 };
 
 

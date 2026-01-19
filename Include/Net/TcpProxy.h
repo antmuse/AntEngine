@@ -121,7 +121,7 @@ private:
 
 class TcpProxyHub :public RefCount {
 public:
-    TcpProxyHub(EngineConfig::ProxyCfg& cfg) :mConfig(cfg) { }
+    TcpProxyHub(ProxyCfg& cfg) :mConfig(cfg) { }
     virtual ~TcpProxyHub() { }
 
     static void funcOnLink(RequestFD* it) {
@@ -130,12 +130,12 @@ public:
         con->drop();
     }
 
-    const EngineConfig::ProxyCfg& getConfig()const {
+    const ProxyCfg& getConfig()const {
         return mConfig;
     }
 
 private:
-    EngineConfig::ProxyCfg mConfig;
+    ProxyCfg mConfig;
 };
 
 } //namespace net

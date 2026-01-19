@@ -128,7 +128,11 @@ bool Loop::run() {
                     Logger::log(ELL_ERROR, "Loop::run>>Handle null");
                 }
             } else {
-                Logger::log(ELL_ERROR, "Loop::run>>Poll null");
+                if (mTaskHead) {
+                    onTask(nullptr);
+                } else {
+                    Logger::log(ELL_ERROR, "Loop::run>>Poll null");
+                }
             }
         }
     } else {
@@ -662,11 +666,21 @@ s32 Loop::postTask(TaskNode* task) {
     mTaskLock.unlock();
 
     if (active) {
+        EventPoller::SEvent evt;
+        evt.mKey = 0;
+        evt.mPointer = nullptr;
+        evt.mInternal = 0;
+        evt.mBytes = 0;
+        if (!mPoller.postEvent(evt)) {
+            DLOG(ELL_ERROR, "fail to active the loop.");
+        }
+        /* note: mSendCMD is invalid on Windows, can't success to active the loop.
         CommandTask activeTask;
         activeTask.pack(&Loop::onTask, this, (void*)nullptr);
         if (activeTask.mSize != mSendCMD.send(&activeTask, activeTask.mSize)) {
             Logger::log(ELL_ERROR, "Loop::postTask>>send cmd, failed to active the loop");
         }
+        */
     }
     return EE_OK;
 }

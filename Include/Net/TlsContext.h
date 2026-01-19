@@ -51,7 +51,7 @@ public:
 
     ~TlsContext();
 
-    s32 init(const EngineConfig::TlsConfig& cfg);
+    s32 init(const TlsConfig& cfg);
 
     void uninit();
 

@@ -70,7 +70,7 @@ public:
 
 class LogFile : public ILogReceiver {
 public:
-    LogFile() : mFileSize(0), mTodayID(0), mFormat("/%Y-%m-%d.") {
+    LogFile() : mFileSize(0), mTodayID(0), mFormat("%Y-%m-%d.") {
         open();
     }
 

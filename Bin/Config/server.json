@@ -1,0 +1,40 @@
+{
+    "Website": [
+        {
+            "Lisen": "0.0.0.0:8000",
+            "Type": 0, //0=http,1=https
+            "Timeout": 30, //秒,0不超时
+            "Path": "Web/",
+            "Host": "local.cn"
+        },
+        {
+            "Lisen": "0.0.0.0:8443",
+            "Type": 1, //0=http,1=https
+            "Timeout": 30, //秒,0不超时
+            "Path": "Web/",
+            "Host": "local.cn",
+            "TLS": {
+                "Ciphers": "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305", //for TLSv1.2
+                "Ciphersuites": "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256", //for TLSv1.3
+                "CA": "Web/TLS/ca.crt",
+                "Cert": "Web/TLS/server.crt",
+                "Key": "Web/TLS/server.unsecure.key",
+                "VersionOff": "v1.0, v1.1",
+                "VerifyDepth": 5,
+                "HttpALPN": 1,
+                "PreferServerCiphers": true,
+                "Debug": false,
+                "Verify": 0
+            }
+        }
+    ],
+    "Proxy": [
+        {
+            "Type": 0, //0=[tcp-tcp], 1=[tls-tcp], 2=[tcp-tls], 3=[tls-tls]
+            "MaxSpeed": 10240, //每个连接，字节每秒
+            "Timeout": 30, //秒,0不超时
+            "Lisen": "0.0.0.0:9900",
+            "Backend": "192.168.1.102:9901"
+        }
+    ]
+}

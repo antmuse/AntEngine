@@ -137,7 +137,7 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     }
 
     // func for TlsConfig load
-    auto func_loadtls = [](const Json::Value& val, EngineConfig::TlsConfig& out) -> bool {
+    auto func_loadtls = [](const Json::Value& val, TlsConfig& out) -> bool {
         if (val.isMember("TLS")) {
             const Json::Value& tls = val["TLS"];
             out.mTlsPathCA = tls["CA"].asCString();
@@ -179,41 +179,6 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
     mMaxProcess = AppClamp<s16>(val["Process"].asInt(), -1024, 1024);
     func_loadtls(val, mEngTlsConfig);
-    if (val.isMember("Proxy")) {
-        ProxyCfg nd;
-        u32 mx = val["Proxy"].size();
-        for (u32 i = 0; i < mx; ++i) {
-            nd.mType = (u8)val["Proxy"][i]["Type"].asInt();
-            nd.mSpeed = (u32)val["Proxy"][i]["MaxSpeed"].asInt();
-            nd.mTimeout = 1000 * AppClamp<u32>(val["Proxy"][i]["Timeout"].asInt(), 0, 3600);
-            nd.mLocal.setIPort(val["Proxy"][i]["Lisen"].asCString());
-            nd.mRemote.setIPort(val["Proxy"][i]["Backend"].asCString());
-            mProxy.pushBack(nd);
-        }
-    }
-    if (val.isMember("Website")) {
-        WebsiteCfg nd;
-        u32 mx = val["Website"].size();
-        for (u32 i = 0; i < mx; ++i) {
-            nd.mType = (u8)val["Website"][i]["Type"].asInt();
-            nd.mTimeout = 1000 * AppClamp<u32>(val["Website"][i]["Timeout"].asInt(), 0, 3600);
-            nd.mLocal.setIPort(val["Website"][i]["Lisen"].asCString());
-            nd.mRootPath = val["Website"][i]["Path"].asCString();
-            nd.mRootPath.replace('\\', '/');
-            nd.mHost = val["Website"][i]["Host"].asCString();
-            if ('/' == nd.mRootPath.lastChar()) {
-                nd.mRootPath.resize(nd.mRootPath.size() - 1);
-            }
-            if (1 == nd.mType) {
-                if (!func_loadtls(val["Website"][i], nd.mTLS)) {
-                    nd.mTLS = mEngTlsConfig;
-                    DLOG(ELL_INFO, "EngineConfig::load, website[%u][%s] TLS use default", i, nd.mLocal.getStr());
-                }
-            }
-            mWebsite.pushBack(nd);
-            mWebsite.getLast().mDict = new HashDict(gDictCalls, nullptr);
-        }
-    }
     return ret;
 }
 

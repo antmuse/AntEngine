@@ -38,6 +38,7 @@ const s8* G_CFGFILE = "Config/config.json";
 u32 MsgHeader::gSharedSN = 0;
 
 Engine::Engine() : mPPID(0), mPID(0), mChild(32), mProcStatus(EPS_INIT), mProcResponCount(0), mMain(true) {
+    setProcessTask(&Engine::initTask, this, (void*)(nullptr));
 }
 
 Engine::~Engine() {
@@ -88,10 +89,9 @@ void Engine::postCommand(s32 val) {
         mProcStatus = EPS_EXITING;
         EngineStats& estat = Engine::getInstance().getEngineStats();
         DLOG(ELL_INFO, "Engine::postCommand>> handles count = %lld", estat.mTotalHandles.load());
-        if (!mMain || (mMain && 0 == mConfig.mMaxProcess)) {
-            Logger::log(ELL_INFO, "Engine::postCommand>> %s process exit...", mMain ? "main" : "child");
-            mLoop.postTask(cmd);
-        }
+        //if (!mMain || (mMain && 0 == mConfig.mMaxProcess)) {
+        Logger::log(ELL_INFO, "Engine::postCommand>> %s process exit...", mMain ? "main" : "child");
+        mLoop.postTask(cmd);
     }
 }
 
@@ -264,7 +264,7 @@ bool Engine::uninit() {
 }
 
 void Engine::run() {
-    if (mMain && mConfig.mMaxProcess > 0) {
+    if (mMain) {
         static std::chrono::milliseconds gap(100);
         while (EPS_RUNNING == mProcStatus) {
             if (mProcResponCount > 0) {
@@ -282,7 +282,8 @@ void Engine::run() {
                     }
                 }
             } else {
-                std::this_thread::sleep_for(gap); // TODO: wait...
+                mLoop.run();
+                // std::this_thread::sleep_for(gap);
             }
         }
         std::this_thread::sleep_for(gap);
@@ -293,7 +294,6 @@ void Engine::run() {
                 Logger::log(ELL_INFO, "Engine::run>> process[%d] exit, pid=%d", i, mChild[i].mID);
             }
         }
-        return;
     }
 
 GT_PROC_CHILD:
@@ -303,15 +303,15 @@ GT_PROC_CHILD:
 }
 
 bool Engine::step() {
-    DASSERT(mMain && 0 == mConfig.mMaxProcess); // engine was used on client side.
+    // engine was used on client side.
     return mLoop.run();
 }
 
 bool Engine::runMainProcess() {
-    if (mConfig.mMaxProcess > 0) {
-        mProcStatus = EPS_RUNNING;
-        return true;
-    }
+    //if (mConfig.mMaxProcess > 0) {
+    //    mProcStatus = EPS_RUNNING;
+    //    return true;
+    //}
     String unpath = Engine::getInstance().getConfig().mLogPath;
     unpath += System::getPID();
     unpath += ".unpath";
@@ -325,7 +325,7 @@ bool Engine::runMainProcess() {
     bool ret = mLoop.start(pair.getSocketB(), pair.getSocketA());
     if (ret) {
         mProcStatus = EPS_RUNNING;
-        initTask();
+        mProcessTask();
     } else {
         Logger::log(ELL_ERROR, "Engine::runMainProcess>> start loop fail");
     }
@@ -338,7 +338,7 @@ bool Engine::runChildProcess(net::Socket& cmdsock, net::Socket& write) {
     bool ret = mLoop.start(cmdsock, write);
     if (ret) {
         mProcStatus = EPS_RUNNING;
-        initTask();
+        mProcessTask();
     } else {
         Logger::log(ELL_ERROR, "Engine::runChildProcess>> start loop fail");
     }
@@ -413,52 +413,8 @@ bool Engine::createProcess(usz idx) {
 }
 
 
-void Engine::initTask() {
-    for (usz i = 0; i < mConfig.mProxy.size(); ++i) {
-        net::TcpProxyHub* pxhub = new net::TcpProxyHub(mConfig.mProxy[i]);
-        net::Acceptor* nd = new net::Acceptor(mLoop, net::TcpProxyHub::funcOnLink, pxhub);
-        pxhub->drop();
-        nd->setTimeout(mConfig.mProxy[i].mTimeout);
-        nd->setBackend(mConfig.mProxy[i].mRemote);
-        if (0 == nd->open(mConfig.mProxy[i].mLocal)) {
-            Logger::log(ELL_INFO, "Engine::init>>start TcpProxy=[%s->%s]", mConfig.mProxy[i].mLocal.getStr(),
-                mConfig.mProxy[i].mRemote.getStr());
-        } else {
-            Logger::log(ELL_ERROR, "Engine::init>>fail TcpProxy=[%s->%s]", mConfig.mProxy[i].mLocal.getStr(),
-                mConfig.mProxy[i].mRemote.getStr());
-            nd->drop();
-        }
-    }
-
-
-    for (usz i = 0; i < mConfig.mWebsite.size(); ++i) {
-        switch (mConfig.mWebsite[i].mType) {
-        case 0: // http
-        case 1: // https
-        {
-            net::Website* website = new net::Website(mConfig.mWebsite[i]);
-            net::Acceptor* nd = new net::Acceptor(mLoop, net::Website::funcOnLink, website);
-            website->drop();
-            nd->getHandleTCP().setTimeGap(mConfig.mWebsite[i].mTimeout);
-            nd->getHandleTCP().setTimeout(mConfig.mWebsite[i].mTimeout);
-            if (0 == nd->open(mConfig.mWebsite[i].mLocal)) {
-                Logger::log(ELL_INFO, "Engine::init>>start website=%s,path=%s", mConfig.mWebsite[i].mLocal.getStr(),
-                    mConfig.mWebsite[i].mRootPath.c_str());
-            } else {
-                Logger::log(ELL_ERROR, "Engine::init>>fail website=%s,path=%s", mConfig.mWebsite[i].mLocal.getStr(),
-                    mConfig.mWebsite[i].mRootPath.c_str());
-                // delete website & nd;
-                nd->drop();
-            }
-            break;
-        }
-        default:
-            Logger::log(ELL_ERROR, "Engine::init>>invalid Proxy=%lld, type=%d", i, mConfig.mWebsite[i].mType);
-            break;
-        }
-    }
-
-    // mConfig.mWebsite.clear();
+void Engine::initTask(void* it) {
+    Logger::log(ELL_INFO, "The default task do nothing, pid = %d", getPID());
 }
 
 } // namespace app

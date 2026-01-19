@@ -19,11 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\Server\App.cpp" />
-    <ClCompile Include="..\..\Source\Server\AppTicker.cpp" />
+    <ClCompile Include="..\..\Source\Server\main.cpp" />
+    <ClCompile Include="..\..\Source\Server\ServerWeb.cpp" />
+    <ClCompile Include="..\..\Source\Server\ServerConfig.cpp" />
+    <ClCompile Include="..\..\Source\Server\Servers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Source\Server\AppTicker.h" />
+    <ClInclude Include="..\..\Source\Server\ServerWeb.h" />
+    <ClInclude Include="..\..\Source\Server\ServerConfig.h" />
+    <ClInclude Include="..\..\Source\Server\Servers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AntEngine\AntEngine.vcxproj">
@@ -118,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Server;$(SolutionDir)../Depend/jsoncpp</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -179,7 +183,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Server;$(SolutionDir)../Depend/jsoncpp</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>

@@ -156,15 +156,12 @@ bool FileRWriter::openFile(const String& fileName, const s8* mode) {
         tmode[i] = mode[i];
     }
     tmode[i] = 0;
-    usz len = AppUTF8ToWchar(mFilename.c_str(), tmp, sizeof(tmp));
-    s32 ecode = _wfopen_s(&mFile, tmp, tmode);
+    usz len = AppUTF8ToWchar(mFilename.data(), tmp, sizeof(tmp));
+    mFile = _wfsopen(tmp, tmode, _SH_DENYNO);
 #else
     usz len = AppUTF8ToGBK(mFilename.c_str(), tmp, sizeof(tmp));
-    s32 ecode = fopen_s(&mFile, tmp, mode);
+    mFile = _fsopen(tmp, tmode, _SH_DENYNO);
 #endif
-    if (0 != ecode) {
-        mFile = nullptr;
-    }
 #else
     mFile = fopen(mFilename.c_str(), mode);
 #endif

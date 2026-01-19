@@ -11,7 +11,7 @@
 namespace app {
 namespace net {
 
-Website::Website(EngineConfig::WebsiteCfg& cfg) : mConfig(cfg) {
+Website::Website(WebsiteCfg& cfg) : mConfig(cfg) {
     init();
 }
 

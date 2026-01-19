@@ -188,7 +188,7 @@ TlsContext::~TlsContext() {
 }
 
 
-s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
+s32 TlsContext::init(const TlsConfig& cfg) {
     if (mTlsContext) {
         DLOG(ELL_WARN, "don't re init SSL_CTX");
         return EE_OK;
@@ -242,20 +242,6 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
         SSL_CTX_set_default_passwd_cb(ctx, AppTlsPasswordCallback);
         SSL_CTX_set_default_passwd_cb_userdata(ctx, (void*)(&cfg.mTlsPassword));
     }
-    if (keyfile.openFile(cfg.mTlsPathCA)) {
-        buf.resize(keyfile.getFileSize());
-        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
-            ret = addTrustedCerts(buf.getPointer(), buf.size());
-            if (EE_OK == ret) {
-                DLOG(ELL_INFO, "success load CA = %s", cfg.mTlsPathCA.data());
-            } else {
-                DLOG(ELL_ERROR, "fail to load CA = %s", cfg.mTlsPathCA.data());
-            }
-        }
-    } else {
-        ret = addTrustedCerts(G_CA_CERT, strlen(G_CA_CERT));
-        DLOG(ELL_ERROR, "fail to open CA file = %s, use static-CA = %d", cfg.mTlsPathCA.data(), ret);
-    }
     if (keyfile.openFile(cfg.mTlsPathCert)) {
         buf.resize(keyfile.getFileSize());
         if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
@@ -284,6 +270,20 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
         ret = setPrivateKey(G_SERVER_KEY, strlen(G_SERVER_KEY));
         DLOG(ELL_ERROR, "fail to load key = %s, use static-KEY = %d", cfg.mTlsPathKey.data(), ret);
     }
+    if (keyfile.openFile(cfg.mTlsPathCA)) {
+        buf.resize(keyfile.getFileSize());
+        if (buf.size() == keyfile.read(buf.getPointer(), buf.size())) {
+            ret = addTrustedCerts(buf.getPointer(), buf.size());
+            if (EE_OK == ret) {
+                DLOG(ELL_INFO, "success load CA = %s", cfg.mTlsPathCA.data());
+            } else {
+                DLOG(ELL_ERROR, "fail to load CA = %s", cfg.mTlsPathCA.data());
+            }
+        }
+    } else {
+        ret = addTrustedCerts(G_CA_CERT, strlen(G_CA_CERT));
+        DLOG(ELL_ERROR, "fail to open CA file = %s, use static-CA = %d", cfg.mTlsPathCA.data(), ret);
+    }
     if (!cfg.mTlsCiphers.empty()) {
         if (!SSL_CTX_set_cipher_list(ctx, cfg.mTlsCiphers.data())) {
             DLOG(ELL_ERROR, "fail to set ciphers = %s", cfg.mTlsCiphers.data());
@@ -303,7 +303,7 @@ s32 TlsContext::init(const EngineConfig::TlsConfig& cfg) {
 #endif
     }
 
-    SSL_CTX_set_alpn_select_cb(ctx, FuncSelectALPN, (void*)(cfg.mHttpALPN));
+    SSL_CTX_set_alpn_select_cb(ctx, FuncSelectALPN, reinterpret_cast<void*>(cfg.mHttpALPN));
     DLOG(ELL_INFO, "set ALPN %p = %d", mTlsContext, cfg.mHttpALPN);
     return EE_OK;
 }

@@ -16,13 +16,13 @@ namespace net {
  */
 class Website : public RefCount {
 public:
-    Website(EngineConfig::WebsiteCfg& cfg);
+    Website(WebsiteCfg& cfg);
     virtual ~Website();
 
     /**
      * @brief called when http_req_head is readed.
      */
-    s32 createMsgEvent(HttpMsg* msg);
+    virtual s32 createMsgEvent(HttpMsg* msg);
 
     static void funcOnLink(RequestFD* it) {
         DASSERT(it && it->mUser);
@@ -31,7 +31,7 @@ public:
         web->onLink(it);
     }
 
-    const EngineConfig::WebsiteCfg& getConfig() const {
+    const WebsiteCfg& getConfig() const {
         return mConfig;
     }
 
@@ -39,7 +39,10 @@ public:
         return mTlsContext;
     }
 
-private:
+protected:
+    TlsContext mTlsContext;
+    WebsiteCfg& mConfig;
+
     void init();
     void clear();
 
@@ -48,9 +51,6 @@ private:
         con->onLink(it);
         con->drop();
     }
-
-    TlsContext mTlsContext;
-    EngineConfig::WebsiteCfg& mConfig;
 };
 
 } // namespace net

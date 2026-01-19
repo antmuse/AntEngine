@@ -157,6 +157,20 @@ public:
     bool step();
     bool uninit();
 
+    /**
+     * @brief Set the task for each process, the task will run before process start;
+     *        you should call this func before the Engine::init();
+     */
+    template <class P>
+    void setProcessTask(void (*func)(P*), P* dat) {
+        mProcessTask.pack(func, dat);
+    }
+
+    template <class T, class P>
+    void setProcessTask(void (T::*func)(P*), const void* it, P* dat) {
+        mProcessTask.pack(func, it, dat);
+    }
+
     const String& getAppPath()const {
         return mAppPath;
     }
@@ -241,13 +255,15 @@ private:
     net::TlsContext mTlsENG;
     TVector<Process> mChild;
 
+    CommandTask mProcessTask;
+
     bool createProcess();
     bool createProcess(usz idx);
     bool runMainProcess();
     bool runChildProcess(net::Socket& readSock, net::Socket& writeSock);
 
     void initPath(const s8* fname);
-    void initTask();
+    void initTask(void* it);
 };
 
 
