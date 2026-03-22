@@ -17,6 +17,10 @@
 #include <sstream>
 #include <utility>
 
+#ifdef JSONCPP_HAS_STRING_VIEW
+#include <string_view>
+#endif
+
 // Provide implementation equivalent of std::snprintf for older _MSC compilers
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #include <stdarg.h>
@@ -87,7 +91,8 @@ template <typename T, typename U>
 static inline bool InRange(double d, T min, U max) {
   // The casts can lose precision, but we are looking only for
   // an approximate range. Might fail on edge cases though. ~cdunn
-  return d >= static_cast<double>(min) && d <= static_cast<double>(max);
+  return d >= static_cast<double>(min) && d <= static_cast<double>(max) &&
+         !(static_cast<U>(d) == min && d != static_cast<double>(min));
 }
 #else  // if !defined(JSON_USE_INT64_DOUBLE_CONVERSION)
 static inline double integerToDouble(Json::UInt64 value) {
@@ -101,7 +106,8 @@ template <typename T> static inline double integerToDouble(T value) {
 
 template <typename T, typename U>
 static inline bool InRange(double d, T min, U max) {
-  return d >= integerToDouble(min) && d <= integerToDouble(max);
+  return d >= integerToDouble(min) && d <= integerToDouble(max) &&
+         !(static_cast<U>(d) == min && d != integerToDouble(min));
 }
 #endif // if !defined(JSON_USE_INT64_DOUBLE_CONVERSION)
 
@@ -163,7 +169,7 @@ inline static void decodePrefixedString(bool isPrefixed, char const* prefixed,
 /** Free the string duplicated by
  * duplicateStringValue()/duplicateAndPrefixStringValue().
  */
-#if JSONCPP_USING_SECURE_MEMORY
+#if JSONCPP_USE_SECURE_MEMORY
 static inline void releasePrefixedStringValue(char* value) {
   unsigned length = 0;
   char const* valueDecoded;
@@ -178,10 +184,10 @@ static inline void releaseStringValue(char* value, unsigned length) {
   memset(value, 0, size);
   free(value);
 }
-#else  // !JSONCPP_USING_SECURE_MEMORY
+#else  // !JSONCPP_USE_SECURE_MEMORY
 static inline void releasePrefixedStringValue(char* value) { free(value); }
 static inline void releaseStringValue(char* value, unsigned) { free(value); }
-#endif // JSONCPP_USING_SECURE_MEMORY
+#endif // JSONCPP_USE_SECURE_MEMORY
 
 } // namespace Json
 
@@ -194,15 +200,6 @@ static inline void releaseStringValue(char* value, unsigned) { free(value); }
 // //////////////////////////////////////////////////////////////////
 #if !defined(JSON_IS_AMALGAMATION)
 
-//#include "json_valueiterator.inl"
-
-// Copyright 2007-2010 Baptiste Lepilleur and The JsonCpp Authors
-// Distributed under MIT license, or public domain if desired and
-// recognized in your jurisdiction.
-// See file LICENSE for detail or copy at http://jsoncpp.sourceforge.net/LICENSE
-
-// included by json_value.cpp
-
 namespace Json {
 
 // //////////////////////////////////////////////////////////////////
@@ -213,12 +210,11 @@ namespace Json {
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueIteratorBase::ValueIteratorBase() : current_() { }
+ValueIteratorBase::ValueIteratorBase() : current_() {}
 
 ValueIteratorBase::ValueIteratorBase(
     const Value::ObjectValues::iterator& current)
-    : current_(current), isNull_(false) {
-}
+    : current_(current), isNull_(false) {}
 
 Value& ValueIteratorBase::deref() { return current_->second; }
 const Value& ValueIteratorBase::deref() const { return current_->second; }
@@ -229,79 +225,79 @@ void ValueIteratorBase::decrement() { --current_; }
 
 ValueIteratorBase::difference_type
 ValueIteratorBase::computeDistance(const SelfType& other) const {
-    // Iterator for null value are initialized using the default
-    // constructor, which initialize current_ to the default
-    // std::map::iterator. As begin() and end() are two instance
-    // of the default std::map::iterator, they can not be compared.
-    // To allow this, we handle this comparison specifically.
-    if (isNull_ && other.isNull_) {
-        return 0;
-    }
+  // Iterator for null value are initialized using the default
+  // constructor, which initialize current_ to the default
+  // std::map::iterator. As begin() and end() are two instance
+  // of the default std::map::iterator, they can not be compared.
+  // To allow this, we handle this comparison specifically.
+  if (isNull_ && other.isNull_) {
+    return 0;
+  }
 
-    // Usage of std::distance is not portable (does not compile with Sun Studio 12
-    // RogueWave STL,
-    // which is the one used by default).
-    // Using a portable hand-made version for non random iterator instead:
-    //   return difference_type( std::distance( current_, other.current_ ) );
-    difference_type myDistance = 0;
-    for (Value::ObjectValues::iterator it = current_; it != other.current_;
-        ++it) {
-        ++myDistance;
-    }
-    return myDistance;
+  // Usage of std::distance is not portable (does not compile with Sun Studio 12
+  // RogueWave STL,
+  // which is the one used by default).
+  // Using a portable hand-made version for non random iterator instead:
+  //   return difference_type( std::distance( current_, other.current_ ) );
+  difference_type myDistance = 0;
+  for (Value::ObjectValues::iterator it = current_; it != other.current_;
+       ++it) {
+    ++myDistance;
+  }
+  return myDistance;
 }
 
 bool ValueIteratorBase::isEqual(const SelfType& other) const {
-    if (isNull_) {
-        return other.isNull_;
-    }
-    return current_ == other.current_;
+  if (isNull_) {
+    return other.isNull_;
+  }
+  return current_ == other.current_;
 }
 
 void ValueIteratorBase::copy(const SelfType& other) {
-    current_ = other.current_;
-    isNull_ = other.isNull_;
+  current_ = other.current_;
+  isNull_ = other.isNull_;
 }
 
 Value ValueIteratorBase::key() const {
-    const Value::CZString czstring = (*current_).first;
-    if (czstring.data()) {
-        if (czstring.isStaticString())
-            return Value(StaticString(czstring.data()));
-        return Value(czstring.data(), czstring.data() + czstring.length());
-    }
-    return Value(czstring.index());
+  const Value::CZString czstring = (*current_).first;
+  if (czstring.data()) {
+    if (czstring.isStaticString())
+      return Value(StaticString(czstring.data()));
+    return Value(czstring.data(), czstring.data() + czstring.length());
+  }
+  return Value(czstring.index());
 }
 
 UInt ValueIteratorBase::index() const {
-    const Value::CZString czstring = (*current_).first;
-    if (!czstring.data())
-        return czstring.index();
-    return Value::UInt(-1);
+  const Value::CZString czstring = (*current_).first;
+  if (!czstring.data())
+    return czstring.index();
+  return Value::UInt(-1);
 }
 
 String ValueIteratorBase::name() const {
-    char const* keey;
-    char const* end;
-    keey = memberName(&end);
-    if (!keey)
-        return String();
-    return String(keey, end);
+  char const* keey;
+  char const* end;
+  keey = memberName(&end);
+  if (!keey)
+    return String();
+  return String(keey, end);
 }
 
 char const* ValueIteratorBase::memberName() const {
-    const char* cname = (*current_).first.data();
-    return cname ? cname : "";
+  const char* cname = (*current_).first.data();
+  return cname ? cname : "";
 }
 
 char const* ValueIteratorBase::memberName(char const** end) const {
-    const char* cname = (*current_).first.data();
-    if (!cname) {
-        *end = nullptr;
-        return nullptr;
-    }
-    *end = cname + (*current_).first.length();
-    return cname;
+  const char* cname = (*current_).first.data();
+  if (!cname) {
+    *end = nullptr;
+    return nullptr;
+  }
+  *end = cname + (*current_).first.length();
+  return cname;
 }
 
 // //////////////////////////////////////////////////////////////////
@@ -316,17 +312,15 @@ ValueConstIterator::ValueConstIterator() = default;
 
 ValueConstIterator::ValueConstIterator(
     const Value::ObjectValues::iterator& current)
-    : ValueIteratorBase(current) {
-}
+    : ValueIteratorBase(current) {}
 
 ValueConstIterator::ValueConstIterator(ValueIterator const& other)
-    : ValueIteratorBase(other) {
-}
+    : ValueIteratorBase(other) {}
 
 ValueConstIterator& ValueConstIterator::
 operator=(const ValueIteratorBase& other) {
-    copy(other);
-    return *this;
+  copy(other);
+  return *this;
 }
 
 // //////////////////////////////////////////////////////////////////
@@ -340,19 +334,18 @@ operator=(const ValueIteratorBase& other) {
 ValueIterator::ValueIterator() = default;
 
 ValueIterator::ValueIterator(const Value::ObjectValues::iterator& current)
-    : ValueIteratorBase(current) {
-}
+    : ValueIteratorBase(current) {}
 
 ValueIterator::ValueIterator(const ValueConstIterator& other)
     : ValueIteratorBase(other) {
-    throwRuntimeError("ConstIterator to Iterator should never be allowed.");
+  throwRuntimeError("ConstIterator to Iterator should never be allowed.");
 }
 
 ValueIterator::ValueIterator(const ValueIterator& other) = default;
 
 ValueIterator& ValueIterator::operator=(const SelfType& other) {
-    copy(other);
-    return *this;
+  copy(other);
+  return *this;
 }
 
 } // namespace Json
@@ -409,20 +402,29 @@ Value::CZString::CZString(const CZString& other) {
   cstr_ = (other.storage_.policy_ != noDuplication && other.cstr_ != nullptr
                ? duplicateStringValue(other.cstr_, other.storage_.length_)
                : other.cstr_);
-  storage_.policy_ =
-      static_cast<unsigned>(
-          other.cstr_
-              ? (static_cast<DuplicationPolicy>(other.storage_.policy_) ==
-                         noDuplication
-                     ? noDuplication
-                     : duplicate)
-              : static_cast<DuplicationPolicy>(other.storage_.policy_)) &
-      3U;
-  storage_.length_ = other.storage_.length_;
+  if (other.cstr_) {
+    storage_.policy_ =
+        static_cast<unsigned>(
+            other.cstr_
+                ? (static_cast<DuplicationPolicy>(other.storage_.policy_) ==
+                           noDuplication
+                       ? noDuplication
+                       : duplicate)
+                : static_cast<DuplicationPolicy>(other.storage_.policy_)) &
+        3U;
+    storage_.length_ = other.storage_.length_;
+  } else {
+    index_ = other.index_;
+  }
 }
 
-Value::CZString::CZString(CZString&& other) noexcept
-    : cstr_(other.cstr_), index_(other.index_) {
+Value::CZString::CZString(CZString&& other) noexcept : cstr_(other.cstr_) {
+  if (other.cstr_) {
+    storage_.policy_ = other.storage_.policy_;
+    storage_.length_ = other.storage_.length_;
+  } else {
+    index_ = other.index_;
+  }
   other.cstr_ = nullptr;
 }
 
@@ -448,8 +450,16 @@ Value::CZString& Value::CZString::operator=(const CZString& other) {
 }
 
 Value::CZString& Value::CZString::operator=(CZString&& other) noexcept {
+  if (cstr_ && storage_.policy_ == duplicate) {
+    releasePrefixedStringValue(const_cast<char*>(cstr_));
+  }
   cstr_ = other.cstr_;
-  index_ = other.index_;
+  if (other.cstr_) {
+    storage_.policy_ = other.storage_.policy_;
+    storage_.length_ = other.storage_.length_;
+  } else {
+    index_ = other.index_;
+  }
   other.cstr_ = nullptr;
   return *this;
 }
@@ -579,6 +589,14 @@ Value::Value(const String& value) {
   value_.string_ = duplicateAndPrefixStringValue(
       value.data(), static_cast<unsigned>(value.length()));
 }
+
+#ifdef JSONCPP_HAS_STRING_VIEW
+Value::Value(std::string_view value) {
+  initBasic(stringValue, true);
+  value_.string_ = duplicateAndPrefixStringValue(
+      value.data(), static_cast<unsigned>(value.length()));
+}
+#endif
 
 Value::Value(const StaticString& value) {
   initBasic(stringValue);
@@ -761,7 +779,7 @@ const char* Value::asCString() const {
   return this_str;
 }
 
-#if JSONCPP_USING_SECURE_MEMORY
+#if JSONCPP_USE_SECURE_MEMORY
 unsigned Value::getCStringLength() const {
   JSON_ASSERT_MESSAGE(type() == stringValue,
                       "in Json::Value::asCString(): requires stringValue");
@@ -786,6 +804,21 @@ bool Value::getString(char const** begin, char const** end) const {
   *end = *begin + length;
   return true;
 }
+
+#ifdef JSONCPP_HAS_STRING_VIEW
+bool Value::getString(std::string_view* str) const {
+  if (type() != stringValue)
+    return false;
+  if (value_.string_ == nullptr)
+    return false;
+  const char* begin;
+  unsigned length;
+  decodePrefixedString(this->isAllocated(), this->value_.string_, &length,
+                       &begin);
+  *str = std::string_view(begin, length);
+  return true;
+}
+#endif
 
 String Value::asString() const {
   switch (type()) {
@@ -844,7 +877,7 @@ Value::UInt Value::asUInt() const {
     JSON_ASSERT_MESSAGE(isUInt(), "LargestUInt out of UInt range");
     return UInt(value_.uint_);
   case realValue:
-    JSON_ASSERT_MESSAGE(InRange(value_.real_, 0, maxUInt),
+    JSON_ASSERT_MESSAGE(InRange(value_.real_, 0u, maxUInt),
                         "double out of UInt range");
     return UInt(value_.real_);
   case nullValue:
@@ -867,6 +900,11 @@ Value::Int64 Value::asInt64() const {
     JSON_ASSERT_MESSAGE(isInt64(), "LargestUInt out of Int64 range");
     return Int64(value_.uint_);
   case realValue:
+    // If the double value is in proximity to minInt64, it will be rounded to
+    // minInt64. The correct value in this scenario is indeterminable
+    JSON_ASSERT_MESSAGE(
+        value_.real_ != minInt64,
+        "Double value is minInt64, precise value cannot be determined");
     JSON_ASSERT_MESSAGE(InRange(value_.real_, minInt64, maxInt64),
                         "double out of Int64 range");
     return Int64(value_.real_);
@@ -888,7 +926,7 @@ Value::UInt64 Value::asUInt64() const {
   case uintValue:
     return UInt64(value_.uint_);
   case realValue:
-    JSON_ASSERT_MESSAGE(InRange(value_.real_, 0, maxUInt64),
+    JSON_ASSERT_MESSAGE(InRange(value_.real_, 0u, maxUInt64),
                         "double out of UInt64 range");
     return UInt64(value_.real_);
   case nullValue:
@@ -999,7 +1037,7 @@ bool Value::isConvertibleTo(ValueType other) const {
            type() == booleanValue || type() == nullValue;
   case uintValue:
     return isUInt() ||
-           (type() == realValue && InRange(value_.real_, 0, maxUInt)) ||
+           (type() == realValue && InRange(value_.real_, 0u, maxUInt)) ||
            type() == booleanValue || type() == nullValue;
   case realValue:
     return isNumeric() || type() == booleanValue || type() == nullValue;
@@ -1254,12 +1292,64 @@ Value const* Value::find(char const* begin, char const* end) const {
     return nullptr;
   return &(*it).second;
 }
+Value const* Value::find(const String& key) const {
+  return find(key.data(), key.data() + key.length());
+}
+
+Value const* Value::findNull(const String& key) const {
+  return findValue<Value, &Value::isNull>(key);
+}
+Value const* Value::findBool(const String& key) const {
+  return findValue<Value, &Value::isBool>(key);
+}
+Value const* Value::findInt(const String& key) const {
+  return findValue<Value, &Value::isInt>(key);
+}
+Value const* Value::findInt64(const String& key) const {
+  return findValue<Value, &Value::isInt64>(key);
+}
+Value const* Value::findUInt(const String& key) const {
+  return findValue<Value, &Value::isUInt>(key);
+}
+Value const* Value::findUInt64(const String& key) const {
+  return findValue<Value, &Value::isUInt64>(key);
+}
+Value const* Value::findIntegral(const String& key) const {
+  return findValue<Value, &Value::isIntegral>(key);
+}
+Value const* Value::findDouble(const String& key) const {
+  return findValue<Value, &Value::isDouble>(key);
+}
+Value const* Value::findNumeric(const String& key) const {
+  return findValue<Value, &Value::isNumeric>(key);
+}
+Value const* Value::findString(const String& key) const {
+  return findValue<Value, &Value::isString>(key);
+}
+Value const* Value::findArray(const String& key) const {
+  return findValue<Value, &Value::isArray>(key);
+}
+Value const* Value::findObject(const String& key) const {
+  return findValue<Value, &Value::isObject>(key);
+}
+
 Value* Value::demand(char const* begin, char const* end) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == objectValue,
                       "in Json::Value::demand(begin, end): requires "
                       "objectValue or nullValue");
   return &resolveReference(begin, end);
 }
+#ifdef JSONCPP_HAS_STRING_VIEW
+const Value& Value::operator[](std::string_view key) const {
+  Value const* found = find(key.data(), key.data() + key.length());
+  if (!found)
+    return nullSingleton();
+  return *found;
+}
+Value& Value::operator[](std::string_view key) {
+  return resolveReference(key.data(), key.data() + key.length());
+}
+#else
 const Value& Value::operator[](const char* key) const {
   Value const* found = find(key, key + strlen(key));
   if (!found)
@@ -1267,7 +1357,7 @@ const Value& Value::operator[](const char* key) const {
   return *found;
 }
 Value const& Value::operator[](const String& key) const {
-  Value const* found = find(key.data(), key.data() + key.length());
+  Value const* found = find(key);
   if (!found)
     return nullSingleton();
   return *found;
@@ -1280,6 +1370,7 @@ Value& Value::operator[](const char* key) {
 Value& Value::operator[](const String& key) {
   return resolveReference(key.data(), key.data() + key.length());
 }
+#endif
 
 Value& Value::operator[](const StaticString& key) {
   return resolveReference(key.c_str());
@@ -1319,12 +1410,18 @@ Value Value::get(char const* begin, char const* end,
   Value const* found = find(begin, end);
   return !found ? defaultValue : *found;
 }
+#ifdef JSONCPP_HAS_STRING_VIEW
+Value Value::get(std::string_view key, const Value& defaultValue) const {
+  return get(key.data(), key.data() + key.length(), defaultValue);
+}
+#else
 Value Value::get(char const* key, Value const& defaultValue) const {
   return get(key, key + strlen(key), defaultValue);
 }
 Value Value::get(String const& key, Value const& defaultValue) const {
   return get(key.data(), key.data() + key.length(), defaultValue);
 }
+#endif
 
 bool Value::removeMember(const char* begin, const char* end, Value* removed) {
   if (type() != objectValue) {
@@ -1340,12 +1437,31 @@ bool Value::removeMember(const char* begin, const char* end, Value* removed) {
   value_.map_->erase(it);
   return true;
 }
+#ifdef JSONCPP_HAS_STRING_VIEW
+bool Value::removeMember(std::string_view key, Value* removed) {
+  return removeMember(key.data(), key.data() + key.length(), removed);
+}
+#else
 bool Value::removeMember(const char* key, Value* removed) {
   return removeMember(key, key + strlen(key), removed);
 }
 bool Value::removeMember(String const& key, Value* removed) {
   return removeMember(key.data(), key.data() + key.length(), removed);
 }
+#endif
+
+#ifdef JSONCPP_HAS_STRING_VIEW
+void Value::removeMember(std::string_view key) {
+  JSON_ASSERT_MESSAGE(type() == nullValue || type() == objectValue,
+                      "in Json::Value::removeMember(): requires objectValue");
+  if (type() == nullValue)
+    return;
+
+  CZString actualKey(key.data(), unsigned(key.length()),
+                     CZString::noDuplication);
+  value_.map_->erase(actualKey);
+}
+#else
 void Value::removeMember(const char* key) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == objectValue,
                       "in Json::Value::removeMember(): requires objectValue");
@@ -1356,6 +1472,7 @@ void Value::removeMember(const char* key) {
   value_.map_->erase(actualKey);
 }
 void Value::removeMember(const String& key) { removeMember(key.c_str()); }
+#endif
 
 bool Value::removeIndex(ArrayIndex index, Value* removed) {
   if (type() != arrayValue) {
@@ -1367,7 +1484,7 @@ bool Value::removeIndex(ArrayIndex index, Value* removed) {
     return false;
   }
   if (removed)
-    *removed = it->second;
+    *removed = std::move(it->second);
   ArrayIndex oldSize = size();
   // shift left all items left, into the place of the "removed"
   for (ArrayIndex i = index; i < (oldSize - 1); ++i) {
@@ -1385,12 +1502,18 @@ bool Value::isMember(char const* begin, char const* end) const {
   Value const* value = find(begin, end);
   return nullptr != value;
 }
+#ifdef JSONCPP_HAS_STRING_VIEW
+bool Value::isMember(std::string_view key) const {
+  return isMember(key.data(), key.data() + key.length());
+}
+#else
 bool Value::isMember(char const* key) const {
   return isMember(key, key + strlen(key));
 }
 bool Value::isMember(String const& key) const {
   return isMember(key.data(), key.data() + key.length());
 }
+#endif
 
 Value::Members Value::getMemberNames() const {
   JSON_ASSERT_MESSAGE(
@@ -1470,8 +1593,12 @@ bool Value::isInt64() const {
     // Note that maxInt64 (= 2^63 - 1) is not exactly representable as a
     // double, so double(maxInt64) will be rounded up to 2^63. Therefore we
     // require the value to be strictly less than the limit.
-    return value_.real_ >= double(minInt64) &&
-           value_.real_ < double(maxInt64) && IsIntegral(value_.real_);
+    // minInt64 is -2^63 which can be represented as a double, but since double
+    // values in its proximity are also rounded to -2^63, we require the value
+    // to be strictly greater than the limit to avoid returning 'true' for
+    // values that are not in the range
+    return value_.real_ > double(minInt64) && value_.real_ < double(maxInt64) &&
+           IsIntegral(value_.real_);
   default:
     break;
   }
@@ -1509,7 +1636,11 @@ bool Value::isIntegral() const {
     // Note that maxUInt64 (= 2^64 - 1) is not exactly representable as a
     // double, so double(maxUInt64) will be rounded up to 2^64. Therefore we
     // require the value to be strictly less than the limit.
-    return value_.real_ >= double(minInt64) &&
+    // minInt64 is -2^63 which can be represented as a double, but since double
+    // values in its proximity are also rounded to -2^63, we require the value
+    // to be strictly greater than the limit to avoid returning 'true' for
+    // values that are not in the range
+    return value_.real_ > double(minInt64) &&
            value_.real_ < maxUInt64AsDouble && IsIntegral(value_.real_);
 #else
     return value_.real_ >= minInt && value_.real_ <= maxUInt &&
@@ -1572,9 +1703,8 @@ void Value::setComment(String comment, CommentPlacement placement) {
     // Always discard trailing newline, to aid indentation.
     comment.pop_back();
   }
-  JSON_ASSERT(!comment.empty());
   JSON_ASSERT_MESSAGE(
-      comment[0] == '\0' || comment[0] == '/',
+      comment.empty() || comment[0] == '/',
       "in Json::Value::setComment(): Comments must start with /");
   comments_.set(placement, std::move(comment));
 }
