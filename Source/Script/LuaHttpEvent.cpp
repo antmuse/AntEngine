@@ -32,6 +32,30 @@ s32 LuaHttpEventDel(lua_State* vm) {
     return 0;
 }
 
+// get param's val in URL
+s32 LuaHttpEventGetUrlQueryBy(lua_State* vm) {
+    s32 cnt = lua_gettop(vm);
+    if (2 != cnt || !lua_isuserdata(vm, 1) || !lua_isstring(vm, 2)) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    HttpEvtLua** nd = reinterpret_cast<HttpEvtLua**>(lua_touserdata(vm, 1));
+    const s8* buf = lua_tostring(vm, 2);
+    if (!nd || !(*nd) || !buf) {
+        lua_pushnil(vm);
+        return 1;
+    }
+    net::HttpMsg* msg = (*nd)->getRepMsg();
+    DASSERT(msg);
+    String key = buf;
+    if (msg->getURL().getParam(key, key)) {
+        lua_pushlstring(vm, key.data(), key.size());
+    } else {
+        lua_pushnil(vm);
+    }
+    return 1;
+}
+
 
 s32 LuaHttpEventWriteLine(lua_State* vm) {
     s32 cnt = lua_gettop(vm);
@@ -157,9 +181,9 @@ s32 LuaHttpEventSendPart(lua_State* vm) {
  * just make a matetable for G_LUA_CLASSNAME.
  */
 luaL_Reg LuaLibHttpEvent[] = {{"new", LuaHttpEventNewDummy}, {"del", LuaHttpEventDel}, {"__gc", LuaHttpEventDel},
-    {"getPathNodes", LuaHttpEventListPath}, {"writeLine", LuaHttpEventWriteLine},
-    {"writeHead", LuaHttpEventWriteHeader}, {"writeBody", LuaHttpEventWriteBody}, {"sendResp", LuaHttpEventSendPart},
-    {NULL, NULL}};
+    {"getUrlQueryBy", LuaHttpEventGetUrlQueryBy}, {"getPathNodes", LuaHttpEventListPath},
+    {"writeLine", LuaHttpEventWriteLine}, {"writeHead", LuaHttpEventWriteHeader}, {"writeBody", LuaHttpEventWriteBody},
+    {"sendResp", LuaHttpEventSendPart}, {NULL, NULL}};
 
 
 s32 LuaRegHttpEvent(lua_State* vm) {

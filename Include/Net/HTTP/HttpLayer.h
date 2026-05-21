@@ -47,6 +47,10 @@ public:
 
     virtual ~HttpLayer();
 
+    bool isHTTPS() const {
+        return mHTTPS;
+    }
+
     HttpMsg* getMsg() const {
         return mMsg;
     }
@@ -149,7 +153,8 @@ private:
 
     // parser
 private:
-
+    void addUrlQuery(StringView& key, StringView& val);
+    
     // Checks if this is the final chunk of the body
     bool isBodyFinal() const;
 

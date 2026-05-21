@@ -666,6 +666,7 @@ public:
             cutLen(len);
             return *this;
         }
+        cutLen(0); // avoid copy old str when resize
         resize(len);
         copyBufType(it, len, data());
         return *this;

@@ -78,10 +78,12 @@ enum EPareState {
     PS_REQ_SERVER,
     PS_REQ_SERVER_AT, //@
     PS_REQ_URL_PATH,
-    PS_REQ_URL_QUERY, //?
+    PS_REQ_URL_QUERY_KEY_PRE, // ? or &
     PS_REQ_URL_QUERY_KEY,
-    PS_REQ_URL_FRAG, // #
-    PS_REQ_URL_FRAGMENT,
+    PS_REQ_URL_QUERY_VAL_PRE, // =
+    PS_REQ_URL_QUERY_VAL,
+    PS_REQ_URL_FRAG_PRE, // #
+    PS_REQ_URL_FRAG,
     PS_REQ_HTTP_START, // HTTP/1.1
     PS_REQ_H,
     PS_REQ_HT,
@@ -131,19 +133,21 @@ enum EPareState {
 };
 
 enum EHttpHostState {
-    s_http_host_dead = 1,
-    s_http_userinfo_start,
-    s_http_userinfo,
-    s_http_host_start,
-    s_http_host_v6_start,
-    s_http_host,
-    s_http_host_v6,
-    s_http_host_v6_end,
-    s_http_host_v6_zone_start,
-    s_http_host_v6_zone,
-    s_http_host_port_start,
-    s_http_host_port
+    EHTTP_HOST_DEAD = 1,
+    EHTTP_HOST_USER_START,
+    EHTTP_HOST_USER,
+    EHTTP_HOST_START,
+    EHTTP_HOST_V6_START,
+    EHTTP_HOST,
+    EHTTP_HOST_V6,
+    EHTTP_HOST_V6_END,
+    EHTTP_HOST_V6_ZONE_START,
+    EHTTP_HOST_V6_ZONE,
+    EHTTP_HOST_PORT_START,
+    EHTTP_HOST_PORT
 };
+
+EPareState AppParseUrlChar(EPareState s, const s8 ch);
 
 
 } // namespace net

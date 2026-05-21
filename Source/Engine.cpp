@@ -147,6 +147,7 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
         loger = Logger::addPrintReceiver();
     }
     Logger::addFileReceiver();
+    Logger::log(ELL_INFO, "Engine::init>> version = %s", DVERSION_NAME);
 
     script::ScriptManager::getInstance();
 

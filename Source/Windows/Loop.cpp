@@ -38,7 +38,7 @@ Loop::Loop() :
     mTimeHub(HandleTime::lessTime),
     mRequest(nullptr),
     mTime(Timer::getTime()),
-    mStop(0),
+    mStop(1),
     mTaskHead(nullptr),
     mTaskHeadIdle(nullptr),
     mTaskIdleCount(0),
@@ -310,6 +310,7 @@ void Loop::unbindFly(Handle* it) {
 
 
 bool Loop::start(net::Socket& sockRead, net::Socket& sockWrite) {
+    mStop = 0;
     mCMD.mSock = sockRead;
     mCMD.setClose(EHT_TCP_LINK, LoopOnClose, this);
     mCMD.setTime(LoopOnTime, 15 * 1000, 20 * 1000, -1);
@@ -317,16 +318,19 @@ bool Loop::start(net::Socket& sockRead, net::Socket& sockWrite) {
     if(!mPoller.open()) {
         sockRead.close();
         sockWrite.close();
+        Logger::log(ELL_ERROR, "Loop::start>>fail to open evt poller");
         return false;
     }
     if (0 != mCMD.mSock.setBlock(false)) {
         sockRead.close();
         sockWrite.close();
+        Logger::log(ELL_ERROR, "Loop::start>>fail to setblock");
         return false;
     }
     if (EE_OK != openHandle(&mCMD)) {
         //sockRead.close();
         sockWrite.close();
+        Logger::log(ELL_ERROR, "Loop::start>>fail to open CMD Handle");
         return false;
     }
     mReadCMD.mType = ERT_READ;

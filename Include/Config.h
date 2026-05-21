@@ -32,9 +32,9 @@
 #define DVERSION_MAJOR 1
 #define DVERSION_MINOR 0
 #define DVERSION_MICRO 0
-#define DVERSION_MINI  0
-#define DVERSION_NAME  "1.0.0.0"
-#define DVERSION_ID    10000
+#define DVERSION_MINI  1
+#define DVERSION_NAME  "1.0.0.1"
+#define DVERSION_ID    10001
 
 #define DUSE_OPENSSL
 #define DUSE_ZLIB

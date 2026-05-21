@@ -49,8 +49,10 @@ const s8* G_CFG_CONTENT = R"({
     }
 })";
 
+
+// https://shop.vivo.com.cn/product/10012006?skuId=144446
 int main(int argc, char** argv) {
-    const char* url = "https://www.baidu.com";
+    const char* url = "https://shop.vivo.com.cn/product/10012006";
     if (argc > 1) {
         url = argv[1];
     }

@@ -100,6 +100,21 @@ s32 LuaRandom(lua_State* vm) {
     return 1;
 }
 
+// keep safe
+s32 LuaSimplifyPath(lua_State* vm) {
+    u32 cnt = lua_gettop(vm);
+    if (1 != cnt && lua_isstring(vm, 1)) {
+        DLOG(ELL_ERROR, "LuaSimplifyPath> invalid, param cnt = %s", cnt);
+        lua_pushnil(vm);
+        return 1;
+    }
+    const s8* buf = lua_tostring(vm, 1);
+    String val(buf);
+    val.simplifyPath();
+    lua_pushlstring(vm, val.data(), val.size());
+    return 1;
+}
+
 s32 LuaEngInfo(lua_State* vm) {
     s32 cnt = lua_gettop(vm);
     Logger::logInfo("LuaEng> LUA.Version = %s", LUA_RELEASE);
@@ -138,7 +153,8 @@ void AppPath2Table(lua_State* vm, const String& fpath, usz offset) {
 
 
 luaL_Reg LuaLibEng[] = {
-    {"dumpStack", LuaDumpStack}, {"getRandom", LuaRandom}, {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel
+    {"dumpStack", LuaDumpStack}, {"simplifyPath", LuaSimplifyPath}, {"getRandom", LuaRandom}, {"showInfo", LuaEngInfo},
+    {NULL, NULL} // sentinel
 };
 luaL_Reg LuaLibWeb[] = {
     {"showInfo", LuaEngInfo}, {NULL, NULL} // sentinel

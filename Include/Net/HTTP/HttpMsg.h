@@ -378,7 +378,8 @@ public:
         mURL = it;
     }
 
-    s32 setURL(const String& req);
+    /** @return true if parse success, else false. */
+    bool setURL(const String& req);
 
     // for req
     HttpURL& getURL() {
@@ -452,7 +453,7 @@ public:
         // 2  = blanks for url   , req only
         // 17 = strlen("HTTP/1.1 200 OK\r\n")
         return mHead.getDataLen() + sizeof(": \r\n") * mHead.size() + 2 + 2 + 17 + mBrief.size() + mBody.size()
-               + mURL.data().size() + (mHead.isChunked() ? sizeof("12345678\r\n0\r\n\r\n") : 0);
+               + mURL.sumCacheSize() + (mHead.isChunked() ? sizeof("12345678\r\n0\r\n\r\n") : 0);
     }
 
 

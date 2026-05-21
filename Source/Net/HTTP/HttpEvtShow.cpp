@@ -17,7 +17,10 @@ s32 HttpEvtShow::onRespWrite(net::HttpMsg* msg) {
 
 s32 HttpEvtShow::onReqHeadDone(net::HttpMsg* msg) {
     DASSERT(msg);
-    msg->getHttpLayer()->getHandle().getTlsSession()->showPeerCert();
+    if (msg->getHttpLayer()->isHTTPS()) {
+        msg->getHttpLayer()->getHandle().getTlsSession()->showPeerCert();
+    }
+    printf("-----------------status: %d-----------------\n", msg->getStatus());
     printf("-----------------head-----------------\n");
     net::HttpHead& hed = msg->getHead();
     for (usz i = 0; i < hed.size(); ++i) {

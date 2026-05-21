@@ -4,7 +4,15 @@ require "Public/ShowInfo"
 local function main()
     -- ShowInfo.showTable("Web.WebDev", WebDev)
     local ctx = VContext.mCTX
-    local fpath = "/fs/"
+    local fpath = ctx:getUrlQueryBy("dir");
+    if(nil == fpath) then
+        fpath = "/fs/";
+    else
+        fpath = Eng.simplifyPath(fpath);
+        if(string.len(fpath) < 2) then
+            fpath = "/fs/";
+        end
+    end
     local body  = [[<UL class=shop> PATH = ]] .. fpath .. [[<br><hr><br>
         <DIV align=left><TABLE border=0 cellPadding=8 cellSpacing=4 width="80%">
     ]];
@@ -18,9 +26,9 @@ local function main()
         Log("total count = " .. dirList.mNodes .. ", paths count = " .. dirList.mPaths)
         for i=1,dirList.mNodes,1 do
             if(i>dirList.mPaths) then
-                body = body .. "<tr><td>*</td><td><a href=\".." .. dirList[i] .. "\">" .. dirList[i] .. "</a></td></tr>"
+                body = body .. "<tr><td>*</td><td><a href=\".." .. dirList[i] .. "\"  target=\"_blank\">" .. dirList[i] .. "</a></td></tr>"
             else
-                body = body .. "<tr><td>+</td><td><a href=\".." .. dirList[i] .. "\">" .. dirList[i] .. "</a></td></tr>"
+                body = body .. "<tr><td>+</td><td><a href=\"?dir=" .. dirList[i] .. "\">" .. dirList[i] .. "</a></td></tr>"
             end
         end
         ctx:writeBody(body)

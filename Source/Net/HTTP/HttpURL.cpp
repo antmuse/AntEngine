@@ -1,202 +1,85 @@
 #include "Net/HTTP/HttpURL.h"
 #include "Net/HTTP/HttpParserDef.h"
 #include "Converter.h"
+#include "TMap.h"
+#include "Logger.h"
 
 namespace app {
 namespace net {
 
-// not strict check
-static EPareState AppParseUrlChar2(EPareState s, const s8 ch) {
-    if (ch == ' ' || ch == '\r' || ch == '\n') {
-        return PS_DEAD;
-    }
-
-#if DHTTP_PARSE_STRICT
-    if (ch == '\t' || ch == '\f') {
-        return PS_DEAD;
-    }
-#endif
-
-    switch (s) {
-    case PS_REQ_URL_PRE:
-        /* Proxied requests are followed by scheme of an absolute URI (alpha).
-         * All methods except CONNECT are followed by '/' or '*'.
-         */
-        if (ch == '/' || ch == '*') {
-            return PS_REQ_URL_PATH;
-        }
-        if (IS_ALPHA(ch)) {
-            return PS_REQ_URL_SCHEMA;
-        }
-        break;
-
-    case PS_REQ_URL_SCHEMA:
-        if (IS_ALPHA(ch)) {
-            return s;
-        }
-        if (ch == ':') {
-            return PS_REQ_URL_SLASH;
-        }
-        break;
-
-    case PS_REQ_URL_SLASH:
-        if (ch == '/') {
-            return PS_REQ_URL_SLASH2;
-        }
-        break;
-
-    case PS_REQ_URL_SLASH2:
-        if (ch == '/') {
-            return PS_REQ_URL_HOST;
-        }
-        break;
-
-    case PS_REQ_SERVER_AT:
-        if (ch == '@') {
-            return PS_DEAD;
-        }
-
-        /* fall through */
-    case PS_REQ_URL_HOST:
-    case PS_REQ_SERVER:
-        if (ch == '/') {
-            return PS_REQ_URL_PATH;
-        }
-        if (ch == '?') {
-            return PS_REQ_URL_QUERY;
-        }
-        if (ch == '@') {
-            return PS_REQ_SERVER_AT;
-        }
-        if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
-            return PS_REQ_SERVER;
-        }
-        break;
-
-    case PS_REQ_URL_PATH:
-        switch (ch) {
-        case '?':
-            return PS_REQ_URL_QUERY;
-        case '#':
-            return PS_REQ_URL_FRAG;
-        default:
-            return s;
-        }
-        break;
-
-    case PS_REQ_URL_QUERY:
-    case PS_REQ_URL_QUERY_KEY:
-        switch (ch) {
-        case '?':
-            // allow extra '?' in query string
-            return PS_REQ_URL_QUERY_KEY;
-        case '#':
-            return PS_REQ_URL_FRAG;
-        default:
-            return PS_REQ_URL_QUERY_KEY;
-        }
-        break;
-
-    case PS_REQ_URL_FRAG:
-        switch (ch) {
-        case '?':
-            return PS_REQ_URL_FRAGMENT;
-        case '#':
-            return s;
-        default:
-            return PS_REQ_URL_FRAGMENT;
-        }
-        break;
-
-    case PS_REQ_URL_FRAGMENT:
-        switch (ch) {
-        case '?':
-        case '#':
-        default:
-            return s;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return PS_DEAD;
-}
-
 
 static EHttpHostState parseHostChar(EHttpHostState s, const s8 ch) {
     switch (s) {
-    case s_http_userinfo:
-    case s_http_userinfo_start:
+    case EHTTP_HOST_USER:
+    case EHTTP_HOST_USER_START:
         if (ch == '@') {
-            return s_http_host_start;
+            return EHTTP_HOST_START;
         }
         if (IS_USERINFO_CHAR(ch)) {
-            return s_http_userinfo;
+            return EHTTP_HOST_USER;
         }
         break;
 
-    case s_http_host_start:
+    case EHTTP_HOST_START:
         if (ch == '[') {
-            return s_http_host_v6_start;
+            return EHTTP_HOST_V6_START;
         }
         if (IS_HOST_CHAR(ch)) {
-            return s_http_host;
+            return EHTTP_HOST;
         }
         break;
 
-    case s_http_host:
+    case EHTTP_HOST:
         if (IS_HOST_CHAR(ch)) {
-            return s_http_host;
+            return EHTTP_HOST;
         }
         // break; fall
 
-    case s_http_host_v6_end:
+    case EHTTP_HOST_V6_END:
         if (ch == ':') {
-            return s_http_host_port_start;
+            return EHTTP_HOST_PORT_START;
         }
         break;
 
-    case s_http_host_v6:
+    case EHTTP_HOST_V6:
         if (ch == ']') {
-            return s_http_host_v6_end;
+            return EHTTP_HOST_V6_END;
         }
         // break; fall
 
-    case s_http_host_v6_start:
+    case EHTTP_HOST_V6_START:
         if (IS_HEX(ch) || ch == ':' || ch == '.') {
-            return s_http_host_v6;
+            return EHTTP_HOST_V6;
         }
-        if (s == s_http_host_v6 && ch == '%') {
-            return s_http_host_v6_zone_start;
+        if (s == EHTTP_HOST_V6 && ch == '%') {
+            return EHTTP_HOST_V6_ZONE_START;
         }
         break;
 
-    case s_http_host_v6_zone:
+    case EHTTP_HOST_V6_ZONE:
         if (ch == ']') {
-            return s_http_host_v6_end;
+            return EHTTP_HOST_V6_END;
         }
         // break; fall
 
-    case s_http_host_v6_zone_start:
+    case EHTTP_HOST_V6_ZONE_START:
         /* RFC 6874 Zone ID consists of 1*( unreserved / pct-encoded) */
         if (IS_ALPHANUM(ch) || ch == '%' || ch == '.' || ch == '-' || ch == '_' || ch == '~') {
-            return s_http_host_v6_zone;
+            return EHTTP_HOST_V6_ZONE;
         }
         break;
 
-    case s_http_host_port:
-    case s_http_host_port_start:
+    case EHTTP_HOST_PORT:
+    case EHTTP_HOST_PORT_START:
         if (IS_NUM(ch)) {
-            return s_http_host_port;
+            return EHTTP_HOST_PORT;
         }
         break;
 
     default:
         break;
     }
-    return s_http_host_dead;
+    return EHTTP_HOST_DEAD;
 }
 
 
@@ -204,18 +87,53 @@ HttpURL::HttpURL() {
     clear();
 }
 
+
 HttpURL::~HttpURL() {
 }
 
-void HttpURL::append(const s8* buf, size_t sz) {
+
+
+bool HttpURL::assign(const s8* buf, usz sz) {
+    mData.assign(buf, sz);
+    return parser(0);
+}
+
+
+void HttpURL::append(const s8* buf, usz sz) {
     mData.append(buf, sz);
 }
 
 
+bool HttpURL::getParam(const String& key, String& val) {
+    TMap<String, String>::Node* nd = mParams.find(key);
+    if (!nd) {
+        // val.resize();
+        return false;
+    }
+    val = nd->getValue();
+    return true;
+}
+
+usz HttpURL::sumCacheSize() const {
+    usz ret = mData.size();
+    if (!mParams.empty()) {
+        // ret*3 for encodeURL
+        for (TMap<String, String>::ConstIterator it = mParams.getConstIterator(); !it.atEnd(); ++it) {
+            ret += it->getKey().size() * 3;
+            ret += it->getValue().size() * 3;
+            ++ret;
+        }
+    }
+    return ret + 2;
+}
+
+
 void HttpURL::clear() {
+    mPort = 0;
     mFieldSet = 0;
     memset(&mFieldData, 0, sizeof(mFieldData));
     mData.resize(0);
+    mParams.clear();
 }
 
 
@@ -275,8 +193,9 @@ bool HttpURL::encode(const s8* uri, usz len) {
     }
     mData.resize(0);
     mData.reserve(len * 3 + 4);
-    mData.resize(encodeURL(uri, len, (s8*)mData.c_str(), mData.capacity()));
-    return parser();
+    //TODO: should encode part by part
+    mData.resize(encodeURL(uri, len, (s8*)mData.data(), mData.capacity()));
+    return parser(0);
 }
 
 
@@ -285,8 +204,13 @@ bool HttpURL::decode(const s8* uri, usz len) {
         return false;
     }
     mData.assign(uri, len);
-    mData.resize(decodeURL((s8*)mData.c_str(), mData.size()));
-    return parser();
+    bool ret = parser(0);
+    // should parse before decode to avoid read UTF8 bytes.
+    if (ret) {
+        mFieldData[UF_PATH].mLen = decodeURL(mData.data() + mFieldData[UF_PATH].mOffset, mFieldData[UF_PATH].mLen);
+        // mData.resize(); // TODO: shrink data len;
+    }
+    return ret;
 }
 
 bool HttpURL::isHttps() const {
@@ -300,13 +224,13 @@ bool HttpURL::isHttps() const {
 StringView HttpURL::getNode(u32 idx) const {
     StringView ret;
     if (idx < UF_MAX) {
-        ret.set((s8*)mData.c_str() + mFieldData[idx].mOffset, mFieldData[idx].mLen);
+        ret.set((s8*)mData.data() + mFieldData[idx].mOffset, mFieldData[idx].mLen);
     }
     return ret;
 }
 
-bool HttpURL::parser() {
-    s32 ret = parseURL(mData.c_str(), mData.size(), 0);
+bool HttpURL::parser(s32 is_connect) {
+    s32 ret = parseURL(mData.data(), mData.size(), is_connect);
     if (0 == ret) {
         StringView ret = getNode(UF_SCHEMA);
         ret.toLower();
@@ -330,37 +254,37 @@ s32 HttpURL::parseHost(const s8* buf, s32 found_at) {
     DASSERT(mFieldSet & (1 << UF_HOST));
     mFieldData[UF_HOST].mLen = 0;
 
-    EHttpHostState s = found_at ? s_http_userinfo_start : s_http_host_start;
+    EHttpHostState s = found_at ? EHTTP_HOST_USER_START : EHTTP_HOST_START;
 
     for (const s8* p = buf + mFieldData[UF_HOST].mOffset; p < buf + buflen; p++) {
         EHttpHostState new_s = parseHostChar(s, *p);
 
-        if (new_s == s_http_host_dead) {
+        if (new_s == EHTTP_HOST_DEAD) {
             return 1;
         }
 
         switch (new_s) {
-        case s_http_host:
-            if (s != s_http_host) {
+        case EHTTP_HOST:
+            if (s != EHTTP_HOST) {
                 mFieldData[UF_HOST].mOffset = (u16)(p - buf);
             }
             mFieldData[UF_HOST].mLen++;
             break;
 
-        case s_http_host_v6:
-            if (s != s_http_host_v6) {
+        case EHTTP_HOST_V6:
+            if (s != EHTTP_HOST_V6) {
                 mFieldData[UF_HOST].mOffset = (u16)(p - buf);
             }
             mFieldData[UF_HOST].mLen++;
             break;
 
-        case s_http_host_v6_zone_start:
-        case s_http_host_v6_zone:
+        case EHTTP_HOST_V6_ZONE_START:
+        case EHTTP_HOST_V6_ZONE:
             mFieldData[UF_HOST].mLen++;
             break;
 
-        case s_http_host_port:
-            if (s != s_http_host_port) {
+        case EHTTP_HOST_PORT:
+            if (s != EHTTP_HOST_PORT) {
                 mFieldData[UF_PORT].mOffset = (u16)(p - buf);
                 mFieldData[UF_PORT].mLen = 0;
                 mFieldSet |= (1 << UF_PORT);
@@ -368,8 +292,8 @@ s32 HttpURL::parseHost(const s8* buf, s32 found_at) {
             mFieldData[UF_PORT].mLen++;
             break;
 
-        case s_http_userinfo:
-            if (s != s_http_userinfo) {
+        case EHTTP_HOST_USER:
+            if (s != EHTTP_HOST_USER) {
                 mFieldData[UF_USERINFO].mOffset = (u16)(p - buf);
                 mFieldData[UF_USERINFO].mLen = 0;
                 mFieldSet |= (1 << UF_USERINFO);
@@ -385,14 +309,14 @@ s32 HttpURL::parseHost(const s8* buf, s32 found_at) {
 
     /* Make sure we don't end somewhere unexpected */
     switch (s) {
-    case s_http_host_start:
-    case s_http_host_v6_start:
-    case s_http_host_v6:
-    case s_http_host_v6_zone_start:
-    case s_http_host_v6_zone:
-    case s_http_host_port_start:
-    case s_http_userinfo:
-    case s_http_userinfo_start:
+    case EHTTP_HOST_START:
+    case EHTTP_HOST_V6_START:
+    case EHTTP_HOST_V6:
+    case EHTTP_HOST_V6_ZONE_START:
+    case EHTTP_HOST_V6_ZONE:
+    case EHTTP_HOST_PORT_START:
+    case EHTTP_HOST_USER:
+    case EHTTP_HOST_USER_START:
         return 1;
     default:
         break;
@@ -403,32 +327,33 @@ s32 HttpURL::parseHost(const s8* buf, s32 found_at) {
 
 
 s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
-    if (buflen == 0) {
-        return 1;
-    }
-
     mPort = 0;
     mFieldSet = 0;
     memset(&mFieldData, 0, sizeof(mFieldData));
+
+    if (buflen == 0) {
+        return EE_ERROR;
+    }
 
     s32 found_at = 0;
     EPareState s = is_connect ? PS_REQ_URL_HOST : PS_REQ_URL_PRE;
     EHttpUrlFields uf;
     EHttpUrlFields old_uf = UF_MAX;
     for (const s8* p = buf; p < buf + buflen; p++) {
-        s = AppParseUrlChar2(s, *p);
+        s = AppParseUrlChar(s, *p);
 
         // Figure out the next field that we're operating on
         switch (s) {
         case PS_DEAD:
-            return 1;
+            return EE_ERROR;
 
-            // Skip delimeters
+        // Skip delimeters
         case PS_REQ_URL_SLASH:
         case PS_REQ_URL_SLASH2:
         case PS_REQ_URL_HOST:
-        case PS_REQ_URL_QUERY:
-        case PS_REQ_URL_FRAG:
+        case PS_REQ_URL_QUERY_KEY_PRE:
+        case PS_REQ_URL_QUERY_VAL_PRE:
+        case PS_REQ_URL_FRAG_PRE:
             continue;
 
         case PS_REQ_URL_SCHEMA:
@@ -447,10 +372,11 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
             break;
 
         case PS_REQ_URL_QUERY_KEY:
+        case PS_REQ_URL_QUERY_VAL:
             uf = UF_QUERY;
             break;
-
-        case PS_REQ_URL_FRAGMENT:
+        
+        case PS_REQ_URL_FRAG:
             uf = UF_FRAGMENT;
             break;
 
@@ -475,18 +401,18 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
     /* host must be present if there is a schema */
     /* parsing http:///toto will fail */
     if ((mFieldSet & (1 << UF_SCHEMA)) && (mFieldSet & (1 << UF_HOST)) == 0) {
-        return 1;
+        return EE_ERROR;
     }
 
     if (mFieldSet & (1 << UF_HOST)) {
         if (parseHost(buf, found_at) != 0) {
-            return 1;
+            return EE_ERROR;
         }
     }
 
     /* CONNECT requests can only contain "hostname:port" */
     if (is_connect && mFieldSet != ((1 << UF_HOST) | (1 << UF_PORT))) {
-        return 1;
+        return EE_ERROR;
     }
 
     if (mFieldSet & (1 << UF_PORT)) {
@@ -509,9 +435,9 @@ s32 HttpURL::parseURL(const s8* buf, usz buflen, s32 is_connect) {
     }
 
     // make safe path
-    s8* pos = const_cast<s8*>(mData.c_str()) + mFieldData[UF_PATH].mOffset;
+    s8* pos = const_cast<s8*>(mData.data()) + mFieldData[UF_PATH].mOffset;
     mFieldData[UF_PATH].mLen = static_cast<u16>(AppSimplifyPath(pos, pos + mFieldData[UF_PATH].mLen));
-    return 0;
+    return EE_OK;
 }
 
 

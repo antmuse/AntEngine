@@ -68,6 +68,7 @@ void AppTicker::http_task(void* dat) {
     msg->getHead().add("Accept", "*/*");
     msg->setMethod(net::HTTP_GET);
     msg->setURL(url);
+    msg->getURL().addParam("skuId", "144446");
     s32 fly = nd->launch(msg);
     if (EE_OK != fly) {
         printf("url = %s, ip=%s\n", url, nd->getHandle().getRemote().getStr());

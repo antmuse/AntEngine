@@ -56,6 +56,10 @@ public:
         return mWebRootPath;
     }
 
+    net::HttpMsg* getRepMsg() {
+        return mMsg;
+    }
+
 private:
     // lua
     script::LuaThread mLuaThread;

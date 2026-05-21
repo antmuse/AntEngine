@@ -28,18 +28,19 @@
 
 
 #include "TString.h"
+#include "TMap.h"
 
 namespace app {
 namespace net {
 
 enum EHttpUrlFields {
     UF_SCHEMA = 0,
-    UF_HOST = 1,
-    UF_PORT = 2,
-    UF_PATH = 3,
-    UF_QUERY = 4,
-    UF_FRAGMENT = 5,
-    UF_USERINFO = 6,
+    UF_USERINFO = 1,
+    UF_HOST = 2,
+    UF_PORT = 3,
+    UF_PATH = 4,
+    UF_QUERY = 5,
+    UF_FRAGMENT = 6,
 
     UF_MAX = 7
 };
@@ -64,9 +65,15 @@ public:
 
     void clear();
 
-    bool parser();
+    /**
+    * @param is_connect 1 if parse CONNECT requests
+    */
+    bool parser(s32 is_connect);
 
-    void append(const s8* buf, size_t sz);
+    /** @return true if parse success, else false. */
+    bool assign(const s8* buf, usz sz);
+
+    void append(const s8* buf, usz sz);
 
     bool isHttps() const;
 
@@ -90,12 +97,24 @@ public:
 
     StringView getNode(u32 idx) const;
 
+    bool getParam(const String& key, String& val);
+
+    void addParam(const String& key, const String& val) {
+        mParams.set(key, val);
+    }
+
+    const TMap<String, String>& getParams() const {
+        return mParams;
+    }
+
+    usz sumCacheSize() const;
 
 private:
+    // String mFragment; not support
     String mData;
-
-    u16 mFieldSet; /* Bitmask of (1 << UF_*) values */
-    u16 mPort;     /* Converted UF_PORT string */
+    TMap<String, String> mParams; // querys kv
+    u16 mFieldSet;                /* Bitmask of (1 << UF_*) values */
+    u16 mPort;                    /* Converted UF_PORT string */
     struct {
         u16 mOffset; /* Offset into buffer in which field starts */
         u16 mLen;    /* Length of run in buffer */

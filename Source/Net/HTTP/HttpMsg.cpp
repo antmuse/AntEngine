@@ -187,11 +187,28 @@ RequestFD* HttpMsg::buildReq() {
     } else {
         *dst++ = '/';
     }
+    if (!mURL.getParams().empty()) {
+        *dst++ = '?';
+        for (TMap<String, String>::ConstIterator kv = mURL.getParams().getConstIterator();;) {
+            const String& key = kv->getKey();
+            dst += HttpURL::encodeURL(key.data(), key.size(), dst, it->mAllocated - static_cast<u32>(dst - it->mData));
+            *dst++ = '=';
+            const String& val = kv->getValue();
+            dst += HttpURL::encodeURL(val.data(), val.size(), dst, it->mAllocated - static_cast<u32>(dst - it->mData));
+            ++kv;
+            if (kv.atEnd()) {
+                break;
+            } else {
+                *dst++ = '&';
+            }
+        }
+    }
     buf.set(" HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n") - 1);
     memcpy(dst, buf.mData, buf.mLen);
     dst += buf.mLen;
 
-    buf.set("Host:", sizeof("Host:") - 1);
+    // don't auto insert header: Host
+    buf.set("Host: ", sizeof("Host: ") - 1);
     memcpy(dst, buf.mData, buf.mLen);
     dst += buf.mLen;
     buf = mURL.getHost();
@@ -200,8 +217,8 @@ RequestFD* HttpMsg::buildReq() {
     *dst++ = '\r';
     *dst++ = '\n';
 
+    it->mUsed = static_cast<u32>(dst - it->mData);
 
-    it->mUsed = dst - it->mData;
     dumpHead(it);
     dumpBody(it);
     return it;
@@ -228,6 +245,7 @@ usz HttpMsg::dumpBody(RequestFD* it) {
     mBody.clear(len);
     return len;
 }
+
 
 void HttpMsg::dumpHead(RequestFD* it) {
     if (RSTEP_HEAD_END & mWriteStep) {
@@ -273,9 +291,8 @@ s32 HttpMsg::dumpLine(RequestFD* it) {
 }
 
 
-s32 HttpMsg::setURL(const String& req) {
-    mURL.append(req.c_str(), req.size());
-    return mURL.parser() ? EE_OK : EE_ERROR;
+bool HttpMsg::setURL(const String& req) {
+    return mURL.assign(req.data(), req.size());
 }
 
 StringView HttpMsg::getMethodStr(EHttpMethod it) {

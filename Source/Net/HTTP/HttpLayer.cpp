@@ -643,7 +643,7 @@ enum EHttpHeaderState {
  * assumed that the caller cares about (and can detect) the transition between
  * URL and non-URL states by looking for these.
  */
-static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
+EPareState AppParseUrlChar(EPareState s, const s8 ch) {
     if (ch == ' ' || ch == '\r' || ch == '\n') {
         return PS_DEAD;
     }
@@ -700,7 +700,7 @@ static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
             return PS_REQ_URL_PATH;
         }
         if (ch == '?') {
-            return PS_REQ_URL_QUERY;
+            return PS_REQ_URL_QUERY_KEY_PRE;
         }
         if (ch == '@') {
             return PS_REQ_SERVER_AT;
@@ -716,39 +716,47 @@ static EPareState AppParseUrlChar(EPareState s, const s8 ch) {
         }
         switch (ch) {
         case '?':
-            return PS_REQ_URL_QUERY;
+            return PS_REQ_URL_QUERY_KEY_PRE;
         case '#':
-            return PS_REQ_URL_FRAG;
+            return PS_REQ_URL_FRAG_PRE;
         }
         break;
 
-    case PS_REQ_URL_QUERY:
+    case PS_REQ_URL_QUERY_KEY_PRE:
     case PS_REQ_URL_QUERY_KEY:
-        if (IS_URL_CHAR(ch)) {
-            return PS_REQ_URL_QUERY_KEY;
-        }
         switch (ch) {
         case '?':
-            /* allow extra '?' in query string */
-            return PS_REQ_URL_QUERY_KEY;
+            return PS_REQ_URL_QUERY_KEY; // allow extra '?' in query string
         case '#':
-            return PS_REQ_URL_FRAG;
+            return PS_REQ_URL_FRAG_PRE;
+        case '=':
+            return PS_REQ_URL_QUERY_VAL_PRE;
         }
+        return IS_URL_CHAR(ch) ? PS_REQ_URL_QUERY_KEY : PS_DEAD;
         break;
 
-    case PS_REQ_URL_FRAG:
-        if (IS_URL_CHAR(ch)) {
-            return PS_REQ_URL_FRAGMENT;
+    case PS_REQ_URL_QUERY_VAL_PRE:
+    case PS_REQ_URL_QUERY_VAL:
+        switch (ch) {
+        case '&':
+            return PS_REQ_URL_QUERY_KEY_PRE;  // next key
+        case '#':
+            return PS_REQ_URL_FRAG_PRE;
         }
+        return IS_URL_CHAR(ch) ? PS_REQ_URL_QUERY_VAL : PS_DEAD;
+        break;
+
+    case PS_REQ_URL_FRAG_PRE:  // #
         switch (ch) {
         case '?':
-            return PS_REQ_URL_FRAGMENT;
+            return PS_REQ_URL_FRAG;
         case '#':
             return s;
         }
+        return IS_URL_CHAR(ch) ? PS_REQ_URL_FRAG : PS_DEAD;
         break;
 
-    case PS_REQ_URL_FRAGMENT:
+    case PS_REQ_URL_FRAG:
         if (IS_URL_CHAR(ch)) {
             return s;
         }
@@ -920,6 +928,14 @@ void HttpLayer::reset() {
 }
 
 
+void HttpLayer::addUrlQuery(StringView& key, StringView& val) {
+    DASSERT(mMsg);
+    key.mLen = HttpURL::decodeURL(key.mData, key.mLen);
+    val.mLen = HttpURL::decodeURL(val.mData, val.mLen);
+    mMsg->mURL.addParam(key, val);
+}
+
+
 usz HttpLayer::parseBuf(const s8* data, usz len) {
     if (mHttpError != HPE_OK) {
         return 0;
@@ -928,6 +944,7 @@ usz HttpLayer::parseBuf(const s8* data, usz len) {
     s8 ch;   // raw byte
     s8 lowc; // low char of ch
     u8 unhex_val;
+    bool re_check = false;
     StringView tmpkey(data, 0);
     StringView tmpval(data, 0);
     StringView tbody(data, 0);
@@ -1298,7 +1315,8 @@ GT_REPARSE: // recheck current byte
             if (ch == ' ') {
                 break;
             }
-            tmpval.set(pp, 0);
+            tbody.set(pp, GMAX_USIZE);  // mLen=GMAX_USIZE, 表示需要resize并回调
+            tmpkey.set(pp, 0);
             if (mMethod == HTTP_CONNECT) {
                 tmpstate = PS_REQ_URL_HOST;
             }
@@ -1316,7 +1334,7 @@ GT_REPARSE: // recheck current byte
         case PS_REQ_URL_HOST:
         {
             switch (ch) {
-            case ' ': // No whitespace allowed here
+            case ' ': // whitespace not allowed here
             case CR:
             case LF:
                 mHttpError = HPE_INVALID_URL;
@@ -1331,25 +1349,70 @@ GT_REPARSE: // recheck current byte
             break;
         }
 
+        case PS_REQ_URL_FRAG_PRE:       // #
+        case PS_REQ_URL_QUERY_KEY_PRE:  // ? or &
+            if (tmpkey.mData && tmpkey.mLen > 0) {
+                tmpval.mLen = pp - 1 - tmpval.mData; // maybe tmpval.mLen=0
+                addUrlQuery(tmpkey, tmpval);
+            }
+            tmpkey.set(pp, 0);
+            tmpval.set(pp, 0);
+            if (GMAX_USIZE == tbody.mLen) {
+                DASSERT(mHttpError == HPE_OK);
+                tbody.mLen = pp - 1 - tbody.mData; // 重新计算长度
+                mState = tmpstate;
+                pe = pp; // steped
+                if (UNLIKELY(!mMsg->mURL.decode(tbody.mData, tbody.mLen))) {
+                    mReadSize = nread;
+                    mHttpError = HPE_CB_URL;
+                    return (pe - data);
+                }
+            }
+            tmpstate = AppParseUrlChar(tmpstate, ch);
+            if (UNLIKELY(tmpstate == PS_DEAD)) {
+                mHttpError = HPE_INVALID_URL;
+                goto GT_ERROR;
+            }
+            break;
+        case PS_REQ_URL_QUERY_VAL_PRE:  // =
+            tmpkey.mLen = pp - 1 - tmpkey.mData;
+            tmpval.set(pp, 0);
+            tmpstate = AppParseUrlChar(tmpstate, ch);
+            if (UNLIKELY(tmpstate == PS_DEAD)) {
+                mHttpError = HPE_INVALID_URL;
+                goto GT_ERROR;
+            }
+            break;
+        case PS_REQ_URL_QUERY_KEY:
+        case PS_REQ_URL_QUERY_VAL:
         case PS_REQ_SERVER:
         case PS_REQ_SERVER_AT:
         case PS_REQ_URL_PATH:
-        case PS_REQ_URL_QUERY:
-        case PS_REQ_URL_QUERY_KEY:
         case PS_REQ_URL_FRAG:
-        case PS_REQ_URL_FRAGMENT:
         {
             switch (ch) {
             case ' ':
+                re_check = true;    // double check url_path or url_query_key
+                if (PS_REQ_URL_QUERY_KEY == tmpstate) {
+                    tmpkey.mLen = pp - tmpkey.mData;
+                }
+                if (PS_REQ_URL_QUERY_VAL == tmpstate) {
+                    tmpval.mLen = pp - tmpval.mData;
+                }
                 tmpstate = PS_REQ_HTTP_START;
-                tmpval.mLen = 1; // tmpval.mLen>0表示需要回调
                 break;
             case CR:
             case LF:
+                re_check = true;    // double check url_path or url_query_key
                 mVersionMajor = 1;
                 mVersionMinor = 0;
+                if (PS_REQ_URL_QUERY_KEY == tmpstate) {
+                    tmpkey.mLen = pp - tmpkey.mData;
+                }
+                if (PS_REQ_URL_QUERY_VAL == tmpstate) {
+                    tmpval.mLen = pp - tmpval.mData;
+                }
                 tmpstate = (ch == CR ? PS_REQ_LINE_END : PS_HEAD_FIELD_PRE);
-                tmpval.mLen = 1; // tmpval.mLen>0表示需要回调
                 break;
             default:
                 tmpstate = AppParseUrlChar(tmpstate, ch);
@@ -1358,15 +1421,22 @@ GT_REPARSE: // recheck current byte
                     goto GT_ERROR;
                 }
             }
-            if (1 == tmpval.mLen) {
-                DASSERT(mHttpError == HPE_OK);
-                tmpval.mLen = pp - tmpval.mData; // 重新计算长度
-                mState = tmpstate;
-                pe = pp + 1; // steped
-                if (UNLIKELY(!mMsg->mURL.decode(tmpval.mData, tmpval.mLen))) {
-                    mReadSize = nread;
-                    mHttpError = HPE_CB_URL;
-                    return (pe - data);
+            if (re_check) {
+                re_check = false;
+                // TODO: recheck url_frag ?
+                if (GMAX_USIZE == tbody.mLen) { // recheck url_path
+                    DASSERT(mHttpError == HPE_OK);
+                    tbody.mLen = pp - tbody.mData; // 重新计算长度
+                    mState = tmpstate;
+                    pe = pp + 1; // steped
+                    if (UNLIKELY(!mMsg->mURL.decode(tbody.mData, tbody.mLen))) {
+                        mReadSize = nread;
+                        mHttpError = HPE_CB_URL;
+                        return (pe - data);
+                    }
+                }
+                if (tmpkey.mLen) { // recheck query
+                    addUrlQuery(tmpkey, tmpval);
                 }
                 msgPath();
             }

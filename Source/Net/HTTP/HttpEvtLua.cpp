@@ -53,8 +53,9 @@ s32 HttpEvtLua::onReqHeadDone(net::HttpMsg* msg) {
         return EE_ERROR;
     }
     mMsgResp = new net::HttpMsg(msg->getHttpLayer());
+    mMsgResp->setEvent(this);
     creatCurrContext();
-    msg->grab();
+
     grab();
     mMsg = msg;
     return EE_OK;
@@ -66,6 +67,10 @@ s32 HttpEvtLua::onLayerClose(net::HttpMsg* msg) {
 }
 
 s32 HttpEvtLua::onReqBodyDone(net::HttpMsg* msg) {
+    if (!mLuaThread.mSubVM) {
+        DLOG(ELL_ERROR, "pls check lua file = %s", msg->getRealPath().data());
+        return EE_ERROR;
+    }
     script::ScriptManager& eng = script::ScriptManager::getInstance();
     eng.resumeThread(mLuaThread);
     if (EE_OK == mLuaThread.mStatus) {
@@ -184,7 +189,7 @@ s32 HttpEvtLua::writeRespBody(const s8* buf, usz len) {
     }
     mMsgResp->writeBody(buf, len);
     if (RSTEP_STEP_CHUNK & mRespStep) {
-        mMsg->writeBody("\r\n", 2);
+        mMsgResp->writeBody("\r\n", 2);
     }
     return EE_OK;
 }
