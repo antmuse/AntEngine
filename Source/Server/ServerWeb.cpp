@@ -1,7 +1,8 @@
 #include "ServerWeb.h"
 #include "Logger.h"
 #include "Net/HTTP/HttpEvtPath.h"
-#include "Net/HTTP/HttpEvtFile.h"
+#include "Net/HTTP/HttpEvtFileReader.h"
+#include "Net/HTTP/HttpEvtFileWriter.h"
 #include "Net/HTTP/HttpEvtError.h"
 #include "Net/HTTP/HttpEvtLua.h"
 #include "Script/ScriptManager.h"
@@ -52,28 +53,32 @@ s32 ServerWeb::createMsgEvent(HttpMsg* msg) {
             evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
         }
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
-        if (1 == checkDisk) {
+        if (1 == checkDisk) { // file
             if (net::HTTP_GET == cmd) {
-                evt = new HttpEvtFile(true);
+                evt = new HttpEvtFileReader();
+            } else if (net::HTTP_DELETE == cmd) {
+                evt = new HttpEvtFileWriter();
             } else {
                 evt = new HttpEvtError(401);
             }
-        } else if (2 == checkDisk) {
+        } else if (2 == checkDisk) { // path
             if (net::HTTP_GET == cmd) {
                 evt = new HttpEvtPath();
+            } else if (net::HTTP_DELETE == cmd) {
+                evt = new HttpEvtFileWriter();
             } else {
                 evt = new HttpEvtError(401);
             }
         } else {
             if (net::HTTP_POST == cmd || net::HTTP_PUT == cmd) {
-                evt = new HttpEvtFile(false); // upload
+                evt = new HttpEvtFileWriter(); // upload
             } else {
                 evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
             }
         }
     } else { // readonly
         if (net::HTTP_GET == cmd && 1 == checkDisk) {
-            evt = new HttpEvtFile(true);
+            evt = new HttpEvtFileReader();
         } else {
             evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
         }

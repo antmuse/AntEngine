@@ -1,7 +1,8 @@
 #include "Net/HTTP/Website.h"
 #include "Logger.h"
 #include "Net/HTTP/HttpEvtPath.h"
-#include "Net/HTTP/HttpEvtFile.h"
+#include "Net/HTTP/HttpEvtFileReader.h"
+#include "Net/HTTP/HttpEvtFileWriter.h"
 #include "Net/HTTP/HttpEvtError.h"
 #include "Net/HTTP/HttpEvtLua.h"
 #include "Script/ScriptManager.h"
@@ -56,7 +57,7 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
         if (1 == checkDisk) {
             if (net::HTTP_GET == cmd) {
-                evt = new HttpEvtFile(true);
+                evt = new HttpEvtFileReader();
             } else {
                 evt = new HttpEvtError(401);
             }
@@ -68,14 +69,14 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
             }
         } else {
             if (net::HTTP_POST == cmd || net::HTTP_PUT == cmd) {
-                evt = new HttpEvtFile(false); // upload
+                evt = new HttpEvtFileWriter(); // upload
             } else {
                 evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
             }
         }
     } else { // readonly
         if (net::HTTP_GET == cmd && 1 == checkDisk) {
-            evt = new HttpEvtFile(true);
+            evt = new HttpEvtFileReader();
         } else {
             evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
         }

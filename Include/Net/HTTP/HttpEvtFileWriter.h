@@ -6,10 +6,10 @@
 
 namespace app {
 
-class HttpEvtFile : public net::HttpEventer {
+class HttpEvtFileWriter : public net::HttpEventer {
 public:
-    HttpEvtFile(bool readonly);
-    virtual ~HttpEvtFile();
+    HttpEvtFileWriter();
+    virtual ~HttpEvtFileWriter();
 
     virtual s32 onLayerClose(net::HttpMsg* msg) override;
 
@@ -33,28 +33,21 @@ private:
     net::HttpMsg* mMsg = nullptr;
     net::HttpMsg* mMsgResp = nullptr; // back msg
     usz mOffset = 0;
-    bool mReadOnly;
     bool mReqBodyFinish = true;
 
     s32 sendRespHead(net::HttpMsg* req, s32 err, const s8* body, bool chunk, bool send);
-    void onFileRead(RequestFD* it);
     void onFileWrite(RequestFD* it);
     void onFileClose(Handle* it);
 
-    s32 launchRead();
     s32 launchWrite();
     s32 postResp();
 
-    static void funcOnRead(RequestFD* it) {
-        HttpEvtFile& nd = *(HttpEvtFile*)it->mUser;
-        nd.onFileRead(it);
-    }
     static void funcOnWrite(RequestFD* it) {
-        HttpEvtFile& nd = *(HttpEvtFile*)it->mUser;
+        HttpEvtFileWriter& nd = *(HttpEvtFileWriter*)it->mUser;
         nd.onFileWrite(it);
     }
     static void funcOnClose(Handle* it) {
-        HttpEvtFile& nd = *(HttpEvtFile*)it->getUser();
+        HttpEvtFileWriter& nd = *(HttpEvtFileWriter*)it->getUser();
         nd.onFileClose(it);
     }
 };

@@ -136,7 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -196,7 +196,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>

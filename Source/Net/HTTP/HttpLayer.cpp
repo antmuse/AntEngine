@@ -930,7 +930,7 @@ void HttpLayer::reset() {
 
 void HttpLayer::addUrlQuery(StringView& key, StringView& val) {
     DASSERT(mMsg);
-    key.mLen = HttpURL::decodeURL(key.mData, key.mLen);
+    // key.mLen = HttpURL::decodeURL(key.mData, key.mLen);
     val.mLen = HttpURL::decodeURL(val.mData, val.mLen);
     mMsg->mURL.addParam(key, val);
 }

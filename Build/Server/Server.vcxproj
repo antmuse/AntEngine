@@ -125,6 +125,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Server;$(SolutionDir)../Depend/jsoncpp</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -186,6 +187,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Server;$(SolutionDir)../Depend/jsoncpp</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

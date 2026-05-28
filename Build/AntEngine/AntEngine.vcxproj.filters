@@ -284,9 +284,6 @@
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFile.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
@@ -337,6 +334,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Script\LuaHttpEvent.cpp">
       <Filter>Source\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileReader.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileWriter.cpp">
+      <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -610,9 +613,6 @@
     <ClInclude Include="..\..\Include\RefCount.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFile.h">
-      <Filter>Include\Net\HTTP</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
@@ -665,6 +665,12 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtShow.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileReader.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileWriter.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
   </ItemGroup>

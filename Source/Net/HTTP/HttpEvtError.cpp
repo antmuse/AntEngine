@@ -54,7 +54,7 @@ text-align: center;
 </head><body>
 <h1>ERROR )";
     ebody += mErr;
-    ebody += R"(</h1><hr><br><p>file or not supported, pls wait for more.</p><br><hr></body></html>)";
+    ebody += R"(</h1><hr><br><p>:) Oops...</p><br><hr></body></html>)";
     net::HttpMsg* resp = new net::HttpMsg(msg->getHttpLayer());
     resp->setStatus(mErr, "ERR");
     resp->getHead().setLength(ebody.size());

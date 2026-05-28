@@ -24,6 +24,7 @@
 
 
 #include "System.h"
+#include <filesystem>
 #if defined(DOS_WINDOWS)
 #include <winsock2.h>
 #include <io.h>
@@ -341,6 +342,19 @@ s32 System::removeFile(const String& it) {
 #endif
     return TRUE == DeleteFile(fname) ? EE_OK : System::getAppError();
 }
+
+
+s64 System::removeAll(const String& it) {
+    std::filesystem::path aim = it.data();
+    std::error_code ee;
+    s64 cnt = std::filesystem::remove_all(aim, ee);
+    if (ee) {
+        DLOG(ELL_ERROR, "%s", ee.message());
+        return EE_ERROR;
+    } 
+    return cnt;
+}
+
 
 s32 System::isExist(const String& it) {
     tchar fname[260];

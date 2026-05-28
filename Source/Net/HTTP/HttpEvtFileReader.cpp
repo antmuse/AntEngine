@@ -1,18 +1,17 @@
-#include "Net/HTTP/HttpEvtFile.h"
+#include "Net/HTTP/HttpEvtFileReader.h"
 #include "RingBuffer.h"
 #include "Net/HTTP/Website.h"
 
-// TODO: fix file upload
 
 namespace app {
 #define DSTRV(V) V, sizeof(V) - 1
 
 static const s32 G_BLOCK_HEAD_SIZE = 6;
 
-HttpEvtFile::HttpEvtFile(bool readonly) : mReadOnly(readonly) {
+HttpEvtFileReader::HttpEvtFileReader() {
 }
 
-HttpEvtFile::~HttpEvtFile() {
+HttpEvtFileReader::~HttpEvtFileReader() {
     DASSERT(mMsg == nullptr);
     if (mMsg) {
         mMsg->drop();
@@ -28,25 +27,25 @@ HttpEvtFile::~HttpEvtFile() {
     }
 }
 
-s32 HttpEvtFile::onReadError(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onReadError(net::HttpMsg* msg) {
     return EE_ERROR;
 }
 
-s32 HttpEvtFile::onRespWriteError(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onRespWriteError(net::HttpMsg* msg) {
     return EE_ERROR;
 }
 
-s32 HttpEvtFile::onReqChunkHeadDone(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onReqChunkHeadDone(net::HttpMsg* msg) {
     return EE_OK;
 }
 
 
-s32 HttpEvtFile::onReqChunkBodyDone(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onReqChunkBodyDone(net::HttpMsg* msg) {
     return EE_OK;
 }
 
 
-s32 HttpEvtFile::onRespWrite(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onRespWrite(net::HttpMsg* msg) {
     if (!mMsgResp) {
         return EE_OK;
     }
@@ -56,45 +55,12 @@ s32 HttpEvtFile::onRespWrite(net::HttpMsg* msg) {
     if (mFile->isClosing()) {
         return EE_CLOSING;
     }
-    return mReadOnly ? launchRead() : launchWrite();
+    return launchRead();
 }
 
 
-void HttpEvtFile::onFileClose(Handle* it) {
+void HttpEvtFileReader::onFileClose(Handle* it) {
     // mReqs.mUser = nullptr;
-    if (!mReadOnly) {
-        if (mMsg) {
-            if (mReqBodyFinish && mCache.empty()) {
-                DLOG(ELL_INFO, "onFileWrite>>success up, file=%s", mFile->getFileName().data());
-                const s8* resp = R"({"ecode":0,"emsg":"success"})";
-                sendRespHead(mMsg, net::HTTP_STATUS_OK, resp, true, false);
-            } else {
-                s32 ret = System::removeFile(mFile->getFileName());
-                DLOG(ELL_INFO, "onFileClose: frontend closed, %s to remove file= %s", EE_OK == ret ? "success" : "fail",
-                    mFile->getFileName().data());
-                const s8* resp = R"({"ecode":400,"emsg":"fail"})";
-                DLOG(ELL_INFO, "onFileWrite>>fail up, file=%s", mFile->getFileName().data());
-                sendRespHead(mMsg, net::HTTP_STATUS_FORBIDDEN, resp, true, false);
-            }
-
-            net::HttpHead& hed = mMsgResp->getHead();
-
-            StringView key(DSTRV("Access-Control-Allow-Origin"));
-            StringView val(DSTRV("*"));
-            hed.add(key, val);
-
-            val.set(DSTRV("application/json; charset=utf-8"));
-            hed.setContentType(val);
-
-            mMsgResp->writeLastChunk();
-            s32 ret = mMsgResp->getHttpLayer()->sendOut(mMsgResp);
-            DLOG(ELL_INFO, "onFileClose: file= %s, last resp = %d", mFile->getFileName().data(), ret);
-        } else {
-            DLOG(ELL_INFO, "onFileClose: file= %s, need remove", mFile->getFileName().data());
-        }
-    }
-
-    // mReqBodyFinish
     if (mMsg) {
         mMsg->drop();
         mMsg = nullptr;
@@ -111,7 +77,7 @@ void HttpEvtFile::onFileClose(Handle* it) {
 }
 
 
-s32 HttpEvtFile::onLayerClose(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onLayerClose(net::HttpMsg* msg) {
     if (mMsg) {
         mMsg->drop();
         mMsg = nullptr;
@@ -127,17 +93,15 @@ s32 HttpEvtFile::onLayerClose(net::HttpMsg* msg) {
 }
 
 
-s32 HttpEvtFile::onReqHeadDone(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onReqHeadDone(net::HttpMsg* msg) {
     msg->grab();
     mMsg = msg;
     mReqBodyFinish = false;
 
     net::EHttpMethod cmd = msg->getMethod();
-    switch (cmd) {
-    case net::HTTP_GET:
-    {
+    if (net::HTTP_GET == cmd) {
         mFile = new HandleFile();
-        mFile->setClose(EHT_FILE, HttpEvtFile::funcOnClose, this);
+        mFile->setClose(EHT_FILE, HttpEvtFileReader::funcOnClose, this);
         s32 ret = mFile->open(msg->getRealPath(), 1);
         if (EE_OK != ret) {
             mReqs.mError = ret;
@@ -145,81 +109,34 @@ s32 HttpEvtFile::onReqHeadDone(net::HttpMsg* msg) {
             mFile = nullptr;
             return sendRespHead(msg, net::HTTP_STATUS_NOT_FOUND, "open fail", false, true);
         }
-        mReqs.mCall = HttpEvtFile::funcOnRead;
+        mReqs.mCall = HttpEvtFileReader::funcOnRead;
         grab();
-        break;
-    }
-    case net::HTTP_PUT:
-    case net::HTTP_POST:
-    {
-        s32 ret = System::createPath(msg->getRealPath());
-        if (AppIsPathDelimiter(msg->getRealPath().lastChar())) {
-            // just create a path don't req on HandleFile
-            if (EE_OK != ret) {
-                return sendRespHead(msg, net::HTTP_STATUS_SERVICE_UNAVAILABLE, "create path fail", false, true);
-            }
-            return sendRespHead(msg, net::HTTP_STATUS_OK, "", false, true);
-        }
-        mFile = new HandleFile();
-        mFile->setClose(EHT_FILE, HttpEvtFile::funcOnClose, this);
-        ret = mFile->open(msg->getRealPath(), 2 | 4);
-        if (EE_OK != ret) {
-            mReqs.mError = ret;
-            delete mFile;
-            mFile = nullptr;
-            return sendRespHead(msg, net::HTTP_STATUS_SERVICE_UNAVAILABLE, "create file fail", false, true);
-        }
-        mReqs.mCall = HttpEvtFile::funcOnWrite;
-        grab();
-        break;
-    }
-    case net::HTTP_DELETE:
-    {
-        // don't req on HandleFile
-        s32 ret = System::removeFile(msg->getRealPath());
-        if (EE_OK != ret) {
-            return sendRespHead(msg, net::HTTP_STATUS_SERVICE_UNAVAILABLE, "delete fail", false, true);
-        }
-        return sendRespHead(msg, net::HTTP_STATUS_OK, "", false, true);
-    }
-    default:
+    } else {
         mMsg->drop();
         mMsg = nullptr;
         return sendRespHead(msg, net::HTTP_STATUS_METHOD_NOT_ALLOWED, "", false, true);
     }
 
-
     mOffset = 0;
     mReqs.mError = 0;
     mReqs.mUser = nullptr;
     sendRespHead(msg, net::HTTP_STATUS_OK, "", true, false);
-    return mReadOnly ? launchRead() : launchWrite();
+    return launchRead();
 }
 
 
-s32 HttpEvtFile::onReqBody(net::HttpMsg* msg) {
-    if (mReadOnly || !mFile || 0 == msg->getBody().size()) {
-        return EE_OK; // skip body if
-    }
-    Packet tmp;
-    tmp.swap(msg->getBody());
-    mCache.moveBack(std::move(tmp));
-    return launchWrite();
+s32 HttpEvtFileReader::onReqBody(net::HttpMsg* msg) {
+    return EE_OK; // skip body if
 }
 
 
-s32 HttpEvtFile::onReqBodyDone(net::HttpMsg* msg) {
+s32 HttpEvtFileReader::onReqBodyDone(net::HttpMsg* msg) {
     mReqBodyFinish = true;
-    s32 ret = onReqBody(msg);
-    // if (mMsg) {
-    //     mMsg->drop();
-    //     mMsg = nullptr;
-    // }
-    return ret;
+    return EE_OK; // skip body if
 }
 
 
-s32 HttpEvtFile::sendRespHead(net::HttpMsg* msg, s32 err, const s8* body, bool chunk, bool send) {
+s32 HttpEvtFileReader::sendRespHead(net::HttpMsg* msg, s32 err, const s8* body, bool chunk, bool send) {
     net::HttpMsg* omsg = new net::HttpMsg(msg->getHttpLayer());
     omsg->setEvent(this);
 
@@ -277,45 +194,7 @@ s32 HttpEvtFile::sendRespHead(net::HttpMsg* msg, s32 err, const s8* body, bool c
 }
 
 
-s32 HttpEvtFile::launchWrite() {
-    if (mReqs.mUsed > 0 || mReqs.mUser || !mMsgResp || 0 == mCache.size()) {
-        return EE_OK;
-    }
-    if (0 == mCache.size()) {
-        if (mReqBodyFinish && mFile) {
-            return mFile->launchClose();
-        }
-        return EE_OK;
-    }
-    Packet& pack = (*mCache.begin());
-    mReqs.mData = pack.data();
-    mReqs.mAllocated = (u32)pack.capacity();
-    mReqs.mUsed = (u32)pack.size();
-    mReqs.mUser = this;
-    mReqs.mError = mFile->write(&mReqs, mOffset);
-    if (EE_OK != mReqs.mError) {
-        return mFile->launchClose();
-    }
-    return EE_OK;
-}
-
-
-void HttpEvtFile::onFileWrite(RequestFD* it) {
-    if (it->mError) {
-        DLOG(ELL_ERROR, "onFileWrite>>err=%d, file=%s", it->mError, mFile->getFileName().data());
-        mFile->launchClose();
-        return;
-    }
-    mOffset += it->mUsed;
-    it->mUser = nullptr;
-    it->mUsed = 0;
-    auto nd = mCache.begin();
-    mCache.erase(nd);
-    launchWrite();
-}
-
-
-void HttpEvtFile::onFileRead(RequestFD* it) {
+void HttpEvtFileReader::onFileRead(RequestFD* it) {
     if (it->mError || !mMsg) {
         DLOG(ELL_ERROR, "onFileRead: err=%d, file=%s", it->mError, mFile->getFileName().data());
         mFile->launchClose();
@@ -346,7 +225,7 @@ void HttpEvtFile::onFileRead(RequestFD* it) {
 }
 
 
-s32 HttpEvtFile::launchRead() {
+s32 HttpEvtFileReader::launchRead() {
     if (EE_OK != mReqs.mError || !mFile || !mMsgResp) {
         return mReqs.mError;
     }
@@ -370,7 +249,7 @@ s32 HttpEvtFile::launchRead() {
 }
 
 
-s32 HttpEvtFile::postResp() {
+s32 HttpEvtFileReader::postResp() {
     s32 ret = mMsgResp->getHttpLayer()->sendOut(mMsgResp);
     if (EE_OK != ret) {
         DLOG(ELL_ERROR, "postResp fail, status=%d", mMsgResp->getStatus());

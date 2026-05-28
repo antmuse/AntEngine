@@ -191,7 +191,9 @@ RequestFD* HttpMsg::buildReq() {
         *dst++ = '?';
         for (TMap<String, String>::ConstIterator kv = mURL.getParams().getConstIterator();;) {
             const String& key = kv->getKey();
-            dst += HttpURL::encodeURL(key.data(), key.size(), dst, it->mAllocated - static_cast<u32>(dst - it->mData));
+            // dst += HttpURL::encodeURL(key.data(), key.size(), dst, it->mAllocated - static_cast<u32>(dst - it->mData));
+            memcpy(dst, key.data(), key.size());
+            dst += key.size();
             *dst++ = '=';
             const String& val = kv->getValue();
             dst += HttpURL::encodeURL(val.data(), val.size(), dst, it->mAllocated - static_cast<u32>(dst - it->mData));

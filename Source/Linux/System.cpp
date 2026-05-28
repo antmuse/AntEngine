@@ -24,6 +24,7 @@
 
 
 #include "System.h"
+#include <filesystem>
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -348,7 +349,19 @@ s32 System::createPath(const String& it) {
 
 
 s32 System::removeFile(const String& it) {
-    return remove(it.c_str());
+    return ::remove(it.c_str());
+}
+
+
+s64 System::removeAll(const String& it) {
+    std::filesystem::path aim = it.data();
+    std::error_code ee;
+    s64 cnt = std::filesystem::remove_all(aim, ee);
+    if (ee) {
+        DLOG(ELL_ERROR, "%s", ee.message());
+        return EE_ERROR;
+    } 
+    return cnt;
 }
 
 

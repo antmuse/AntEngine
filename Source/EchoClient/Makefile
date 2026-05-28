@@ -2,7 +2,7 @@
 
 CC := gcc
 CXX := g++
-CXX_FLAGS := -std=c++11 -m64 
+CXX_FLAGS := -std=c++17 -m64 
 
 ifeq ($(DEBUG),true)
 	CXX_FLAGS += -ggdb -O0

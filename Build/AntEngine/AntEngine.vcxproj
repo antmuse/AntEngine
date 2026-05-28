@@ -45,11 +45,12 @@
     <ClCompile Include="..\..\Source\MemoryPool.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileReader.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileWriter.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtPath.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtShow.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFile.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtError.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp" />
     <ClCompile Include="..\..\Source\Net\KCProtocal.cpp" />
@@ -154,6 +155,8 @@
     <ClInclude Include="..\..\Include\HashFunctions.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileReader.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileWriter.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtPath.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtShow.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpParserDef.h" />
@@ -174,7 +177,6 @@
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLua.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpCookie.h" />
-    <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFile.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtError.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpHead.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpLayer.h" />
@@ -315,7 +317,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <StringPooling>true</StringPooling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -379,7 +381,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <StringPooling>true</StringPooling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>

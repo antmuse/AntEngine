@@ -119,9 +119,9 @@ usz HttpURL::sumCacheSize() const {
     if (!mParams.empty()) {
         // ret*3 for encodeURL
         for (TMap<String, String>::ConstIterator it = mParams.getConstIterator(); !it.atEnd(); ++it) {
-            ret += it->getKey().size() * 3;
+            ret += it->getKey().size();
             ret += it->getValue().size() * 3;
-            ++ret;
+            ret += 2;
         }
     }
     return ret + 2;

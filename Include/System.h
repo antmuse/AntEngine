@@ -93,6 +93,14 @@ public:
 
     static s32 removeFile(const String& it);
 
+    /**
+     * @brief recursive deletion
+     *
+     * @param fpath path of file
+     * @return <0: fail, 0: not exsit,  >0: count of success deleted.
+     */
+    static s64 removeAll(const String& it);
+
     //@return 0=不存在，1=file, 2=path
     static s32 isExist(const String& it);
 
