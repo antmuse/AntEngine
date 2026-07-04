@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_WEBSITE_H
 #define APP_WEBSITE_H
 

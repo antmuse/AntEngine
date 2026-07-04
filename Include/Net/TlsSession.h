@@ -23,6 +23,7 @@
  ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_TLSSESSION_H
 #define APP_TLSSESSION_H
 
@@ -62,7 +63,7 @@ public:
 
     s32 read(void* buf, s32 len);
 
-    s32 getError(s32 nread) const;
+    s32 getError(s32 ssl_ret) const;
 
     s32 handshake();
 

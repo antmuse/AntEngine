@@ -7,6 +7,7 @@
 // + Maximum RTT reduce three times vs tcp.
 // + Lightweight, distributed as a single source file.
 //=====================================================================
+#pragma once
 #ifndef APP_KCPROTOCAL_H
 #define APP_KCPROTOCAL_H
 

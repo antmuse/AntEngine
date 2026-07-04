@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_DECODERGZIP_H
 #define APP_DECODERGZIP_H
 

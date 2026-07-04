@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_MEMSLAB_H
 #define APP_MEMSLAB_H
 

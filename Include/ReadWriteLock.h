@@ -23,6 +23,7 @@
  ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_READWRITELOCK_H
 #define APP_READWRITELOCK_H
 

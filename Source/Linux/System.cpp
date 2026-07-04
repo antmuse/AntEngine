@@ -366,15 +366,18 @@ s64 System::removeAll(const String& it) {
 
 
 s32 System::isExist(const String& it) {
-    //return (0 == access(it.c_str(), F_OK)) ? 0 : -1;
+    // return (0 == access(it.c_str(), F_OK)) ? 0 : -1;
     struct stat statbuf;
     if (0 == stat(it.c_str(), &statbuf)) {
-        if (0 != (S_IFDIR & statbuf.st_mode)) {
-            return 2;
+        if (0 != (S_IFREG & statbuf.st_mode)) {
+            return EDPF_FILE;
         }
-        return (0 != (S_IFREG & statbuf.st_mode)) ? 1 : 0;
+        if (0 != (S_IFDIR & statbuf.st_mode)) {
+            return EDPF_PATH;
+        }
+        return (0 != (S_IFLNK & statbuf.st_mode)) ? EDPF_LINK : EDPF_OTHER;
     }
-    return 0;
+    return EDPF_NOT_EXIST;
 }
 
 

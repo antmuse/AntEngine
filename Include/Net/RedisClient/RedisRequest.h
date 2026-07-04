@@ -22,6 +22,7 @@
  * SOFTWARE.
 ***************************************************************************************************/
 
+#pragma once
 #ifndef APP_REDISREQUEST_H
 #define	APP_REDISREQUEST_H
 
@@ -109,9 +110,9 @@ public:
     bool pexpireat(const s8* key, u32 kenLen, s64 timestamp);
 
     /**
-    * @brief ÓÃ UNIX Ê±¼ä½ØÉèÖÃ KEY µÄÉú´æÖÜÆÚ
+    * @brief ï¿½ï¿½ UNIX Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ KEY ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     * set the expiration for a key as a UNIX timestamp
-    * @param timestamp UNIX Ê±¼ä½Ø£¬¼´×Ô 1970 ÄêÒÔÀ´µÄÃëÊý
+    * @param timestamp UNIX Ê±ï¿½ï¿½Ø£ï¿½ï¿½ï¿½ï¿½ï¿½ 1970 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     */
     bool expireat(const s8* key, s64 timestamp);
     bool expireat(const s8* key, u32 kenLen, s64 timestamp);
@@ -218,7 +219,7 @@ public:
 
     //---------------------------------zset---------------------------------
     /*
-    * @brief ZADD key score member [[score member] [score member] ¡­]
+    * @brief ZADD key score member [[score member] [score member] ï¿½ï¿½]
     */
     bool zadd(const s8* key, u32 keyLen, const s8** val, const u32* valLens, u32 count);
     bool zscore(const s8* key, u32 keyLen, const s8* val, const u32 valLens);
@@ -232,7 +233,7 @@ public:
     bool zrevrange(const s8* key, u32 keyLen, s32 start, s32 stop, bool withScore = false);
     /**
     * @brief ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]
-    * @param flag Î»¿ª¹Ø 1: >min, 2: -inf, 3: <max, 4: +inf
+    * @param flag Î»ï¿½ï¿½ï¿½ï¿½ 1: >min, 2: -inf, 3: <max, 4: +inf
     */
     bool zrangebyscore(const s8* key, u32 keyLen, f32 min, f32 max, u32 flag = 0, bool withScore = false);
     //ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]
@@ -253,7 +254,7 @@ public:
     //ZSCAN key cursor [MATCH pattern] [COUNT count]
     bool zscan(const s8* key, u32 keyLen, u32 offset, const s8* pattern, u32 patLen, u32 count = 0);
     /**
-    * @brief ZUNIONSTORE destination numkeys key [key ¡­] [WEIGHTS weight [weight ¡­]] [AGGREGATE SUM|MIN|MAX]
+    * @brief ZUNIONSTORE destination numkeys key [key ï¿½ï¿½] [WEIGHTS weight [weight ï¿½ï¿½]] [AGGREGATE SUM|MIN|MAX]
     * @note destkey used for slot calculate, cmd successed when all the keys should in same slots.
     * @param aggregate 0=SUM,1=MAX,-1=MIN
     */
@@ -262,7 +263,7 @@ public:
         const s8** weight, const u32* weightLens,
         u32 count, s32 aggregate = 0);
     /**
-    * @brief ZINTERSTORE destination numkeys key [key ¡­] [WEIGHTS weight [weight ¡­]] [AGGREGATE SUM|MIN|MAX]
+    * @brief ZINTERSTORE destination numkeys key [key ï¿½ï¿½] [WEIGHTS weight [weight ï¿½ï¿½]] [AGGREGATE SUM|MIN|MAX]
     * @note destkey used for slot calculate, cmd successed when all the keys should in same slots.
     * @see zunionstore
     * @param aggregate 0=SUM,1=MAX,-1=MIN
@@ -290,29 +291,29 @@ public:
     bool hmget(const s8* key, u32 keyLen, const s8** name, const u32* nameLen, u32 count);
 
     //---------------------------------HyperLogLog---------------------------------
-    //PFADD key element [element ¡­]
+    //PFADD key element [element ï¿½ï¿½]
     bool pfadd(const s8* key, u32 keyLen, const s8** val, const u32* valLens, u32 count);
-    //PFCOUNT key [key ¡­]
+    //PFCOUNT key [key ï¿½ï¿½]
     bool pfcount(const s8** val, const u32* valLens, u32 count);
     /**
-    * @brief PFMERGE destkey sourcekey [sourcekey ¡­]
+    * @brief PFMERGE destkey sourcekey [sourcekey ï¿½ï¿½]
     * @param count src keys count
     */
     bool pafmerge(const s8* destkey, u32 destkeyLen, const s8** srckeys, const u32* srcLens, u32 count);
 
 
     //---------------------------------GEO---------------------------------
-    //GEOADD key longitude latitude member [longitude latitude member ¡­]
+    //GEOADD key longitude latitude member [longitude latitude member ï¿½ï¿½]
     bool geoadd(const s8* key, u32 keyLen, const s8** val, const u32* valLens, u32 count);
-    //GEOPOS key member [member ¡­]
+    //GEOPOS key member [member ï¿½ï¿½]
     bool geopos(const s8* key, u32 keyLen, const s8** val, const u32* valLens, u32 count);
     /**
     * @brief GEODIST key member1 member2 [unit]
     * unit=
-    * 0=m ±íÊ¾µ¥Î»ÎªÃ×¡£
-    * 1=km ±íÊ¾µ¥Î»ÎªÇ§Ã×¡£
-    * 2=mi ±íÊ¾µ¥Î»ÎªÓ¢Àï¡£
-    * 3=ft ±íÊ¾µ¥Î»ÎªÓ¢³ß¡£
+    * 0=m ï¿½ï¿½Ê¾ï¿½ï¿½Î»Îªï¿½×¡ï¿½
+    * 1=km ï¿½ï¿½Ê¾ï¿½ï¿½Î»ÎªÇ§ï¿½×¡ï¿½
+    * 2=mi ï¿½ï¿½Ê¾ï¿½ï¿½Î»ÎªÓ¢ï¿½ï¡£
+    * 3=ft ï¿½ï¿½Ê¾ï¿½ï¿½Î»ÎªÓ¢ï¿½ß¡ï¿½
     */
     bool geodist(const s8* key, u32 keyLen,
         const s8* key1, u32 keyLen1,
@@ -334,7 +335,7 @@ public:
     bool georadiusbymember(const s8* key, u32 keyLen,
         const s8* member, u32 memberLen, f32 redius, u32 max = 0, u32 unit = 0, u32 flag = 0);
     /**
-    * @brief GEOHASH key member [member ¡­]
+    * @brief GEOHASH key member [member ï¿½ï¿½]
     */
     bool geohash(const s8* key, u32 keyLen, const s8** val, const u32* valLens, u32 count);
 
@@ -360,7 +361,7 @@ public:
     bool bitpos(const s8* key, u32 keyLen, bool val, u32 min = 0, u32 max = 0xFFFFFFFF);
 
     /**
-    * @brief BITOP operation destkey key [key ¡­]
+    * @brief BITOP operation destkey key [key ï¿½ï¿½]
     * @param flag 0=AND,1=OR,2=NOT,3=XOR
     */
     bool bitop(const s8* destkey, u32 destkeyLen, u32 flag,
@@ -375,15 +376,15 @@ public:
     //---------------------------------Publish---------------------------------
     //PUBLISH channel message
     bool publish(const s8* key, u32 keyLen, const s8* val, const u32 valLen);
-    //SUBSCRIBE channel [channel ¡­]
+    //SUBSCRIBE channel [channel ï¿½ï¿½]
     bool subscribe(const s8** val, const u32* valLens, u32 count);
-    //UNSUBSCRIBE [channel [channel ¡­]]
+    //UNSUBSCRIBE [channel [channel ï¿½ï¿½]]
     bool unsubscribe(const s8** val = nullptr, const u32* valLens = nullptr, u32 count = 0);
-    //PSUBSCRIBE pattern [pattern ¡­]
+    //PSUBSCRIBE pattern [pattern ï¿½ï¿½]
     bool psubscribe(const s8** val, const u32* valLens, u32 count);
-    //PUNSUBSCRIBE [pattern [pattern ¡­]]
+    //PUNSUBSCRIBE [pattern [pattern ï¿½ï¿½]]
     bool punsubscribe(const s8** val = nullptr, const u32* valLens = nullptr, u32 count = 0);
-    //PUBSUB <subcommand> [argument [argument ¡­]]
+    //PUBSUB <subcommand> [argument [argument ï¿½ï¿½]]
     //TODO>>PUBSUB
 
     //---------------------------------OOO---------------------------------

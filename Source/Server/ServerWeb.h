@@ -1,5 +1,5 @@
 #pragma once
-#include "Net/HTTP/WebSite.h"
+#include "Net/HTTP/Website.h"
 
 namespace app {
 namespace net {

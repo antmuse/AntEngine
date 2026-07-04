@@ -47,13 +47,13 @@ s32 ServerWeb::createMsgEvent(HttpMsg* msg) {
     const s32 checkDisk = System::isExist(real);
 
     if (requrl.equalsn("/lua/", sizeof("/lua/") - 1)) {
-        if (1 == checkDisk) {
+        if (EDPF_FILE == checkDisk) {
             evt = new HttpEvtLua();
         } else {
             evt = new HttpEvtError(0 == checkDisk ? 404 : 403);
         }
     } else if (requrl.equalsn("/fs/", sizeof("/fs/") - 1)) {
-        if (1 == checkDisk) { // file
+        if (EDPF_FILE == checkDisk) { // file
             if (net::HTTP_GET == cmd) {
                 evt = new HttpEvtFileReader();
             } else if (net::HTTP_DELETE == cmd) {
@@ -61,7 +61,7 @@ s32 ServerWeb::createMsgEvent(HttpMsg* msg) {
             } else {
                 evt = new HttpEvtError(401);
             }
-        } else if (2 == checkDisk) { // path
+        } else if (EDPF_PATH == checkDisk) { // path
             if (net::HTTP_GET == cmd) {
                 evt = new HttpEvtPath();
             } else if (net::HTTP_DELETE == cmd) {

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_COLOR_H
 #define APP_COLOR_H
 

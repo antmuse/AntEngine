@@ -23,6 +23,7 @@
  ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_ENGINECONFIG_H
 #define APP_ENGINECONFIG_H
 

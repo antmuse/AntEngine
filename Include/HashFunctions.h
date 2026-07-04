@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_HASHFUNCTIONS_H
 #define APP_HASHFUNCTIONS_H
 

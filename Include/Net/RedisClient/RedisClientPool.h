@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_REDISCLIENTPOOL_H
 #define	APP_REDISCLIENTPOOL_H
 
@@ -42,7 +43,7 @@ class RedisClientCluster;
 
 
 /**
- * @brief redis 连接池类
+ * @brief redis 锟斤拷锟接筹拷锟斤拷
  */
 class RedisClientPool {
 public:
@@ -55,7 +56,7 @@ public:
     }
 
     /**
-     * 获得本连接池所对应的db
+     * 锟斤拷帽锟斤拷锟斤拷映锟斤拷锟斤拷锟接︼拷锟絛b
      * @return id of db
      */
     s32 getDatabaseID() const {
@@ -74,7 +75,7 @@ public:
 
     /**
      *
-     * @param dbnum id of db, range[0-15], 在非集群模式下设置连接建立后所选择的db
+     * @param dbnum id of db, range[0-15], 锟节非硷拷群模式锟斤拷锟斤拷锟斤拷锟斤拷锟接斤拷锟斤拷锟斤拷锟斤拷选锟斤拷锟絛b
      */
     void open(const net::NetAddress& serverIP, s32 maxTCP, const s8* passowrd, s32 dbnum = 0);
 

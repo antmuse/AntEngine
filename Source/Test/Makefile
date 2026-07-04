@@ -4,10 +4,10 @@ CC := gcc
 CXX := g++
 CXX_FLAGS := -std=c++17 -m64 
 
-ifeq ($(DEBUG),true)
+ifeq ($(BINTYPE),debug)
 	CXX_FLAGS += -ggdb -O0
 	BUILD_TYPE := debug
-else ifeq ($(DEBUG),false)
+else ifeq ($(BINTYPE),release)
 	CXX_FLAGS += -ggdb -O3
 	BUILD_TYPE := releaseSymbol
 else

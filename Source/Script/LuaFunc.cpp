@@ -125,7 +125,7 @@ s32 LuaEngInfo(lua_State* vm) {
 
 
 void AppPath2Table(lua_State* vm, const String& fpath, usz offset) {
-    if (2 != System::isExist(fpath)) {
+    if (EDPF_PATH != System::isExist(fpath)) {
         lua_pushnil(vm);
         return;
     }

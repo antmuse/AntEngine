@@ -365,9 +365,9 @@ s32 System::isExist(const String& it) {
 #endif
     DWORD attr = GetFileAttributes(fname);
     if (INVALID_FILE_ATTRIBUTES == attr) {
-        return 0;
+        return EDPF_NOT_EXIST;
     }
-    return (FILE_ATTRIBUTE_DIRECTORY & attr) > 0 ? 2 : 1;
+    return (FILE_ATTRIBUTE_DIRECTORY & attr) > 0 ? EDPF_PATH : EDPF_FILE;
 }
 
 

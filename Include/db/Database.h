@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_DB_DATABASE_H
 #define	APP_DB_DATABASE_H
 

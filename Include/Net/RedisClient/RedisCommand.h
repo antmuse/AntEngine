@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_REDISCOMMAND_H
 #define	APP_REDISCOMMAND_H
 

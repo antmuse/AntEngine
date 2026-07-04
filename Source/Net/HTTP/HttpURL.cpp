@@ -139,7 +139,7 @@ void HttpURL::clear() {
 
 usz HttpURL::encodeURL(const s8* from, usz len, s8* out, usz olen) {
     const static u8 hexchars[] = "0123456789ABCDEF";
-    register u8 ch;
+    u8 ch;
     s8* curr = out;
     const s8* const end = from + len;
     const s8* const oend = out + olen;

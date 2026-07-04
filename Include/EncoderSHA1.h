@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_ENCODERSHA1_H
 #define APP_ENCODERSHA1_H
 

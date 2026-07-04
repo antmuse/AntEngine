@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_HOSTCHECK_H
 #define APP_HOSTCHECK_H
 

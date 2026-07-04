@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_DB_CONNECTOR_H
 #define APP_DB_CONNECTOR_H
 
@@ -109,7 +110,6 @@ private:
     EErrorCode execute(Task* task);
 
     /**
-     * @brief 如果句柄尚未连接，将阻塞并连接。
      * @return true if success, else false.
      */
     bool connect();

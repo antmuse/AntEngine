@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_WINAPI_H
 #define APP_WINAPI_H
 

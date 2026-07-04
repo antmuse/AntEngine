@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_STRCONVERTER_H
 #define	APP_STRCONVERTER_H
 

@@ -284,9 +284,6 @@
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp">
-      <Filter>Source\Net\HTTP</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Script\Script.cpp">
       <Filter>Source\Script</Filter>
     </ClCompile>

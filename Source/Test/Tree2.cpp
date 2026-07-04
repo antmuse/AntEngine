@@ -130,7 +130,7 @@ private:
             mx = -mx;
         }
         int val;
-        srand(Timer::getRelativeTime());
+        ::srand((u32)Timer::getRelativeTime());
         MyNode* curr;
         for (int i = 0; i < mx; ++i) {
             val = order ? i : rand();

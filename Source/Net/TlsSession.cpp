@@ -230,8 +230,8 @@ s32 TlsSession::read(void* buf, s32 len) {
     return SSL_read(static_cast<SSL*>(mSSL), buf, len);
 }
 
-s32 TlsSession::getError(s32 nread) const {
-    return SSL_get_error(static_cast<SSL*>(mSSL), nread);
+s32 TlsSession::getError(s32 ssl_ret) const {
+    return SSL_get_error(static_cast<SSL*>(mSSL), ssl_ret);
 }
 
 s32 TlsSession::handshake() {

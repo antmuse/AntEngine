@@ -22,6 +22,7 @@
  * SOFTWARE.
 ***************************************************************************************************/
 
+#pragma once
 #ifndef APP_SCRIPTMANAGER_H
 #define	APP_SCRIPTMANAGER_H
 

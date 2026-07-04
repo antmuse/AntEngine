@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_RINGBLOCKS_H
 #define APP_RINGBLOCKS_H
 

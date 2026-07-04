@@ -17,9 +17,9 @@ void CheckSum::add(const void* iData, s32 iSize) {
     if (iSize <= 0) {
         return;
     }
-    register const u16* buffer = (const u16*)iData;
+    const u16* buffer = (const u16*)iData;
     s32 byte_swapped = 0;
-    register s32 mlen = 0;
+    s32 mlen = 0;
 
     //leftover byte of last buffer
     if (mHaveTail) {

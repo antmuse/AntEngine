@@ -23,11 +23,8 @@
 ***************************************************************************************************/
 
 
-/**
-*@file CheckSum.h
-*@brief CheckSum generates and validates checksums.
-*/
 
+#pragma once
 #ifndef APP_CHECKSUM_H
 #define APP_CHECKSUM_H
 

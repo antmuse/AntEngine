@@ -50,7 +50,6 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtPath.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtShow.cpp" />
-    <ClCompile Include="..\..\Source\Net\HTTP\HttpLua.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtError.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\Website.cpp" />
     <ClCompile Include="..\..\Source\Net\KCProtocal.cpp" />

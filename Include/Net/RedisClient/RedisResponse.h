@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_REDISRESPONSE_H
 #define	APP_REDISRESPONSE_H
 

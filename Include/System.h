@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_SYSTEM_H
 #define APP_SYSTEM_H
 
@@ -30,6 +31,14 @@
 #include "TVector.h"
 
 namespace app {
+
+enum DiskPathFlag {
+    EDPF_FILE = 0x1,
+    EDPF_PATH = 0x2,
+    EDPF_LINK = 0x4,
+    EDPF_OTHER = 0x8,
+    EDPF_NOT_EXIST = 0
+};
 
 class FileInfo {
 public:
@@ -101,7 +110,7 @@ public:
      */
     static s64 removeAll(const String& it);
 
-    //@return 0=不存在，1=file, 2=path
+    //@return DiskPathFlag of path. [0=不存在，1=file, 2=path, ...]
     static s32 isExist(const String& it);
 
     static void getPathNodes(const String& pth, usz pos, TVector<FileInfo>& out);

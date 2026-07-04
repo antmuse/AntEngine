@@ -23,6 +23,7 @@
 ***************************************************************************************************/
 
 
+#pragma once
 #ifndef APP_NETADDRESS_H
 #define APP_NETADDRESS_H
 
@@ -34,12 +35,11 @@
 struct sockaddr_in;
 struct sockaddr_in6;
 
+namespace app {
 //ipv4 "127.122.122.122:65535"
 //ipv6 "[CDCD:910A:2222:5498:8475:1111:3900:2020]:65535"
-#define DIP_STR_MAX_SIZE 48
+constexpr u32 DIP_STR_MAX_SIZE = sizeof("[CDCD:910A:2222:5498:8475:1111:3900:2020]:65535");
 
-
-namespace app {
 namespace net {
 
 class NetAddress {

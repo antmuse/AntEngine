@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APP_DB_CONNECTCONFIG_H
 #define APP_DB_CONNECTCONFIG_H
 
@@ -64,9 +65,9 @@ public:
 
     /**
      * @return The database client flags.
-     * mysql_real_connectº¯ÊıµÄ×îºóÒ»¸ö²ÎÊıÎªclient_flag,Ä¬ÈÏÍ¨³£ÓÃ0,
-     * µ«Ê¹ÓÃ´æ´¢¹ı³ÌÊ±,ÊÇÔÚÍ¬Ò»×Ö·û´®ÖĞÖ´ĞĞ¶àÌõÓï¾ä,
-     * ËùÒÔ¸Ã²ÎÊıĞèÒª´øÉÏmysql::CLIENT_MULTI_STATEMENTS
+     * mysql_real_connectå‡½æ•°çš„æœ€åä¸€ä¸ªå‚æ•°ä¸ºclient_flag,é»˜è®¤é€šå¸¸ç”¨0,
+     * ä½†ä½¿ç”¨å­˜å‚¨è¿‡ç¨‹æ—¶,æ˜¯åœ¨åŒä¸€å­—ç¬¦ä¸²ä¸­æ‰§è¡Œå¤šæ¡è¯­å¥,
+     * æ‰€ä»¥è¯¥å‚æ•°éœ€è¦å¸¦ä¸Šmysql::CLIENT_MULTI_STATEMENTS
      */
     u64 getClientFlags() const {
         return mClientFlags;

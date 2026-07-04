@@ -1,10 +1,6 @@
-#ture = debug
-#false = release with symbol
-#release = release without symbol
-
-#DEBUG ?= true
-ifeq (${DEBUG},)
-export DEBUG = false
+#BINTYPE ?= release
+ifeq (${BINTYPE},)
+export BINTYPE = yes
 endif
 
 export BUILD_DIR := $(shell pwd)
@@ -39,7 +35,7 @@ all:path
 		do \
 		make -C $$dir; \
 		done
-	@echo "------------------------build mode = $(DEBUG) finished"
+	@echo "------------------------build mode = $(BINTYPE) finished"
 	@ls -lhr ./Lib/*.a
 	@ls -lhr ./Bin/*.bin
 
@@ -65,7 +61,7 @@ tags:
 
 help:
 	@echo $(COLOR_YELLOW)
-	@echo "------------------------make, will build release bin without symbol"
-	@echo "------------------------make DEBUG=true"
-	@echo "------------------------make DEBUG=false, will build release bin with symbol"
+	@echo "------------------------ make                   build release bin without symbol"
+	@echo "------------------------ make BINTYPE=debug     build debug   bin with symbol"
+	@echo "------------------------ make BINTYPE=release   build release bin with symbol"
 	@echo $(COLOR_CLEAR)
