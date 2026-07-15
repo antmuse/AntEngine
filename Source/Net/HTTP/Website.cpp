@@ -27,7 +27,7 @@ s32 Website::createMsgEvent(HttpMsg* msg) {
     }
     s32 ret = EE_OK;
 
-    DLOG(ELL_INFO, "ip= %s, url= %s", msg->getHttpLayer()->getHandle().getRemote().getStr(),
+    DLOG(ELL_INFO, "ip= %s, url= %s", msg->getHttpLayer()->getRemote()->getStr(),
         msg->getURL().data().c_str());
 
     // reset url

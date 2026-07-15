@@ -464,6 +464,7 @@ protected:
     usz dumpBody(RequestFD* it);
 
     friend class HttpLayer;
+    friend class Http1Parser;
 
     u16 mStatusCode = HTTP_STATUS_OK;
     u16 mFlags = 0;

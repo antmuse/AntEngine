@@ -48,8 +48,8 @@ protected:
     void clear();
 
     void onLink(RequestFD* it) {
-        HttpLayer* con = new HttpLayer(EHTTP_REQUEST, 1 == getConfig().mType, &mTlsContext);
-        con->onLink(it);
+        HttpLayer* con = new HttpLayer();
+        con->onLink(it, 1 == getConfig().mType ? &mTlsContext : nullptr);
         con->drop();
     }
 };

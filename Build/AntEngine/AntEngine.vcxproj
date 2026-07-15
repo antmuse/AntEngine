@@ -45,6 +45,7 @@
     <ClCompile Include="..\..\Source\MemoryPool.cpp" />
     <ClCompile Include="..\..\Source\MemSlabPool.cpp" />
     <ClCompile Include="..\..\Source\Net\Acceptor.cpp" />
+    <ClCompile Include="..\..\Source\Net\HTTP\Http1Parser.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileReader.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileWriter.cpp" />
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtPath.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="..\..\Include\HashFunctions.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
+    <ClInclude Include="..\..\Include\Net\HTTP\Http1Parser.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileReader.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileWriter.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtPath.h" />

@@ -338,6 +338,9 @@
     <ClCompile Include="..\..\Source\Net\HTTP\HttpEvtFileWriter.cpp">
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\Net\HTTP\Http1Parser.cpp">
+      <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Depend\jsoncpp\json\allocator.h">
@@ -668,6 +671,9 @@
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\HttpEvtFileWriter.h">
+      <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Net\HTTP\Http1Parser.h">
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
   </ItemGroup>

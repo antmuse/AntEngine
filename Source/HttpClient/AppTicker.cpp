@@ -60,7 +60,7 @@ void AppTicker::http_task(void* dat) {
     // http
     const s8* url = (s8*)dat;
     HttpEvtShow* evt = new HttpEvtShow();
-    net::HttpLayer* nd = new net::HttpLayer(net::EHTTP_RESPONSE);
+    net::HttpLayer* nd = new net::HttpLayer();
     net::HttpMsg* msg = new net::HttpMsg(nd);
     msg->setEvent(evt);
     evt->drop();
@@ -71,7 +71,7 @@ void AppTicker::http_task(void* dat) {
     msg->getURL().addParam("skuId", "144446");
     s32 fly = nd->launch(msg);
     if (EE_OK != fly) {
-        printf("url = %s, ip=%s\n", url, nd->getHandle().getRemote().getStr());
+        printf("url = %s\n", url);
     }
     nd->drop();
     msg->drop();

@@ -18,7 +18,7 @@ s32 HttpEvtShow::onRespWrite(net::HttpMsg* msg) {
 s32 HttpEvtShow::onReqHeadDone(net::HttpMsg* msg) {
     DASSERT(msg);
     if (msg->getHttpLayer()->isHTTPS()) {
-        msg->getHttpLayer()->getHandle().getTlsSession()->showPeerCert();
+        msg->getHttpLayer()->getHandleTLS()->getTlsSession()->showPeerCert();
     }
     printf("-----------------status: %d-----------------\n", msg->getStatus());
     printf("-----------------head-----------------\n");
