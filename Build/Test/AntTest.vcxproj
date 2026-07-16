@@ -30,6 +30,7 @@
     <ClCompile Include="..\..\Source\Test\TestDict.cpp" />
     <ClCompile Include="..\..\Source\Test\TestGbkUtf8.cpp" />
     <ClCompile Include="..\..\Source\Test\TestHttpsClient.cpp" />
+    <ClCompile Include="..\..\Source\Test\TestHuffman.cpp" />
     <ClCompile Include="..\..\Source\Test\TestRedis.cpp" />
     <ClCompile Include="..\..\Source\Test\TestRingBlocks.cpp" />
     <ClCompile Include="..\..\Source\Test\TestRWLock.cpp" />

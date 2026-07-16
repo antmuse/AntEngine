@@ -66,6 +66,12 @@
     <Filter Include="Include\Script">
       <UniqueIdentifier>{23ef56df-fa7e-464e-aa9c-cab3ee790844}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Net\HTTP\HTTP2">
+      <UniqueIdentifier>{ca564986-7eb7-487b-bc50-a8ecfe2cf007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Net\HTTP\HTTP2">
+      <UniqueIdentifier>{a6406dbc-e0c7-4a59-b12d-0d2df19b5d07}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\StrConverter.cpp">
@@ -340,6 +346,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Source\Net\HTTP\Http1Parser.cpp">
       <Filter>Source\Net\HTTP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Huffman.cpp">
+      <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -675,6 +684,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Net\HTTP\Http1Parser.h">
       <Filter>Include\Net\HTTP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Huffman.h">
+      <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

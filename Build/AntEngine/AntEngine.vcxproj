@@ -40,6 +40,7 @@
     <ClCompile Include="..\..\Source\Handle.cpp" />
     <ClCompile Include="..\..\Source\HashDict.cpp" />
     <ClCompile Include="..\..\Source\EncoderMD5.cpp" />
+    <ClCompile Include="..\..\Source\Huffman.cpp" />
     <ClCompile Include="..\..\Source\Logger.cpp" />
     <ClCompile Include="..\..\Source\MemoryHub.cpp" />
     <ClCompile Include="..\..\Source\MemoryPool.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="..\..\Include\HandleFile.h" />
     <ClInclude Include="..\..\Include\HashDict.h" />
     <ClInclude Include="..\..\Include\HashFunctions.h" />
+    <ClInclude Include="..\..\Include\Huffman.h" />
     <ClInclude Include="..\..\Include\IntID.h" />
     <ClInclude Include="..\..\Include\Linux\Request.h" />
     <ClInclude Include="..\..\Include\Net\HTTP\Http1Parser.h" />

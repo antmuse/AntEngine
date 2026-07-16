@@ -26,6 +26,7 @@
 
 
 namespace app {
+s32 AppTestHuffman(s32 argc, s8** argv);
 s32 AppTestDBClient(s32 argc, s8** argv);
 void AppTestNetAddress();
 void AppTestTree2heap();
@@ -112,10 +113,11 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
-            AppTestMD5(argc, argv);
-            // AppTestNode(argc, argv);
-            // AppTestFutex(argc, argv);
+            AppTestHuffman(argc, argv);
         } else {
+            AppTestMD5(argc, argv);
+            AppTestNode(argc, argv);
+            AppTestFutex(argc, argv);
             AppTestThreadPool(argc, argv);
             AppTestSimplifyPath(argc, argv);
             AppTestRingBlocks(argc, argv);
