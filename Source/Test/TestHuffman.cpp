@@ -13,11 +13,11 @@ s32 AppTestHuffman(s32 argc, s8** argv) {
         rawss = argv[2];
     }
     usz len = snprintf(srcbuf, sizeof(srcbuf), "%s", rawss);
-    usz elen = AppHuffEncode((u8*)srcbuf, len, (u8*)enbuf, 1);
+    usz elen = AppHuffEncode((u8*)srcbuf, len, (u8*)enbuf, true);
     DLOG(ELL_INFO, "src[%lu]= %s,  huff-len= %lu", len, srcbuf, elen);
     u8 stat = 0;
     u8* dst = (u8*)rebuf;
-    bool ret = AppHuffDecode((u8*)enbuf, elen, &dst, &stat, 1);
+    bool ret = AppHuffDecode((u8*)enbuf, elen, &dst, &stat, true);
     usz len2 = dst - (u8*)rebuf;
     DLOG(ELL_INFO, "ret = %s, stat = x%x, resrc[%lu]= %.*s", ret ? "success" : "fail", stat, len2, len2, rebuf);
     return 0;

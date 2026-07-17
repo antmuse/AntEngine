@@ -89,6 +89,7 @@
     <ClCompile Include="..\..\Source\Packet.cpp" />
     <ClCompile Include="..\..\Source\RingBlocks.cpp" />
     <ClCompile Include="..\..\Source\RingBuffer.cpp" />
+    <ClCompile Include="..\..\Source\RingBufferFixed.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaColor.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFileHandle.cpp" />
     <ClCompile Include="..\..\Source\Script\LuaFunc.cpp" />
@@ -206,6 +207,7 @@
     <ClInclude Include="..\..\Include\RefCount.h" />
     <ClInclude Include="..\..\Include\RingBlocks.h" />
     <ClInclude Include="..\..\Include\RingBuffer.h" />
+    <ClInclude Include="..\..\Include\RingBufferFixed.h" />
     <ClInclude Include="..\..\Include\Script\LuaRegClass.h" />
     <ClInclude Include="..\..\Include\Script\LuaFunc.h" />
     <ClInclude Include="..\..\Include\Script\Script.h" />
@@ -318,7 +320,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend;$(SolutionDir)../Depend/tweetnacl;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <StringPooling>true</StringPooling>
@@ -382,7 +384,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend;$(SolutionDir)../Depend/tweetnacl;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/zlib;$(SolutionDir)../Depend/MySQL;$(SolutionDir)../Depend/Lua/src;$(SolutionDir)../../../Public/openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <StringPooling>true</StringPooling>

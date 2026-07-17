@@ -20,12 +20,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-***************************************************************************************************/
+ ***************************************************************************************************/
 
 
 #pragma once
 #ifndef APP_ENGINE_H
-#define	APP_ENGINE_H
+#define APP_ENGINE_H
 
 #include <atomic>
 #include "TString.h"
@@ -74,7 +74,7 @@ struct CommandExit : public MsgHeader {
     }
 };
 
-//ping-pong
+// ping-pong
 struct CommandActive : public MsgHeader {
     void pack() {
         finish(ECT_ACTIVE, ++gSharedSN, ECT_VERSION);
@@ -90,23 +90,23 @@ struct CommandTask : public MsgHeader {
     void* mData;
 
 
-    template<class P>
-    void pack(void(*func)(P*), P* dat) {
+    template <class P>
+    void pack(void (*func)(P*), P* dat) {
         init(ECT_TASK, sizeof(*this), 0, ECT_VERSION);
         mCall = func;
         mThis = nullptr;
         mData = dat;
     }
 
-    template<class T, class P>
-    void pack(void(T::* func)(P*), const void* it, P* dat) {
+    template <class T, class P>
+    void pack(void (T::*func)(P*), const void* it, P* dat) {
         init(ECT_TASK, sizeof(*this), 0, ECT_VERSION);
         void* fff = reinterpret_cast<void*>(&func);
         mCall = *(FuncTask*)fff;
         mThis = it;
         mData = dat;
     }
-    
+
     void operator()() {
         if (mThis) {
             ((FuncTaskClass)mCall)(mThis, mData);
@@ -122,7 +122,7 @@ struct Process {
     s32 mStatus;
     void* mHandle;
     bool mAlive;
-    net::Socket mSocket; //write socket of pair
+    net::Socket mSocket; // write socket of pair
 };
 
 
@@ -136,15 +136,20 @@ struct EngineStats {
     std::atomic<ssz> mOutPackets;
     std::atomic<ssz> mHeartbeat;
     std::atomic<ssz> mHeartbeatResp;
+    EngineStats() {
+        clear();
+    }
     void clear() {
         memset(this, 0, sizeof(*this));
     }
 };
 
 struct EngineData {
+    usz mShareMemTotalSize = 0;
+    s32 mRefCount = 1;
+    s32 mProcessCount = 1;
     EngineStats mStats;
-    Process* mAllProcess;
-    s32 mProcessCount;
+    Process* mAllProcess = nullptr;
 };
 
 class Engine {
@@ -172,11 +177,11 @@ public:
         mProcessTask.pack(func, it, dat);
     }
 
-    const String& getAppPath()const {
+    const String& getAppPath() const {
         return mAppPath;
     }
 
-    const String& getAppName()const {
+    const String& getAppName() const {
         return mAppName;
     }
 
@@ -201,7 +206,7 @@ public:
         return mChild;
     }
 
-    usz getChildCount()const {
+    usz getChildCount() const {
         return mChild.size();
     }
 
@@ -209,11 +214,16 @@ public:
         return script::ScriptManager::getInstance();
     }
 
-    const EngineConfig& getConfig()const {
+    const EngineConfig& getConfig() const {
         return mConfig;
     }
 
-    s32 getPID()const{
+    // @return Runing status of engine, @see ProcessStatus
+    s32 getStatus() const {
+        return mProcStatus;
+    }
+
+    s32 getPID() const {
         return mPID;
     }
 
@@ -223,16 +233,29 @@ public:
 
     /** @return Engine's statistics datas in shared mem. @see mMapfile. */
     EngineStats& getEngineStats() {
-        return reinterpret_cast<EngineData*>(mMapfile.getMem())->mStats;
+        return mEngData->mStats;
+    }
+
+    EngineData& getEngineData() {
+        return *mEngData;
     }
 
     MemSlabPool& getMemSlabPool() {
-        return *reinterpret_cast<MemSlabPool*>(mMapfile.getMem() + sizeof(EngineData));
+        return *mSlabPool;
     }
 
     usz getMemSlabPoolSize() const {
-        return mConfig.mMemSize - sizeof(EngineData);
+        return mMemSlabPoolSize;
     }
+
+    s8* getMemReserve() const {
+        return mUserReserveMem;
+    }
+
+    usz getMemReserveSize() const {
+        return mConfig.mMemReserveSize;
+    }
+
 protected:
     Engine();
     ~Engine();
@@ -242,32 +265,37 @@ private:
     Engine(const Engine&&) = delete;
     const Engine& operator=(const Engine&) = delete;
     const Engine& operator=(const Engine&&) = delete;
-    String mAppPath;
-    String mAppName;
-    Loop mLoop;
-    MapFile mMapfile;
-    ThreadPool mThreadPool;
-    s32 mPPID;
-    s32 mPID;
-    std::atomic<s32> mProcResponCount;
-    s32 mProcStatus;
-    bool mMain;
-    EngineConfig mConfig;
-    net::TlsContext mTlsENG;
-    TVector<Process> mChild;
-
-    CommandTask mProcessTask;
-
     bool createProcess();
     bool createProcess(usz idx);
     bool runMainProcess();
     bool runChildProcess(net::Socket& readSock, net::Socket& writeSock);
-
     void initPath(const s8* fname);
     void initTask(void* it);
+
+    bool mMain;
+    s32 mPPID;
+    s32 mPID;
+    String mAppPath;
+    String mAppName;
+    Loop mLoop;
+
+    // reserve mem from mMapfile, for user defind, @see mConfig.mMemReserveSize
+    MapFile mMapfile;
+    usz mMemSlabPoolSize = 0;
+    EngineData* mEngData = nullptr;
+    MemSlabPool* mSlabPool = nullptr;
+    s8* mUserReserveMem = nullptr;
+
+    ThreadPool mThreadPool;
+    std::atomic<s32> mProcResponCount;
+    s32 mProcStatus;
+    EngineConfig mConfig;
+    net::TlsContext mTlsENG;
+    TVector<Process> mChild;
+    CommandTask mProcessTask;
 };
 
 
-} //namespace app
+} // namespace app
 
-#endif //APP_ENGINE_H
+#endif // APP_ENGINE_H

@@ -375,6 +375,14 @@ public:
         return mData;
     }
 
+    T* data() {
+        return mData;
+    }
+
+    const T* data() const {
+        return mData;
+    }
+
     usz size() const {
         return mUsed;
     }

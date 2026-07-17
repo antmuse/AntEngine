@@ -1,8 +1,11 @@
 #build lib
 
+GIT_BRANCH := $(shell git branch | sed -n '/\* /s///p')
+GIT_COMMIT := $(shell git rev-parse HEAD)
+
 CC := gcc
 CXX := g++
-CXX_FLAGS := -std=c++17 -m64 
+CXX_FLAGS := -std=c++17 -m64 -DDGIT_COMMIT_ID=\"$(GIT_COMMIT)\" -DDGIT_BRANCH=\"$(GIT_BRANCH)\"
 
 ifeq ($(BINTYPE),debug)
 	CXX_FLAGS += -ggdb -O0

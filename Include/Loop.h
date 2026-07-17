@@ -125,7 +125,7 @@ public:
     }
 
     template <class T, class P>
-    s32 postTask(void (T::*func)(P*), const void* it, P* dat) {
+    s32 postTask(void (T::*func)(P*), const T* it, P* dat) {
         TaskNode* task = popTaskNode();
         task->pack(func, it, dat);
         if (EE_OK != postTask(task)) {

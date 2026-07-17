@@ -92,11 +92,14 @@ public:
 
     bool save(const String& cfg);
 
+    void showAll();
+
     bool mDaemon;
     u8 mPrint;
     u8 mMaxPostAccept;
     u8 mMaxThread;
     s16 mMaxProcess;
+    u64 mMemReserveSize;
     u64 mMemSize;
     String mLogPath;
     String mPidFile;

@@ -59,7 +59,7 @@ static DictFunctions gDictCalls
 
 EngineConfig::EngineConfig() :
     mDaemon(false), mPrint(1), mMaxPostAccept(10), mMaxThread(3), mMaxProcess(0), mMemSize(1024 * 1024 * 1),
-    mLogPath("Log/"), mPidFile("Log/PID.txt"), mMemName("GMAP/MainMem.map") {
+    mMemReserveSize(0), mLogPath("Log/"), mPidFile("Log/PID.txt"), mMemName("GMAP/MainMem.map") {
     // memset(this, 0, sizeof(*this));
 
     s8 sed[20];
@@ -83,7 +83,8 @@ bool EngineConfig::save(const String& cfg) {
     val["LogPath"] = mLogPath.c_str();
     val["PidFile"] = mPidFile.c_str();
     val["ShareMem"] = mMemName.c_str();
-    val["ShareMemSize"] = (Json::Value::Int64)mMemSize / (1024 * 1024);
+    val["ShareMemSize"] = static_cast<Json::Value::Int64>(mMemSize) / (1024 * 1024);
+    val["ShareMemReserveSize"] = static_cast<Json::Value::Int64>(mMemReserveSize);
     val["AcceptPost"] = mMaxPostAccept;
     val["ThreadPool"] = mMaxThread;
     val["Process"] = mMaxProcess;
@@ -175,6 +176,8 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     mPidFile = val["PidFile"].asCString();
     mMemName = val["ShareMem"].asCString();
     mMemSize = 1024 * 1024 * AppClamp<s64>(val["ShareMemSize"].asInt64(), 1LL, 10LL * 1024);
+    mMemReserveSize = AppClamp<s64>(val["ShareMemReserveSize"].asInt64(), 0LL, mMemSize / 2);
+    mMemReserveSize = AppAlignSize(mMemReserveSize, sizeof(usz));
     mMaxPostAccept = AppClamp<u8>(val["AcceptPost"].asInt(), 1, 255);
     mMaxThread = AppClamp<u8>(val["ThreadPool"].asInt(), 1, 255);
     mMaxProcess = AppClamp<s16>(val["Process"].asInt(), -1024, 1024);
@@ -182,5 +185,11 @@ bool EngineConfig::load(const String& runPath, const String& cfg, bool mainProce
     return ret;
 }
 
+
+void EngineConfig::showAll() {
+    DLOG(ELL_CRITICAL, "mMaxProcess = %d", mMaxProcess);
+    DLOG(ELL_CRITICAL, "mMemSize = %llu", mMemSize);
+    DLOG(ELL_CRITICAL, "mMemReserveSize = %llu", mMemReserveSize);
+}
 
 } // namespace app

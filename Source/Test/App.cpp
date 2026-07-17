@@ -24,8 +24,34 @@
 #endif
 
 
-
 namespace app {
+
+const s8* DCFG_ENG_CFG = R"({
+    "Daemon": false,
+    "Print": 1,
+    "LogPath": "Log/",
+    "PidFile": "Log/pid.txt",
+    "ShareMem": "GMEM/MainMemTest.map",
+    "ShareMemSize": 1,
+    "ShareMemReserveSize": 1104,
+    "AcceptPost": 10,
+    "ThreadPool": 3,
+    "Process": 0,
+    "TLS": {
+        "Ciphers": "HIGH:!aNULL:!MD5", //for TLSv1.2
+        "Ciphersuites": "", //for TLSv1.3
+        "CA": "Config/eng_ca.crt",
+        "Cert": "Config/eng.crt",
+        "Key": "Config/eng.key",
+        "VersionOff": "v1.0, v1.1",
+        "VerifyDepth": 5,
+        "HttpALPN": 1,
+        "PreferServerCiphers": true,
+        "Debug": false,
+        "Verify": 0
+    }
+})";
+
 s32 AppTestHuffman(s32 argc, s8** argv);
 s32 AppTestDBClient(s32 argc, s8** argv);
 void AppTestNetAddress();
@@ -52,6 +78,7 @@ s32 AppTestNode(s32 argc, s8** argv);
 #if defined(DUSE_ZLIB)
 s32 AppTestZlib(s32 argc, s8** argv);
 s32 AppTestRingBlocks(s32 argc, s8** argv);
+s32 AppRingBufferFixed(s32 argc, s8** argv);
 #endif
 } // namespace app
 
@@ -71,7 +98,7 @@ int main(int argc, char** argv) {
     const s32 cmd = App10StrToS32(argv[1]);
 
     Engine& eng = Engine::getInstance();
-    if (!eng.init(argv[0], false, "{}")) {
+    if (!eng.init(argv[0], false, app::DCFG_ENG_CFG)) {
         printf("main>> engine init fail\n");
         return 0;
     }
@@ -113,6 +140,7 @@ int main(int argc, char** argv) {
         break;
     default:
         if (true) {
+            AppRingBufferFixed(argc, argv);
             AppTestHuffman(argc, argv);
         } else {
             AppTestMD5(argc, argv);
@@ -138,12 +166,14 @@ int main(int argc, char** argv) {
         break;
     }
 
-    Engine::getInstance().postCommand(ECT_EXIT);
+    // Engine::getInstance().postCommand(ECT_EXIT);
     eng.run();
-    DLOG(ELL_INFO, "Test=%s", "val");
-    DLOG(ELL_INFO, "Test exit");
-    Logger::log(ELL_INFO, "main>>exit...");
+    DLOG(ELL_INFO, "main>>exit...");
     Logger::flush();
+    // for (int i = 0; i < 30; ++i) {
+    //     printf("main>>sleep %d\n", i);
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // }
     eng.uninit();
     printf("main>>stop\n");
     return 0;

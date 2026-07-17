@@ -4,7 +4,8 @@
     "LogPath": "Log/",
     "PidFile": "Log/pid.txt",
     "ShareMem": "GMEM/MainMem.map", //共享内存名
-    "ShareMemSize": 1, //[1-10 * 1024], 1MB
+    "ShareMemSize": 1, //[1-10 * 1024], 1 MB
+    "ShareMemReserveSize": 1024, // ShareMem中预留空间, 1024 bytes
     "AcceptPost": 10, //[1-255]监听端口上侯命的请求数
     "ThreadPool": 3, //[1-255]
     "Process": 0, //进程数

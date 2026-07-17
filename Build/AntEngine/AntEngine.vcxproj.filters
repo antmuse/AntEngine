@@ -72,6 +72,9 @@
     <Filter Include="Include\Net\HTTP\HTTP2">
       <UniqueIdentifier>{a6406dbc-e0c7-4a59-b12d-0d2df19b5d07}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Depend\tweetnacl">
+      <UniqueIdentifier>{66ce153c-c28d-4b8d-9bf7-16eb60b9fb5f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\StrConverter.cpp">
@@ -348,6 +351,9 @@
       <Filter>Source\Net\HTTP</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\Huffman.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\RingBufferFixed.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -686,6 +692,9 @@
       <Filter>Include\Net\HTTP</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Huffman.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RingBufferFixed.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>

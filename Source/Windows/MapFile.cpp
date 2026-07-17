@@ -31,7 +31,7 @@
 
 namespace app {
 
-//"Gobal\\%s" 需要跨用户权限(admin)，我们只需要同用户多进程共享
+//"Gobal\\%s" need(admin)
 static const s8* G_MEM_FMT = "Local\\%s";
 
 MapFile::MapFile() :
@@ -159,26 +159,29 @@ bool MapFile::flush() {
 }
 
 
-void* MapFile::createMem(usz iSize, const s8* iMapName, bool iReadOnly, bool share) {
+void* MapFile::createMem(usz iSize, const s8* iMapName, bool iReadOnly, bool share, bool not_anonymous) {
     if (!iMapName || 0 == iMapName[0]) {
         return nullptr;
     }
     closeAll();
-    mFlag = EMF_READ | EMF_CREATOR;
+    mFlag = EMF_READ;
     if (!iReadOnly) {
         mFlag |= EMF_WRITE;
     }
     if (share) {
         mFlag |= EMF_SHARE;
     }
-
+    if (not_anonymous) {
+        mFlag |= EMF_NOT_ANONYMOUS;
+    }
     String mmm = iMapName;
     mmm.deletePathFromFilename();
 
     snprintf(mMemName, sizeof(mMemName), G_MEM_FMT, mmm.c_str());
-    if (createMap(mMemName, iSize)) {
+    s32 ecode = createMap(mMemName, iSize);
+    if (0 != ecode) {
+        mFlag |= (1 == ecode ? EMF_CREATOR : 0);
         createView();
-        mFlag |= EMF_CREATOR;
     }
     if (!mMemory) {
         closeAll();
@@ -187,7 +190,7 @@ void* MapFile::createMem(usz iSize, const s8* iMapName, bool iReadOnly, bool sha
 }
 
 
-void* MapFile::openMem(const s8* iMapName, bool iReadOnly) {
+void* MapFile::openMem(const s8* iMapName, bool iReadOnly, bool not_anonymous) {
     if (!iMapName || 0 == iMapName[0]) {
         return nullptr;
     }
@@ -195,6 +198,9 @@ void* MapFile::openMem(const s8* iMapName, bool iReadOnly) {
     mFlag = EMF_READ;
     if (!iReadOnly) {
         mFlag |= EMF_WRITE;
+    }
+    if (not_anonymous) {
+        mFlag |= EMF_NOT_ANONYMOUS;
     }
     String mmm = iMapName;
     mmm.deletePathFromFilename();
@@ -214,7 +220,7 @@ void* MapFile::createMapfile(usz iSize, const s8* iFileName, bool iReadOnly, boo
         return nullptr;
     }
     closeAll();
-    mFlag = EMF_READ | EMF_CREATOR;
+    mFlag = EMF_READ;
     if (!iReadOnly) {
         mFlag |= EMF_WRITE;
     }
@@ -230,7 +236,9 @@ void* MapFile::createMapfile(usz iSize, const s8* iFileName, bool iReadOnly, boo
 
     snprintf(mMemName, sizeof(mMemName), G_MEM_FMT, mmm.c_str());
     if (createFile(iSize)) {
-        if (createMap(mMemName, mFileSize)) {
+        s32 ecode = createMap(mMemName, mFileSize);
+        if (0 != ecode) {
+            mFlag |= (1 == ecode ? EMF_CREATOR : 0);
             createView();
         }
     }
@@ -241,7 +249,7 @@ void* MapFile::createMapfile(usz iSize, const s8* iFileName, bool iReadOnly, boo
 }
 
 
-bool MapFile::createMap(const s8* iMapName, usz iSize) {
+s32 MapFile::createMap(const s8* iMapName, usz iSize) {
     tchar* realname;
 #if defined(DWCHAR_SYS)
     tchar fname[sizeof(mMemName)];
@@ -275,9 +283,13 @@ bool MapFile::createMap(const s8* iMapName, usz iSize) {
     }
     if (mMapHandle == nullptr) {
         Logger::log(ELL_ERROR, "MapFile::createMap>>fail = %s, err=%d, pls run as Administrator", mMemName, System::getAppError());
-        return false;
+        return 0;
     }
-    return true;
+    if (ERROR_ALREADY_EXISTS == System::getError()) {
+        Logger::log(ELL_INFO, "MapFile::createMap>> already exists = %s, ", mMemName);
+        return 2;
+    }
+    return 1;
 }
 
 

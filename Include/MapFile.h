@@ -36,11 +36,11 @@ public:
 
     virtual ~MapFile();
 
-    void* createMem(usz iSize, const s8* iMapName, bool iReadOnly, bool share);
+    void* createMem(usz iSize, const s8* iMapName, bool iReadOnly, bool share, bool not_anonymous);
 
     void* createMapfile(usz iSize, const s8* iFileName, bool iReadOnly, bool needDEL, bool share);
 
-    void* openMem(const s8* iMapName, bool iReadOnly);
+    void* openMem(const s8* iMapName, bool iReadOnly, bool not_anonymous);
 
     void closeAll();
 
@@ -48,6 +48,10 @@ public:
 
     bool isOpen()const {
         return nullptr != mMemory;
+    }
+
+    bool isCreator() const {
+        return 0 != (EMF_CREATOR & mFlag);
     }
 
     s8* getMem()const {
@@ -74,6 +78,8 @@ protected:
     void* mMapHandle;
 #else
     s32 mFile;
+    s32 createMemFD(const s8* iMapName, usz iSize);
+    void fixMemName(s8* mname);
 #endif
     void* mMemory;
     usz mMemSize;
@@ -86,13 +92,17 @@ protected:
         EMF_READ = 0x1,
         EMF_WRITE = 0x2,
         EMF_SHARE = 0x4,
-        EMF_NEED_DEL = 0x8,       //del file when close
-        EMF_CREATOR = 0x10
+        EMF_NEED_DEL = 0x8,       // del file when close
+        EMF_NOT_ANONYMOUS = 0x10, // not anonymous for linux only
+        EMF_CREATOR = 0x20
     };
 
 private:
     bool createFile(usz iSize);
-    bool createMap(const s8* iMapName, usz iSize);
+    /**
+     * @return 0 if fail, 1 if created success, 2 if opened a exsist map
+     */
+    s32 createMap(const s8* iMapName, usz iSize);
     bool openMap(const s8* iMapName);
 
 #if defined(DOS_WINDOWS)

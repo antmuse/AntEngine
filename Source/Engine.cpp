@@ -33,6 +33,13 @@
 
 
 namespace app {
+#if !defined(DGIT_BRANCH)
+#define DGIT_BRANCH "GIT_BRANCH"
+#endif
+#if !defined(DGIT_COMMIT_ID)
+#define DGIT_COMMIT_ID "GIT_COMMIT_ID"
+#endif
+
 
 const s8* G_CFGFILE = "Config/config.json";
 u32 MsgHeader::gSharedSN = 0;
@@ -71,7 +78,7 @@ void Engine::postCommand(s32 val) {
         return;
     }
     default:
-        Logger::log(ELL_INFO, "Engine::postCommand>>invalid cmd = %d", val);
+        DLOG(ELL_INFO, "Engine::postCommand>>invalid cmd = %d", val);
         return;
     }
     if (mMain) {
@@ -81,7 +88,7 @@ void Engine::postCommand(s32 val) {
              */
 
             if (sizeof(cmd) != mChild[i].mSocket.sendAll(&cmd, sizeof(cmd))) { // block send
-                Logger::log(ELL_INFO, "Engine::postCommand>>fail post cmd = %d, pid=%d", val, mChild[i].mID);
+                DLOG(ELL_INFO, "Engine::postCommand>>fail post cmd = %d, pid=%d", val, mChild[i].mID);
             }
         }
     }
@@ -89,8 +96,8 @@ void Engine::postCommand(s32 val) {
         mProcStatus = EPS_EXITING;
         EngineStats& estat = Engine::getInstance().getEngineStats();
         DLOG(ELL_INFO, "Engine::postCommand>> handles count = %lld", estat.mTotalHandles.load());
-        //if (!mMain || (mMain && 0 == mConfig.mMaxProcess)) {
-        Logger::log(ELL_INFO, "Engine::postCommand>> %s process exit...", mMain ? "main" : "child");
+        // if (!mMain || (mMain && 0 == mConfig.mMaxProcess)) {
+        DLOG(ELL_INFO, "Engine::postCommand>> %s process exit...", mMain ? "main" : "child");
         mLoop.postTask(cmd);
     }
 }
@@ -147,53 +154,60 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
         loger = Logger::addPrintReceiver();
     }
     Logger::addFileReceiver();
-    Logger::log(ELL_INFO, "Engine::init>> version = %s", DVERSION_NAME);
+    DLOG(ELL_INFO, "Engine::init>> version = %s, git.branch = %s, git.commitID = %s", DVERSION_NAME, DGIT_BRANCH,
+        DGIT_COMMIT_ID);
 
     script::ScriptManager::getInstance();
 
     bool ret = 0 == System::loadNetLib();
     if (!ret) {
-        Logger::log(ELL_ERROR, "Engine::init>>loadNetLib fail");
+        DLOG(ELL_ERROR, "Engine::init>>loadNetLib fail");
         return false;
     }
 
     net::AppInitTlsLib();
     if (EE_OK != mTlsENG.init(mConfig.mEngTlsConfig)) {
-        Logger::log(ELL_ERROR, "Engine::init>>default TLS fail");
+        DLOG(ELL_ERROR, "Engine::init>>default TLS fail");
         return false;
     }
-
-    if (App4Char2S32("GMEM") == App4Char2S32(mConfig.mMemName.c_str())) {
+    mConfig.showAll();
+    const s32 memtype = App4Char2S32(mConfig.mMemName.c_str());
+    if (App4Char2S32("GMEM") == memtype || App4Char2S32("SMEM") == memtype) {
         if (mMain) {
-            if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true)) {
-                Logger::log(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
+            if (!mMapfile.createMem(mConfig.mMemSize, mConfig.mMemName.c_str(), false, true, false)) {
+                DLOG(ELL_INFO, "Engine::init>>createMem fail = %s", mConfig.mMemName.c_str());
                 return false;
             }
         } else {
-            if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
-                Logger::log(ELL_INFO, "Engine::init>>child openMem GMEM fail = %s", mConfig.mMemName.c_str());
+            if (!mMapfile.openMem(mConfig.mMemName.c_str(), false, false)) {
+                DLOG(ELL_INFO, "Engine::init>>child openMem GMEM fail = %s", mConfig.mMemName.c_str());
                 return false;
             }
         }
     } else {
         if (mMain) {
             if (!mMapfile.createMapfile(mConfig.mMemSize, mConfig.mMemName.c_str(), false, false, true)) {
-                Logger::log(ELL_INFO, "Engine::init>>createMapfile fail = %s", mConfig.mMemName.c_str());
+                DLOG(ELL_INFO, "Engine::init>>createMapfile fail = %s", mConfig.mMemName.c_str());
                 return false;
             }
         } else {
-            if (!mMapfile.openMem(mConfig.mMemName.c_str(), false)) {
-                Logger::log(ELL_INFO, "Engine::init>>child openMem GMAP fail = %s", mConfig.mMemName.c_str());
+            if (!mMapfile.openMem(mConfig.mMemName.c_str(), false, false)) {
+                DLOG(ELL_INFO, "Engine::init>>child openMem GMAP fail = %s", mConfig.mMemName.c_str());
                 return false;
             }
         }
     }
+    DLOG(ELL_INFO, "Engine::init>> share mem = %p, len = %llu", sizeof(EngineData), mMapfile.getMem(),
+        mMapfile.getMemSize());
+    mEngData = reinterpret_cast<EngineData*>(mMapfile.getMem());
+    mUserReserveMem = mMapfile.getMem() + sizeof(EngineData);
+    mSlabPool = reinterpret_cast<MemSlabPool*>(mMapfile.getMem() + sizeof(EngineData) + mConfig.mMemReserveSize);
+    mMemSlabPoolSize = mConfig.mMemSize - sizeof(EngineData) - mConfig.mMemReserveSize;
 
     if (mMain) {
-        MemSlabPool& mpool = getMemSlabPool();
-        new (&mpool) MemSlabPool(getMemSlabPoolSize()); // mpool.initSlabSize();
-        // mpool.mLock.tryUnlock();  TODO clear lock when ...
-        getEngineStats().clear();
+        new (mEngData) EngineData();
+        mEngData->mShareMemTotalSize = mMapfile.getMemSize();
+        new (mSlabPool) MemSlabPool(mMemSlabPoolSize);
 
         System::removeFile(mConfig.mPidFile.c_str());
         FileRWriter file;
@@ -203,7 +217,7 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
         } else {
             return false;
         }
-        Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+        DLOG(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
         ret = createProcess();
     }
 
@@ -218,13 +232,13 @@ bool Engine::init(const s8* fname, bool child, const s8* cfg) {
         }
 #if defined(DOS_WINDOWS)
         net::Socket cmdsock = (net::netsocket)GetStdHandle(STD_INPUT_HANDLE);
-        Logger::log(ELL_INFO, "Engine::init>>pid = %d, cmdsock = %llu", mPID, cmdsock.getValue());
+        DLOG(ELL_INFO, "Engine::init>>pid = %d, cmdsock = %llu", mPID, cmdsock.getValue());
         if (!cmdsock.isOpen()) {
-            Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+            DLOG(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
             return false;
         }
         net::Socket tmp;
-        Logger::log(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
+        DLOG(ELL_INFO, "Engine::init>>pid = %d, main = %c", mPID, mMain ? 'Y' : 'N');
         ret = runChildProcess(cmdsock, tmp);
 #endif
     }
@@ -240,18 +254,18 @@ bool Engine::uninit() {
         MemSlabPool& mpool = getMemSlabPool();
         EngineStats& engStats = getEngineStats();
 
-        Logger::log(ELL_INFO, "Engine::uninit>>share stats[total=%ld, closed=%ld, in=%lu, out=%lu]",
+        DLOG(ELL_INFO, "Engine::uninit>>share stats[total=%ld, closed=%ld, in=%lu, out=%lu]",
             engStats.mTotalHandles.load(), engStats.mClosedHandles.load(), engStats.mInBytes.load(),
             engStats.mOutBytes.load());
 
         u32 cnt = mpool.getStateCount();
         for (u32 i = 0; i < cnt; i++) {
             MemStat& mstat = *(mpool.getStats() + i);
-            Logger::log(ELL_INFO, "Engine::uninit>>share mem[%u][used/total=%lu/%lu, req=%lu, fail=%lu]", i,
-                mstat.mUsed, mstat.mTotal, mstat.mRequests, mstat.mFails);
+            DLOG(ELL_INFO, "Engine::uninit>>share mem[%u][used/total=%lu/%lu, req=%lu, fail=%lu]", i, mstat.mUsed,
+                mstat.mTotal, mstat.mRequests, mstat.mFails);
         }
     }
-    Logger::log(ELL_INFO, "Engine::uninit>>pid = %d, main = %c, script=%llu", mPID, mMain ? 'Y' : 'N',
+    DLOG(ELL_INFO, "Engine::uninit>>pid = %d, main = %c, script=%llu", mPID, mMain ? 'Y' : 'N',
         script::ScriptManager::getInstance().getMemory());
     script::ScriptManager::getInstance().removeAll();
     Logger::flush();
@@ -277,8 +291,7 @@ void Engine::run() {
                                 mProcResponCount = 0;
                                 goto GT_PROC_CHILD;
                             }
-                            Logger::log(
-                                ELL_INFO, "Engine::run>> success respawn process[%lu] , pid=%d", i, mChild[i].mID);
+                            DLOG(ELL_INFO, "Engine::run>> success respawn process[%lu] , pid=%d", i, mChild[i].mID);
                         }
                     }
                 }
@@ -292,7 +305,7 @@ void Engine::run() {
             if (mChild[i].mHandle) {
                 System::waitProcess(mChild[i].mHandle);
                 mChild[i].mHandle = nullptr;
-                Logger::log(ELL_INFO, "Engine::run>> process[%d] exit, pid=%d", i, mChild[i].mID);
+                DLOG(ELL_INFO, "Engine::run>> process[%d] exit, pid=%d", i, mChild[i].mID);
             }
         }
     }
@@ -309,17 +322,17 @@ bool Engine::step() {
 }
 
 bool Engine::runMainProcess() {
-    //if (mConfig.mMaxProcess > 0) {
-    //    mProcStatus = EPS_RUNNING;
-    //    return true;
-    //}
+    // if (mConfig.mMaxProcess > 0) {
+    //     mProcStatus = EPS_RUNNING;
+    //     return true;
+    // }
     String unpath = Engine::getInstance().getConfig().mLogPath;
     unpath += System::getPID();
     unpath += ".unpath";
 
     net::SocketPair pair;
     if (!pair.open(unpath.c_str())) {
-        Logger::log(ELL_ERROR, "Engine::runMainProcess>> fail to open SocketPair");
+        DLOG(ELL_ERROR, "Engine::runMainProcess>> fail to open SocketPair");
         return false;
     }
     mThreadPool.start(mConfig.mMaxThread);
@@ -328,7 +341,7 @@ bool Engine::runMainProcess() {
         mProcStatus = EPS_RUNNING;
         mProcessTask();
     } else {
-        Logger::log(ELL_ERROR, "Engine::runMainProcess>> start loop fail");
+        DLOG(ELL_ERROR, "Engine::runMainProcess>> start loop fail");
     }
 
     return ret;
@@ -341,7 +354,7 @@ bool Engine::runChildProcess(net::Socket& cmdsock, net::Socket& write) {
         mProcStatus = EPS_RUNNING;
         mProcessTask();
     } else {
-        Logger::log(ELL_ERROR, "Engine::runChildProcess>> start loop fail");
+        DLOG(ELL_ERROR, "Engine::runChildProcess>> start loop fail");
     }
     return ret;
 }
@@ -396,15 +409,15 @@ bool Engine::createProcess(usz idx) {
             pair.getSocketB().close();
         }
 #endif
-        Logger::log(ELL_INFO, "Engine::createProcess>> success start pid = %d, ppid=%d", nd.mID, mPID);
+        DLOG(ELL_INFO, "Engine::createProcess>> success start pid = %d, ppid=%d", nd.mID, mPID);
         return true;
     }
 
 
 #if defined(DOS_LINUX)
-    GT_PROC_FAIL:
+GT_PROC_FAIL:
 #endif
-    Logger::log(ELL_ERROR, "Engine::createProcess>> fail to create Process[%u] fail", idx);
+    DLOG(ELL_ERROR, "Engine::createProcess>> fail to create Process[%u] fail", idx);
     nd.mID = 0;
     nd.mHandle = nullptr;
     nd.mStatus = EPS_EXITED;
@@ -415,7 +428,7 @@ bool Engine::createProcess(usz idx) {
 
 
 void Engine::initTask(void* it) {
-    Logger::log(ELL_INFO, "The default task do nothing, pid = %d", getPID());
+    DLOG(ELL_INFO, "The default task do nothing, pid = %d", getPID());
 }
 
 } // namespace app

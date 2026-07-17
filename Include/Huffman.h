@@ -4,7 +4,7 @@
 namespace app {
 
 /**
- * @brief http huffman encoder
+ * @brief http2 huffman encoder
  * @param src the src buf.
  * @param len the len of src buf.
  * @param dest the dest buf.
@@ -14,7 +14,7 @@ namespace app {
 usz AppHuffEncode(const u8* src, usz len, u8* dest, bool lower);
 
 /**
- * @brief http huffman decoder
+ * @brief http2 huffman decoder
  * @param src the src buf.
  * @param len the len of src buf.
  * @param dest the tail of dest buf.
