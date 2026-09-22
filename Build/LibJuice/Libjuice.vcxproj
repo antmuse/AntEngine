@@ -19,56 +19,83 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AntEngine\AntEngine.vcxproj">
-      <Project>{323ca6c7-fb56-4590-bf44-9b151281e81d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Lua\Lua.vcxproj">
-      <Project>{0d7657bd-0c41-4709-a511-9fb8377e50c3}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Zlib\zlib.vcxproj">
-      <Project>{dd3f5e27-00ec-4b15-84b0-274ce88cc66e}</Project>
-    </ProjectReference>
+    <ClCompile Include="..\..\Depend\libjuice\src\addr.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\agent.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\base64.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\conn.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\conn_mux.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\conn_poll.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\conn_thread.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\const_time.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\crc32.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\hash.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\hmac.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\ice.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\juice.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\log.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\random.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\server.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\stun.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\tcp.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\timestamp.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\turn.c" />
+    <ClCompile Include="..\..\Depend\libjuice\src\udp.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\ServiceNAT\ClientNAT\AppNAT.cpp" />
-    <ClCompile Include="..\..\Source\ServiceNAT\ClientNAT\ClientNAT.cpp" />
-    <ClCompile Include="..\..\Source\ServiceNAT\MsgNAT.cpp" />
-    <ClCompile Include="..\..\Source\ServiceNAT\NatHolePuncher.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\Source\ServiceNAT\ClientNAT\ClientNAT.h" />
-    <ClInclude Include="..\..\Source\ServiceNAT\MsgNAT.h" />
-    <ClInclude Include="..\..\Source\ServiceNAT\NatHolePuncher.h" />
+    <ClInclude Include="..\..\Depend\libjuice\include\juice\juice.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\addr.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\agent.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\base64.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\conn.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\conn_mux.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\conn_poll.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\conn_thread.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\const_time.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\crc32.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\hash.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\hmac.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\ice.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\log.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\picohash.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\random.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\server.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\socket.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\stun.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\tcp.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\thread.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\timestamp.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\turn.h" />
+    <ClInclude Include="..\..\Depend\libjuice\src\udp.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{511801E8-F8C3-418F-A0FB-3E4DA4D748AA}</ProjectGuid>
+    <ProjectGuid>{F363B954-C48F-46E8-BB5E-492C34C8E617}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>AntTest</RootNamespace>
+    <RootNamespace>Lua</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -95,24 +122,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
-    <TargetName>$(ProjectName)D</TargetName>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
-    <TargetName>$(ProjectName)D</TargetName>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Bin\Temp\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)..\Bin\</OutDir>
+    <OutDir>$(SolutionDir)..\Lib\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -120,18 +145,16 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;JUICE_STATIC;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/ServiceNAT;$(SolutionDir)../Source/ServiceNAT/ClientNAT;$(SolutionDir)../Depend/libjuice/include</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Depend/libjuice/include/juice;$(SolutionDir)../Depend/libjuice/src</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../Public/openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;Libjuice.lib;Bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -142,14 +165,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -162,16 +185,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/Test</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Depend/jsoncpp;$(SolutionDir)../Depend/http_parser;$(SolutionDir)../../openssl/include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -182,20 +205,18 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;JUICE_STATIC;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)../Include;$(SolutionDir)../Source/ServiceNAT;$(SolutionDir)../Source/ServiceNAT/ClientNAT;$(SolutionDir)../Depend/libjuice/include</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4819;4828</DisableSpecificWarnings>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(SolutionDir)../Depend/libjuice/include/juice;$(SolutionDir)../Depend/libjuice/src</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\Lib\$(Configuration)\;$(SolutionDir)../../../Public/openssl</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcrypto.lib;libssl.lib;AntEngine.lib;zlib.lib;libmysql.lib;Lua.lib;Libjuice.lib;Bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

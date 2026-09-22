@@ -24,12 +24,18 @@
     <ClCompile Include="..\..\Source\ServiceNAT\MsgNAT.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\ServiceNAT\NatHolePuncher.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\ServiceNAT\ClientNAT\ClientNAT.h">
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\ServiceNAT\MsgNAT.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\ServiceNAT\NatHolePuncher.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>

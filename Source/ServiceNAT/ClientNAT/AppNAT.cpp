@@ -6,6 +6,7 @@
 #include "ClientNAT.h"
 #include "Timer.h"
 #include "Converter.h"
+#include "NatHolePuncher.h"
 
 
 #ifdef DOS_WINDOWS
@@ -52,6 +53,8 @@ int main(int argc, char** argv) {
         printf("main>> engine init fail\n");
         return 1;
     }
+    net::NatHolePuncher puner;
+    puner.init();
     ClientNAT tick;
     if (tick.start(cmd, argv[2], argv[3], argv[4])) {
         DLOG(ELL_INFO, "main>>start fail on: %s", cmd);

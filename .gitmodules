@@ -1,3 +1,6 @@
 [submodule "Depend/zlib"]
 	path = Depend/zlib
 	url = git@github.com:madler/zlib.git
+[submodule "Depend/libjuice"]
+	path = Depend/libjuice
+	url = https://github.com/paullouisageneau/libjuice

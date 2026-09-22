@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{17e8b43f-acd9-4e9e-9b20-93f5df0e67da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\juice">
+      <UniqueIdentifier>{211542bf-e9d5-4092-b915-d58b0e113d4a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Depend\libjuice\src\addr.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\agent.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\base64.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\conn.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\conn_mux.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\conn_poll.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\conn_thread.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\const_time.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\crc32.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\hash.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\hmac.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\ice.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\juice.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\log.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\random.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\server.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\stun.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\tcp.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\timestamp.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\turn.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Depend\libjuice\src\udp.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Depend\libjuice\src\addr.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\agent.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\base64.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\conn.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\conn_mux.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\conn_poll.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\conn_thread.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\const_time.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\crc32.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\hash.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\hmac.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\ice.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\log.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\picohash.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\random.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\server.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\socket.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\stun.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\tcp.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\thread.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\timestamp.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\turn.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\src\udp.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Depend\libjuice\include\juice\juice.h">
+      <Filter>Include\juice</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
